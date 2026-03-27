@@ -1,7 +1,7 @@
 # Project Structure
 
 ```
-velostack-go/
+laju-go/
 ├── main.go                          # Application entry point (Go server bootstrap)
 ├── go.mod                           # Go module dependencies
 ├── go.sum                           # Go dependency checksums
@@ -16,7 +16,7 @@ velostack-go/
 ├── .vite-port                       # Vite dev server port (auto-generated)
 ├── README.md                        # Quick start documentation
 ├── DOKUMEN.md                       # Full project documentation
-├── velostack-go                     # Compiled binary (gitignored)
+├── laju-go                          # Compiled binary (gitignored)
 │
 ├── app/                             # Go backend application code
 │   ├── config/

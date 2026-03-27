@@ -1,4 +1,4 @@
-# VeloStack Go - Complete Documentation
+# Laju Go - Complete Documentation
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@
 
 ## Overview
 
-**VeloStack Go** is a high-performance SaaS boilerplate built with modern technologies:
+**Laju Go** is a high-performance SaaS boilerplate built with modern technologies:
 
 - **Backend**: Go Fiber (fasthttp-based web framework)
 - **Frontend**: Svelte 5 with Vite
@@ -85,8 +85,8 @@ This stack provides the performance of Go with the developer experience of moder
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd velostack-go
+   git clone https://github.com/maulanashalihin/laju-go.git
+   cd laju-go
    ```
 
 2. **Install Go dependencies**
@@ -136,7 +136,7 @@ See [FOLDER.md](FOLDER.md) for detailed directory structure.
 ### Quick Reference
 
 ```
-velostack-go/
+laju-go/
 ├── main.go              # Entry point
 ├── app/                 # Backend code
 │   ├── handlers/        # HTTP handlers
@@ -457,7 +457,7 @@ go run main.go       # Start Go server
 
 # Production build
 npm run build        # Build frontend
-go build -o velostack-go .  # Build Go binary
+go build -o laju-go .  # Build Go binary
 
 # Database
 goose -dir migrations sqlite3:data/app.db up  # Run migrations
@@ -482,7 +482,7 @@ npm run test         # Run frontend tests
 
 2. **Build Go binary**:
    ```bash
-   go build -o velostack-go .
+   go build -o laju-go .
    ```
 
 3. **Run migrations**:
@@ -492,7 +492,7 @@ npm run test         # Run frontend tests
 
 4. **Start server**:
    ```bash
-   ./velostack-go
+   ./laju-go
    ```
 
 ### Environment Configuration
@@ -511,16 +511,16 @@ DB_PATH=data/app.db
 Use a process manager like PM2, systemd, or Supervisor:
 
 ```ini
-# /etc/systemd/system/velostack-go.service
+# /etc/systemd/system/laju-go.service
 [Unit]
-Description=VeloStack Go
+Description=Laju Go
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/path/to/velostack-go
-ExecStart=/path/to/velostack-go/velostack-go
+WorkingDirectory=/path/to/laju-go
+ExecStart=/path/to/laju-go/laju-go
 Restart=always
 
 [Install]
@@ -564,7 +564,7 @@ WantedBy=multi-user.target
 | `APP_URL` | Application URL | `http://localhost:8080` |
 | `DB_PATH` | Database path | `data/app.db` |
 | `SESSION_SECRET` | Session encryption key | `your-secret-key` |
-| `SESSION_NAME` | Session cookie name | `velostack_session` |
+| `SESSION_NAME` | Session cookie name | `laju_session` |
 
 ### OAuth Variables (Optional)
 
@@ -587,7 +587,7 @@ DB_PATH=data/app.db
 
 # Session
 SESSION_SECRET=your-32-character-secret-key
-SESSION_NAME=velostack_session
+SESSION_NAME=laju_session
 
 # Google OAuth (optional)
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
