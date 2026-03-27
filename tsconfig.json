@@ -1,0 +1,23 @@
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["frontend/*"],
+      "@components/*": ["frontend/Components/*"],
+      "@layouts/*": ["frontend/Layouts/*"],
+      "@pages/*": ["frontend/Pages/*"]
+    },
+    "verbatimModuleSyntax": false
+  },
+  "include": ["frontend/**/*.ts", "frontend/**/*.svelte"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{{.Title}} - VeloStack</title>
+        <meta
+            name="description"
+            content="VeloStack Go Fiber - High Performance SaaS Boilerplate"
+        />
+        <link rel="icon" href="/public/favicon.png" />
+        {{if .Styles}} {{range .Styles}}
+        <link rel="stylesheet" href="{{.}}" />
+        {{end}} {{end}}
+    </head>
+    <body class="bg-gray-50 text-gray-900">
+        <div id="app"></div>
+
+        <script data-page="app" type="application/json">
+            {{.Page}}
+        </script>
+
+        {{if .ViteServerURL}}
+        <!-- Development: use Vite dev server -->
+        <script type="module" src="{{.ViteServerURL}}/@vite/client"></script>
+        <link rel="stylesheet" href="{{.ViteServerURL}}/src/app.css" />
+        <script type="module" src="{{.ViteServerURL}}/src/main.ts"></script>
+        {{else}}
+        <!-- Production: use built assets with hashed filenames -->
+        <link rel="stylesheet" href="{{.MainCSS}}" />
+        <script type="module" src="{{.MainJS}}"></script>
+        {{end}}
+    </body>
+</html>

@@ -1,0 +1,58 @@
+package config
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
+)
+
+type Config struct {
+	AppPort            string
+	AppEnv             string
+	DBPath             string
+	SessionSecret      string
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURL  string
+	FrontendURL        string
+}
+
+var AppConfig *Config
+
+func Load() *Config {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
+	AppConfig = &Config{
+		AppPort:            getEnv("APP_PORT", "8080"),
+		AppEnv:             getEnv("APP_ENV", "development"),
+		DBPath:             getEnv("DB_PATH", "./data/app.db"),
+		SessionSecret:      getEnv("SESSION_SECRET", "change-this-in-production"),
+		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
+		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", ""),
+		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:5173"),
+	}
+
+	return AppConfig
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+func (c *Config) GetDSN() string {
+	return fmt.Sprintf("file:%s?_foreign_keys=on", c.DBPath)
+}
+
+func (c *Config) IsDevelopment() bool {
+	return c.AppEnv == "development"
+}
