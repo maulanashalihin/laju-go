@@ -1,4 +1,4 @@
-# VeloStack Go
+# Laju Go
 
 High-performance SaaS boilerplate built with **Go Fiber** + **Svelte 5** + **SQLite**.
 
@@ -17,7 +17,7 @@ High-performance SaaS boilerplate built with **Go Fiber** + **Svelte 5** + **SQL
 ## 📁 Project Structure
 
 ```
-velostack-go/
+laju-go/
 ├── main.go                  # Entry point
 ├── go.mod                   # Go dependencies
 ├── package.json             # Node.js dependencies
@@ -83,8 +83,8 @@ velostack-go/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/velostack/velostack-go.git
-   cd velostack-go
+   git clone https://github.com/maulanashalihin/laju-go.git
+   cd laju-go
    ```
 
 2. **Install Go dependencies**
@@ -137,19 +137,19 @@ velostack-go/
 
 2. **Build Go binary**
    ```bash
-   go build -o velostack-go .
+   go build -o laju-go .
    ```
 
 3. **Run the binary**
    ```bash
-   ./velostack-go
+   ./laju-go
    ```
 
 ### Using Docker
 
 1. **Build the image**
    ```bash
-   docker build -t velostack-go .
+   docker build -t laju-go .
    ```
 
 2. **Run the container**
@@ -157,7 +157,7 @@ velostack-go/
    docker run -p 8080:8080 \
      -v $(pwd)/data:/root/data \
      -v $(pwd)/storage:/root/storage \
-     velostack-go
+     laju-go
    ```
 
 ## 🔐 Default Admin Setup
@@ -227,8 +227,8 @@ sudo apt install -y nodejs
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/velostack/velostack-go.git /opt/velostack-go
-cd /opt/velostack-go
+git clone https://github.com/maulanashalihin/laju-go.git /opt/laju-go
+cd /opt/laju-go
 
 # 2. Install dependencies
 go mod download
@@ -238,7 +238,7 @@ npm install
 npm run build
 
 # 4. Build Go binary
-go build -o velostack-go .
+go build -o laju-go .
 
 # 5. Configure environment
 cp .env.example .env
@@ -248,22 +248,22 @@ nano .env  # Edit with your settings
 ### Create Systemd Service
 
 ```bash
-sudo nano /etc/systemd/system/velostack-go.service
+sudo nano /etc/systemd/system/laju-go.service
 ```
 
 Add the following content:
 
 ```ini
 [Unit]
-Description=VeloStack Go Application
+Description=Laju Go Application
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/opt/velostack-go
-ExecStart=/opt/velostack-go/velostack-go
+WorkingDirectory=/opt/laju-go
+ExecStart=/opt/laju-go/laju-go
 Restart=always
 RestartSec=5
 StandardOutput=journal
@@ -284,15 +284,15 @@ WantedBy=multi-user.target
 
 ```bash
 # Create data and storage directories
-sudo mkdir -p /opt/velostack-go/data /opt/velostack-go/storage/avatars
+sudo mkdir -p /opt/laju-go/data /opt/laju-go/storage/avatars
 
 # Set ownership
-sudo chown -R www-data:www-data /opt/velostack-go
+sudo chown -R www-data:www-data /opt/laju-go
 
 # Set permissions (SQLite needs write access to data directory)
-sudo chmod 755 /opt/velostack-go
-sudo chmod 770 /opt/velostack-go/data
-sudo chmod 770 /opt/velostack-go/storage
+sudo chmod 755 /opt/laju-go
+sudo chmod 770 /opt/laju-go/data
+sudo chmod 770 /opt/laju-go/storage
 ```
 
 ### Start & Enable Service
@@ -333,34 +333,34 @@ The application includes the following SQLite optimizations:
 
 ```bash
 # Create backup using SQLite backup API
-sqlite3 /opt/velostack-go/data/app.db ".backup '/opt/velostack-go/backups/app-$(date +%Y%m%d).db'"
+sqlite3 /opt/laju-go/data/app.db ".backup '/opt/laju-go/backups/app-$(date +%Y%m%d).db'"
 ```
 
 **Checkpoint WAL (optional, for maintenance):**
 
 ```bash
 # Checkpoint WAL to main database file
-sqlite3 /opt/velostack-go/data/app.db "PRAGMA wal_checkpoint(TRUNCATE);"
+sqlite3 /opt/laju-go/data/app.db "PRAGMA wal_checkpoint(TRUNCATE);"
 ```
 
 **Vacuum (reclaim space, requires downtime):**
 
 ```bash
 # Stop service first
-sudo systemctl stop velostack-go
+sudo systemctl stop laju-go
 
 # Vacuum database
-sqlite3 /opt/velostack-go/data/app.db "VACUUM;"
+sqlite3 /opt/laju-go/data/app.db "VACUUM;"
 
 # Restart service
-sudo systemctl start velostack-go
+sudo systemctl start laju-go
 ```
 
 ### Nginx Reverse Proxy (Optional)
 
 ```bash
 sudo apt install -y nginx
-sudo nano /etc/nginx/sites-available/velostack-go
+sudo nano /etc/nginx/sites-available/laju-go
 ```
 
 ```nginx
@@ -383,7 +383,7 @@ server {
 
 ```bash
 # Enable site
-sudo ln -s /etc/nginx/sites-available/velostack-go /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/laju-go /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
