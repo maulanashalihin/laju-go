@@ -1,18 +1,18 @@
 # SQLite Configuration Guide
 
-Panduan lengkap konfigurasi SQLite untuk Laju Go berdasarkan resource server dan use case production.
+Complete guide for SQLite configuration in Laju Go based on server resources and production use cases.
 
 ## Overview
 
-Laju Go menggunakan SQLite dengan optimalisasi yang dapat disesuaikan berdasarkan:
-- **RAM tersedia** - Menentukan cache size dan connection pool
-- **CPU cores** - Menentukan concurrent connections
+Laju Go uses SQLite with optimizations that can be customized based on:
+- **Available RAM** - Determines cache size and connection pool
+- **CPU cores** - Determines concurrent connections
 - **Storage type** - NVMe vs SSD vs HDD (mmap optimization)
 - **Traffic pattern** - Read-heavy vs write-heavy workloads
 
 ## Current Configuration (Default)
 
-Konfigurasi default di `main.go` dioptimalkan untuk **Vultr High Frequency 1-2GB RAM**:
+The default configuration in `main.go` is optimized for **Vultr High Frequency 1-2GB RAM**:
 
 ```go
 // main.go - initDatabase()
@@ -59,10 +59,10 @@ SQLite mmap (virt)  : 128MB (not physical RAM)
 OS overhead         : ~150MB
 Buffer/Headroom     : ~50-100MB
 ─────────────────────────────────
-Total               : ~400-500MB dari 512MB (80-95% usage)
+Total               : ~400-500MB of 512MB (80-95% usage)
 ```
 
-**⚠️ Warning**: Untuk 512MB, **wajib tambah swap file** minimal 512MB:
+**⚠️ Warning**: For 512MB, **you must add swap file** at least 512MB:
 ```bash
 # Create swap file
 sudo fallocate -l 512M /swapfile
@@ -104,7 +104,7 @@ SQLite mmap (virt)  : 512MB (virtual)
 OS overhead         : ~200MB
 Buffer/Headroom     : ~1GB+
 ─────────────────────────────────
-Total               : ~600-700MB dari 2-4GB (20-35% usage)
+Total               : ~600-700MB of 2-4GB (20-35% usage)
 ```
 
 **Expected performance**:
@@ -143,7 +143,7 @@ SQLite mmap (virt)  : 1GB (virtual)
 OS overhead         : ~300MB
 Buffer/Headroom     : ~6-10GB
 ─────────────────────────────────
-Total               : ~1.5-2GB dari 8-16GB (10-25% usage)
+Total               : ~1.5-2GB of 8-16GB (10-25% usage)
 ```
 
 **Expected performance**:
@@ -175,7 +175,7 @@ db.Exec("PRAGMA temp_store = MEMORY")          // Memory temp tables
 db.Exec("PRAGMA page_size = 4096")             // Explicit page size
 ```
 
-**Memory breakdown** (contoh: 58GB RAM):
+**Memory breakdown** (example: 58GB RAM):
 ```
 App (Go/Fiber)      : ~500-800MB
 SQLite cache        : 4GB
@@ -183,7 +183,7 @@ SQLite mmap (virt)  : 2GB (virtual)
 OS overhead         : ~500MB
 Buffer/Headroom     : ~50GB+
 ─────────────────────────────────
-Total               : ~5-6GB dari 58GB (10% usage)
+Total               : ~5-6GB of 58GB (10% usage)
 ```
 
 **Expected performance**:
@@ -192,11 +192,11 @@ Total               : ~5-6GB dari 58GB (10% usage)
 - Cache hit ratio: ~96-99%
 - P99 latency: ~8-15ms
 
-**⚠️ Important**: SQLite memiliki batasan inherent:
+**⚠️ Important**: SQLite has inherent limitations:
 - **Max concurrent writes**: 1 at a time (WAL helps, but still limited)
 - **Write contention**: Starts after ~50-100 concurrent connections
 
-Untuk write-heavy workloads dengan hardware ini, **pertimbangkan PostgreSQL**.
+For write-heavy workloads with this hardware, **consider PostgreSQL**.
 
 ---
 
@@ -204,7 +204,7 @@ Untuk write-heavy workloads dengan hardware ini, **pertimbangkan PostgreSQL**.
 
 ### Read-Heavy Workload (>90% reads)
 
-**Optimasi untuk caching maksimal**:
+**Optimization for maximum caching**:
 
 ```go
 // Increase cache size
@@ -216,13 +216,13 @@ db.SetMaxOpenConns(50)
 db.SetMaxIdleConns(25)
 ```
 
-**Alasan**: Lebih banyak data di-cache = lebih sedikit disk I/O
+**Reason**: More data cached = less disk I/O
 
 ---
 
 ### Write-Heavy Workload (>30% writes)
 
-**Optimasi untuk write throughput**:
+**Optimization for write throughput**:
 
 ```go
 // Reduce checkpoint frequency
@@ -235,15 +235,15 @@ db.Exec("PRAGMA cache_size = -32000")  // 32MB cache
 db.Exec("PRAGMA busy_timeout = 15000")  // 15 second timeout
 ```
 
-**Alasan**: Less frequent checkpoints = better write performance
+**Reason**: Less frequent checkpoints = better write performance
 
-**⚠️ Warning**: SQLite tidak cocok untuk >50% write workloads. Pertimbangkan PostgreSQL.
+**⚠️ Warning**: SQLite is not suitable for >50% write workloads. Consider PostgreSQL.
 
 ---
 
 ### Mixed Workload (70% reads, 30% writes)
 
-**Balanced configuration** (default sudah cukup):
+**Balanced configuration** (default is sufficient):
 
 ```go
 db.SetMaxOpenConns(25)
@@ -285,7 +285,7 @@ PRAGMA cache_size = -<KB>  -- Negative value = KB
 | 32GB | 2GB | `-2000000` |
 | 58GB | 4GB | `-4000000` |
 
-**Rule of thumb**: 1-7% dari total RAM
+**Rule of thumb**: 1-7% of total RAM
 
 ---
 
@@ -301,7 +301,7 @@ PRAGMA mmap_size = <bytes>
 | SSD | 256MB | `268435456` |
 | NVMe | 1-2GB | `1073741824` - `2147483648` |
 
-**Alasan**: NVMe benefit besar dari memory-mapped I/O
+**Reason**: NVMe benefits greatly from memory-mapped I/O
 
 ---
 
@@ -348,7 +348,7 @@ PRAGMA synchronous = FULL | NORMAL | OFF
 | `NORMAL` ✅ | Very High | Fast | Production web apps (recommended) |
 | `OFF` ⚠️ | Low | Fastest | Development only (risky!) |
 
-**⚠️ Warning**: `OFF` bisa cause data corruption on power loss!
+**⚠️ Warning**: `OFF` can cause data corruption on power loss!
 
 ---
 
@@ -375,7 +375,7 @@ PRAGMA temp_store;             -- Should be: 2 (MEMORY)
 
 ### Verify from Application Logs
 
-Saat server start, akan ada log:
+When server starts, you'll see:
 ```
 SQLite optimizations: journal_mode=WAL, synchronous=NORMAL, cache_size=32000KB, mmap_size=536870912KB, wal_autocheckpoint=2000, busy_timeout=7500ms
 ```
@@ -386,7 +386,7 @@ SQLite optimizations: journal_mode=WAL, synchronous=NORMAL, cache_size=32000KB, 
 
 ### Database Locked Errors
 
-**Symptoms**: `database is locked`, `PRAGMA busy_timeout` tidak help
+**Symptoms**: `database is locked`, `PRAGMA busy_timeout` doesn't help
 
 **Solutions**:
 1. Increase busy_timeout: `PRAGMA busy_timeout = 15000`
@@ -421,13 +421,13 @@ SQLite optimizations: journal_mode=WAL, synchronous=NORMAL, cache_size=32000KB, 
 
 ### Write Contention
 
-**Symptoms**: Timeouts pada write operations, WAL file grows large
+**Symptoms**: Timeouts on write operations, WAL file grows large
 
 **Solutions**:
 1. Increase wal_autocheckpoint: `PRAGMA wal_autocheckpoint = 5000`
 2. Run manual checkpoint: `PRAGMA wal_checkpoint(PASSIVE)`
 3. Reduce concurrent writes (queue/batch writes)
-4. **Consider PostgreSQL** jika write-heavy
+4. **Consider PostgreSQL** if write-heavy
 
 ---
 
@@ -435,7 +435,7 @@ SQLite optimizations: journal_mode=WAL, synchronous=NORMAL, cache_size=32000KB, 
 
 ### From Development to Production
 
-**Step 1**: Update configuration di `main.go`:
+**Step 1**: Update configuration in `main.go`:
 
 ```go
 // Change from development (512MB-1GB) to production (2-4GB)
@@ -448,7 +448,7 @@ db.Exec("PRAGMA busy_timeout = 5000")     // → 7500 (7.5s)
 db.Exec("PRAGMA wal_autocheckpoint = 1000") // → 2000
 ```
 
-**Step 2**: Deploy dan monitor:
+**Step 2**: Deploy and monitor:
 ```bash
 # Deploy
 git push && ssh user@server "cd laju-go && git pull && go build && sudo systemctl restart laju-go"
@@ -472,8 +472,8 @@ sqlite3 data/app.db "PRAGMA cache_size;"
 
 **Migration steps**:
 1. Install PostgreSQL
-2. Update connection string di `.env`
-3. Replace SQLite-specific PRAGMAs dengan PostgreSQL equivalents
+2. Update connection string in `.env`
+3. Replace SQLite-specific PRAGMAs with PostgreSQL equivalents
 4. Run migrations
 5. Test thoroughly
 
@@ -571,12 +571,12 @@ Expected (hey -n 200000 -c 500):
 ### 1. Start Conservative, Scale Up
 
 ```go
-// Start dengan konfigurasi minimal
+// Start with minimal configuration
 db.SetMaxOpenConns(10)
 db.Exec("PRAGMA cache_size = -8000")
 
-// Monitor usage selama 1-2 minggu
-// Increase jika perlu
+// Monitor usage for 1-2 weeks
+// Increase if needed
 ```
 
 ### 2. Monitor Memory Usage
@@ -592,7 +592,7 @@ sqlite3 data/app.db "PRAGMA cache_size;"
 ### 3. Test Before Production
 
 ```bash
-# Load test dengan konfigurasi baru
+# Load test with new configuration
 hey -n 10000 -c 50 http://localhost:8080/
 
 # Monitor response times
@@ -601,9 +601,9 @@ hey -n 10000 -c 50 http://localhost:8080/
 
 ### 4. Document Changes
 
-Selalu dokumentasikan perubahan konfigurasi:
-- Tanggal perubahan
-- Alasan perubahan
+Always document configuration changes:
+- Date of change
+- Reason for change
 - Before/after values
 - Performance impact
 
@@ -613,7 +613,7 @@ Selalu dokumentasikan perubahan konfigurasi:
 # Check WAL file size
 ls -lh data/app.db*
 
-# Manual checkpoint jika WAL terlalu besar
+# Manual checkpoint if WAL is too large
 sqlite3 data/app.db "PRAGMA wal_checkpoint(PASSIVE);"
 ```
 
