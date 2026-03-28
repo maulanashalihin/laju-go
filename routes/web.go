@@ -4,18 +4,18 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/velostack/velostack-go/app/handlers"
-	"github.com/velostack/velostack-go/app/middlewares"
-	"github.com/velostack/velostack-go/app/services"
-	"github.com/velostack/velostack-go/app/session"
+	"github.com/maulanashalihin/laju-go/app/handlers"
+	"github.com/maulanashalihin/laju-go/app/middlewares"
+	"github.com/maulanashalihin/laju-go/app/services"
+	"github.com/maulanashalihin/laju-go/app/session"
 )
 
 type Handlers struct {
-	Public         *handlers.PublicHandler
-	Auth           *handlers.AuthHandler
-	App            *handlers.AppHandler
-	Upload         *handlers.UploadHandler
-	PasswordReset  *handlers.PasswordResetHandler
+	Public        *handlers.PublicHandler
+	Auth          *handlers.AuthHandler
+	App           *handlers.AppHandler
+	Upload        *handlers.UploadHandler
+	PasswordReset *handlers.PasswordResetHandler
 }
 
 func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
@@ -35,16 +35,13 @@ func setupPublicRoutes(app *fiber.App, handler *handlers.PublicHandler) {
 }
 
 func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, passwordResetHandler *handlers.PasswordResetHandler, store *session.Store, mailerService *services.MailerService) {
-	// Guest routes (redirect if already logged in)
-	guest := app.Group("/", middlewares.Guest(store))
-	
-	// Login routes
-	guest.Get("/login", authHandler.ShowLoginForm)
-	guest.Post("/login", authHandler.Login, middlewares.AuthRateLimit.Limit())
-	
-	// Register routes
-	guest.Get("/register", authHandler.ShowRegisterForm)
-	guest.Post("/register", authHandler.Register, middlewares.AuthRateLimit.Limit())
+	// Login routes (with Guest middleware)
+	app.Get("/login", middlewares.Guest(store), authHandler.ShowLoginForm)
+	app.Post("/login", middlewares.Guest(store), authHandler.Login, middlewares.AuthRateLimit.Limit())
+
+	// Register routes (with Guest middleware)
+	app.Get("/register", middlewares.Guest(store), authHandler.ShowRegisterForm)
+	app.Post("/register", middlewares.Guest(store), authHandler.Register, middlewares.AuthRateLimit.Limit())
 
 	// OAuth routes
 	app.Get("/auth/google", authHandler.GoogleLogin)

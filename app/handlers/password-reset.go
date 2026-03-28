@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/velostack/velostack-go/app/services"
-	"github.com/velostack/velostack-go/app/session"
+	"github.com/maulanashalihin/laju-go/app/services"
+	"github.com/maulanashalihin/laju-go/app/session"
 	"golang.org/x/crypto/bcrypt"
 )
 

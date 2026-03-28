@@ -3,8 +3,8 @@ package services
 import (
 	"errors"
 
-	"github.com/velostack/velostack-go/app/models"
-	"github.com/velostack/velostack-go/app/repositories"
+	"github.com/maulanashalihin/laju-go/app/models"
+	"github.com/maulanashalihin/laju-go/app/repositories"
 )
 
 type UserService struct {
@@ -68,8 +68,12 @@ func (s *UserService) ChangePassword(userID int64, oldPassword, newPassword stri
 		return err
 	}
 
-	// Verify old password
-	if !checkPassword(user.Password, oldPassword) {
+	// Verify old password - user must have a password
+	if !user.Password.Valid {
+		return errors.New("invalid current password")
+	}
+
+	if !checkPassword(user.Password.String, oldPassword) {
 		return errors.New("invalid current password")
 	}
 

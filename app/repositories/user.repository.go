@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/velostack/velostack-go/app/models"
+	"github.com/maulanashalihin/laju-go/app/models"
 )
 
 var (
@@ -31,7 +31,7 @@ func (r *UserRepository) Create(user *models.User) error {
 	query, args, err := r.psql.
 		Insert("users").
 		Columns("email", "name", "password", "role", "created_at", "updated_at").
-		Values(user.Email, user.Name, user.Password, user.Role, time.Now(), time.Now()).
+		Values(user.Email, user.Name, user.Password.String, user.Role, time.Now(), time.Now()).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {
@@ -84,8 +84,9 @@ func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 	}
 
 	user := &models.User{}
+	var password sql.NullString
 	err = r.db.QueryRow(query, args...).Scan(
-		&user.ID, &user.Email, &user.Name, &user.Password, &user.Avatar,
+		&user.ID, &user.Email, &user.Name, &password, &user.Avatar,
 		&user.Role, &user.GoogleID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
@@ -94,6 +95,7 @@ func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 		}
 		return nil, err
 	}
+	user.Password = password
 
 	return user, nil
 }
@@ -110,8 +112,9 @@ func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 	}
 
 	user := &models.User{}
+	var password sql.NullString
 	err = r.db.QueryRow(query, args...).Scan(
-		&user.ID, &user.Email, &user.Name, &user.Password, &user.Avatar,
+		&user.ID, &user.Email, &user.Name, &password, &user.Avatar,
 		&user.Role, &user.GoogleID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
@@ -120,6 +123,7 @@ func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 		}
 		return nil, err
 	}
+	user.Password = password
 
 	return user, nil
 }
@@ -136,8 +140,9 @@ func (r *UserRepository) GetByGoogleID(googleID string) (*models.User, error) {
 	}
 
 	user := &models.User{}
+	var password sql.NullString
 	err = r.db.QueryRow(query, args...).Scan(
-		&user.ID, &user.Email, &user.Name, &user.Password, &user.Avatar,
+		&user.ID, &user.Email, &user.Name, &password, &user.Avatar,
 		&user.Role, &user.GoogleID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
@@ -146,6 +151,7 @@ func (r *UserRepository) GetByGoogleID(googleID string) (*models.User, error) {
 		}
 		return nil, err
 	}
+	user.Password = password
 
 	return user, nil
 }

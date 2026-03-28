@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/velostack/velostack-go/app/services"
+	"github.com/maulanashalihin/laju-go/app/services"
 )
 
 type PublicHandler struct {
@@ -24,7 +24,7 @@ func NewPublicHandler(authService *services.AuthService, userService *services.U
 // Index renders the home page
 func (h *PublicHandler) Index(c *fiber.Ctx) error {
 	data := fiber.Map{
-		"Title": "Welcome to VeloStack",
+		"Title": "Welcome to Laju",
 	}
 
 	// Merge asset data (Vite dev server or production assets)
@@ -38,6 +38,6 @@ func (h *PublicHandler) Index(c *fiber.Ctx) error {
 // About renders the about page
 func (h *PublicHandler) About(c *fiber.Ctx) error {
 	return h.inertiaService.Render(c, "About", fiber.Map{
-		"Title": "About VeloStack",
+		"Title": "About Laju",
 	})
 }

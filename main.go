@@ -11,12 +11,12 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/pressly/goose/v3"
-	"github.com/velostack/velostack-go/app/config"
-	"github.com/velostack/velostack-go/app/handlers"
-	"github.com/velostack/velostack-go/app/repositories"
-	"github.com/velostack/velostack-go/app/services"
-	"github.com/velostack/velostack-go/app/session"
-	"github.com/velostack/velostack-go/routes"
+	"github.com/maulanashalihin/laju-go/app/config"
+	"github.com/maulanashalihin/laju-go/app/handlers"
+	"github.com/maulanashalihin/laju-go/app/repositories"
+	"github.com/maulanashalihin/laju-go/app/services"
+	"github.com/maulanashalihin/laju-go/app/session"
+	"github.com/maulanashalihin/laju-go/routes"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -37,11 +37,12 @@ func main() {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	// Initialize session store
-	sessionStore := session.New(cfg.SessionSecret)
-
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository(db)
+	sessionRepo := repositories.NewSessionRepository(db)
+
+	// Initialize session store with database backend
+	sessionStore := session.New(sessionRepo)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, services.AuthServiceConfig{
@@ -93,7 +94,7 @@ func main() {
 	// Initialize Fiber app
 	engine := html.New("./templates", ".html")
 	app := fiber.New(fiber.Config{
-		AppName:      "VeloStack Go",
+		AppName:      "Laju",
 		ErrorHandler: customErrorHandler,
 		Views:        engine,
 	})

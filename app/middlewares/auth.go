@@ -1,8 +1,10 @@
 package middlewares
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/velostack/velostack-go/app/session"
+	"github.com/maulanashalihin/laju-go/app/session"
 )
 
 // AuthRequired is a middleware that checks if the user is authenticated
@@ -16,7 +18,10 @@ func AuthRequired(store *session.Store) fiber.Handler {
 		}
 
 		userID := sess.Get("user_id")
+		log.Printf("[AuthRequired] userID=%v\n", userID)
+		
 		if userID == nil {
+			log.Printf("[AuthRequired] Not authenticated, redirecting to /login\n")
 			// For Inertia requests, return redirect in JSON format
 			if c.Get("X-Inertia") == "true" {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -79,7 +84,10 @@ func Guest(store *session.Store) fiber.Handler {
 		}
 
 		userID := sess.Get("user_id")
+		log.Printf("[Guest] userID=%v\n", userID)
+		
 		if userID != nil {
+			log.Printf("[Guest] Already authenticated, redirecting to /app\n")
 			return c.Redirect("/app")
 		}
 

@@ -1,10 +1,16 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"log"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/velostack/velostack-go/app/models"
-	"github.com/velostack/velostack-go/app/services"
-	"github.com/velostack/velostack-go/app/session"
+	"github.com/maulanashalihin/laju-go/app/models"
+	"github.com/maulanashalihin/laju-go/app/services"
+	"github.com/maulanashalihin/laju-go/app/session"
 )
 
 type AuthHandler struct {
@@ -67,11 +73,28 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	}
 
 	// Create session
-	sess, _ := h.store.Get(c)
+	sess, err := h.store.Get(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create session",
+		})
+	}
 	sess.Set("user_id", user.ID)
 	sess.Set("email", user.Email)
 	sess.Set("role", string(user.Role))
-	sess.Save()
+
+	if err := sess.Save(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to save session",
+		})
+	}
+
+	log.Printf("[Auth.Register] Session created for user %d, redirecting to /app\n", user.ID)
+
+	// For Inertia requests, return redirect response
+	if c.Get("X-Inertia") == "true" {
+		return c.Redirect("/app")
+	}
 
 	return c.JSON(fiber.Map{
 		"message": "Registration successful",
@@ -109,11 +132,28 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	// Create session
-	sess, _ := h.store.Get(c)
+	sess, err := h.store.Get(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create session",
+		})
+	}
 	sess.Set("user_id", user.ID)
 	sess.Set("email", user.Email)
 	sess.Set("role", string(user.Role))
-	sess.Save()
+
+	if err := sess.Save(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to save session",
+		})
+	}
+
+	log.Printf("[Auth.Login] Session created for user %d, redirecting to /app\n", user.ID)
+
+	// For Inertia requests, return redirect response
+	if c.Get("X-Inertia") == "true" {
+		return c.Redirect("/app")
+	}
 
 	return c.JSON(fiber.Map{
 		"message": "Login successful",
@@ -126,9 +166,14 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	sess, _ := h.store.Get(c)
 	sess.Destroy()
 
-	return c.JSON(fiber.Map{
-		"message": "Logout successful",
-	})
+	log.Printf("[Auth.Logout] User logged out, redirecting to /login\n")
+
+	// For Inertia requests, return redirect response
+	if c.Get("X-Inertia") == "true" {
+		return c.Redirect("/login")
+	}
+
+	return c.Redirect("/login")
 }
 
 // GoogleLogin initiates Google OAuth login
@@ -154,6 +199,7 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	// Validate state
 	storedState := c.Cookies("oauth_state")
 	if state != storedState {
+		log.Printf("State mismatch: got=%s, expected=%s\n", state, storedState)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid OAuth state",
 		})
@@ -165,26 +211,30 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	// Process the token
 	user, err := h.authService.ProcessGoogleToken(c.Context(), code)
 	if err != nil {
+		log.Printf("Google token error: %v\n", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to authenticate with Google",
+			"error": "Failed to authenticate with Google: " + err.Error(),
 		})
 	}
 
 	// Create session
-	sess, _ := h.store.Get(c)
+	sess, err := h.store.Get(c)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create session",
+		})
+	}
 	sess.Set("user_id", user.ID)
 	sess.Set("email", user.Email)
 	sess.Set("role", string(user.Role))
-	sess.Save()
 
-	// Redirect to app or return JSON for API calls
-	if c.Get("Accept") == "application/json" {
-		return c.JSON(fiber.Map{
-			"message": "Login successful",
-			"user":    user.ToResponse(),
+	if err := sess.Save(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to save session",
 		})
 	}
 
+	// Redirect to app
 	return c.Redirect("/app")
 }
 
@@ -213,6 +263,12 @@ func (h *AuthHandler) Me(c *fiber.Ctx) error {
 
 // generateState generates a random state string for OAuth
 func generateState() string {
-	// In production, use a proper random generator
-	return "random-state-placeholder"
+	// Generate random bytes
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback to timestamp-based
+		return fmt.Sprintf("state_%d", time.Now().UnixNano())
+	}
+	// Convert to hex string
+	return hex.EncodeToString(b)
 }

@@ -49,7 +49,7 @@ func Load() *Config {
 		SMTPUser:  getEnv("SMTP_USER", ""),
 		SMTPPass:  getEnv("SMTP_PASS", ""),
 		FromEmail: getEnv("FROM_EMAIL", "noreply@example.com"),
-		FromName:  getEnv("FROM_NAME", "VeloStack"),
+		FromName:  getEnv("FROM_NAME", "Laju"),
 	}
 
 	return AppConfig
