@@ -64,7 +64,7 @@ func main() {
 		Public: handlers.NewPublicHandler(authService, userService, inertiaService, assetService),
 		Auth:   handlers.NewAuthHandler(authService, userService, sessionStore, inertiaService),
 		App:    handlers.NewAppHandler(userService, sessionStore, inertiaService),
-		Upload: handlers.NewUploadHandler(sessionStore),
+		Upload: handlers.NewUploadHandler(sessionStore, userService),
 	}
 
 	// Setup CSRF middleware

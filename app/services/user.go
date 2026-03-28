@@ -38,6 +38,11 @@ func (s *UserService) UpdatePassword(userID int64, hashedPassword string) error 
 	return s.userRepo.UpdatePassword(userID, hashedPassword)
 }
 
+// UpdateAvatar updates a user's avatar URL
+func (s *UserService) UpdateAvatar(userID int64, avatarURL string) error {
+	return s.userRepo.UpdateAvatar(userID, avatarURL)
+}
+
 // UpdateProfile updates a user's profile
 func (s *UserService) UpdateProfile(userID int64, req models.UpdateProfileRequest) (*models.UserResponse, error) {
 	user, err := s.userRepo.GetByID(userID)

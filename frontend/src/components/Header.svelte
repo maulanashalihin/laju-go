@@ -232,51 +232,14 @@
 
 <!-- Mobile Header -->
 <header
-    class="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800"
+    class="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-950 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800"
 >
     <div class="flex items-center justify-between px-4 h-16">
         <!-- Logo -->
-        <a href="/" class="flex items-center gap-2">
-            <svg
-                width="32"
-                height="32"
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <defs>
-                    <linearGradient
-                        id="grad1"
-                        x1="0%"
-                        y1="0%"
-                        x2="100%"
-                        y2="0%"
-                    >
-                        <stop
-                            offset="0%"
-                            style="stop-color:#f97316;stop-opacity:1"
-                        />
-                        <stop
-                            offset="100%"
-                            style="stop-color:#ea580c;stop-opacity:1"
-                        />
-                    </linearGradient>
-                </defs>
-                <path d="M30 10 H65 L55 50 H20 Z" fill="url(#grad1)" />
-                <path d="M20 58 H85 L75 90 H10 Z" fill="url(#grad1)" />
-                <rect
-                    x="70"
-                    y="58"
-                    width="20"
-                    height="32"
-                    transform="skewX(-14)"
-                    fill="white"
-                    fill-opacity="0.1"
-                />
-            </svg>
+        <a href="/app" class="flex items-center gap-2">
             <span
                 class="text-lg font-black italic text-slate-900 dark:text-white"
-                >VeloStack<span class="text-orange-500">.dev</span></span
+                >Laju<span class="text-orange-500">.dev</span></span
             >
         </a>
 
