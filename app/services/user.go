@@ -28,6 +28,16 @@ func (s *UserService) GetProfile(userID int64) (*models.UserResponse, error) {
 	return &response, nil
 }
 
+// GetProfileByEmail retrieves a user's profile by email
+func (s *UserService) GetProfileByEmail(email string) (*models.User, error) {
+	return s.userRepo.GetByEmail(email)
+}
+
+// UpdatePassword updates a user's password
+func (s *UserService) UpdatePassword(userID int64, hashedPassword string) error {
+	return s.userRepo.UpdatePassword(userID, hashedPassword)
+}
+
 // UpdateProfile updates a user's profile
 func (s *UserService) UpdateProfile(userID int64, req models.UpdateProfileRequest) (*models.UserResponse, error) {
 	user, err := s.userRepo.GetByID(userID)

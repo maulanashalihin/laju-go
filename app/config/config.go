@@ -17,6 +17,13 @@ type Config struct {
 	GoogleClientSecret string
 	GoogleRedirectURL  string
 	FrontendURL        string
+	// Email configuration
+	SMTPHost string
+	SMTPPort int
+	SMTPUser string
+	SMTPPass string
+	FromEmail string
+	FromName  string
 }
 
 var AppConfig *Config
@@ -36,6 +43,13 @@ func Load() *Config {
 		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", ""),
 		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:5173"),
+		// Email configuration
+		SMTPHost:  getEnv("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:  getEnvAsInt("SMTP_PORT", 587),
+		SMTPUser:  getEnv("SMTP_USER", ""),
+		SMTPPass:  getEnv("SMTP_PASS", ""),
+		FromEmail: getEnv("FROM_EMAIL", "noreply@example.com"),
+		FromName:  getEnv("FROM_NAME", "VeloStack"),
 	}
 
 	return AppConfig
@@ -47,6 +61,18 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func getEnvAsInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	var result int
+	if _, err := fmt.Sscanf(value, "%d", &result); err != nil {
+		return defaultValue
+	}
+	return result
 }
 
 func (c *Config) GetDSN() string {

@@ -88,8 +88,65 @@ func (h *AppHandler) UpdateProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	return h.inertiaService.Render(c, "Profile", fiber.Map{
+	return h.inertiaService.Render(c, "app/Profile", fiber.Map{
 		"user":    user,
 		"success": "Profile updated successfully",
+	})
+}
+
+// UpdatePassword updates user password (Inertia)
+func (h *AppHandler) UpdatePassword(c *fiber.Ctx) error {
+	sess, _ := h.store.Get(c)
+	userID := sess.Get("user_id")
+
+	if userID == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Not authenticated",
+		})
+	}
+
+	var req struct {
+		CurrentPassword string `json:"current_password"`
+		NewPassword     string `json:"new_password"`
+		ConfirmPassword string `json:"confirm_password"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Validate passwords
+	if req.NewPassword != req.ConfirmPassword {
+		return h.inertiaService.Render(c, "app/Profile", fiber.Map{
+			"error": "Passwords do not match",
+		})
+	}
+
+	if len(req.NewPassword) < 8 {
+		return h.inertiaService.Render(c, "app/Profile", fiber.Map{
+			"error": "Password must be at least 8 characters",
+		})
+	}
+
+	// Change password
+	err := h.userService.ChangePassword(userID.(int64), req.CurrentPassword, req.NewPassword)
+	if err != nil {
+		return h.inertiaService.Render(c, "app/Profile", fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	user, err := h.userService.GetProfile(userID.(int64))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to load profile",
+		})
+	}
+
+	return h.inertiaService.Render(c, "app/Profile", fiber.Map{
+		"user":    user,
+		"success": "Password changed successfully",
 	})
 }
