@@ -323,16 +323,31 @@ go test -cover ./...
 
 ### SQLite Production Settings
 
-The application includes these optimizations by default:
+The application includes these optimizations by default, tuned for **Vultr High Frequency 1-2GB RAM**:
 
 | Setting | Value | Benefit |
 |---------|-------|---------|
 | `journal_mode` | WAL | Better write concurrency |
 | `synchronous` | NORMAL | Faster writes with safety |
-| `cache_size` | 64MB | Reduced disk I/O |
+| `cache_size` | 16MB | Reduced disk I/O (optimized for 1-2GB RAM) |
+| `mmap_size` | 256MB | NVMe memory-mapped I/O |
 | `temp_store` | MEMORY | Faster temp table operations |
 | `busy_timeout` | 5000ms | Automatic retry on locks |
-| Connection Pool | 25 max | Efficient connection reuse |
+| Connection Pool | 15 max | Efficient connection reuse |
+
+### Tune for Your Server
+
+Different RAM size? See the complete **[SQLite Configuration Guide](docs/deployment/sqlite-configuration.md)** for optimal settings:
+
+| Server RAM | MaxOpenConns | cache_size | mmap_size |
+|------------|--------------|------------|-----------|
+| 512MB ⚠️ | 10 | 8MB | 128MB |
+| **1-2GB ✅** | **15** | **16MB** | **256MB** |
+| 4GB | 25 | 32MB | 512MB |
+| 8GB | 50 | 256MB | 1GB |
+| 16GB+ | 100 | 500MB+ | 2GB |
+
+> 📖 **Full guide**: [SQLite Configuration Guide](docs/deployment/sqlite-configuration.md) - Complete reference for tuning SQLite based on RAM, CPU, storage type, and workload patterns.
 
 ## 🤝 Contributing
 

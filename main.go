@@ -133,7 +133,7 @@ func initDatabase(dbPath string) (*sql.DB, error) {
 	}
 
 	// Configure connection pooling
-	db.SetMaxOpenConns(25)                // Maximum number of open connections
+	db.SetMaxOpenConns(15)                // Maximum number of open connections (optimized for SQLite single-instance)
 	db.SetMaxIdleConns(5)                 // Maximum number of idle connections
 	db.SetConnMaxLifetime(5 * time.Minute) // Maximum lifetime for a connection
 
@@ -152,8 +152,13 @@ func initDatabase(dbPath string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Set cache size to 64MB (negative value = KB)
-	if _, err := db.Exec("PRAGMA cache_size = -64000"); err != nil {
+	// Set cache size to 16MB (negative value = KB) - optimized for Vultr HF 1-2GB RAM
+	if _, err := db.Exec("PRAGMA cache_size = -16000"); err != nil {
+		return nil, err
+	}
+
+	// Enable memory-mapped I/O for NVMe performance (256MB)
+	if _, err := db.Exec("PRAGMA mmap_size = 268435456"); err != nil {
 		return nil, err
 	}
 
@@ -164,6 +169,11 @@ func initDatabase(dbPath string) (*sql.DB, error) {
 
 	// Set busy timeout to 5 seconds (wait for locks instead of failing immediately)
 	if _, err := db.Exec("PRAGMA busy_timeout = 5000"); err != nil {
+		return nil, err
+	}
+
+	// Set WAL autocheckpoint to 1000 pages (default, but explicit is better)
+	if _, err := db.Exec("PRAGMA wal_autocheckpoint = 1000"); err != nil {
 		return nil, err
 	}
 
@@ -181,7 +191,7 @@ func initDatabase(dbPath string) (*sql.DB, error) {
 // logDatabaseOptimizations logs the current SQLite optimization settings
 func logDatabaseOptimizations(db *sql.DB) {
 	var journalMode, synchronous string
-	var cacheSize, busyTimeout int
+	var cacheSize, busyTimeout, mmapSize, walAutocheckpoint int
 
 	// Query current settings
 	err := db.QueryRow("PRAGMA journal_mode").Scan(&journalMode)
@@ -204,8 +214,18 @@ func logDatabaseOptimizations(db *sql.DB) {
 		log.Printf("Warning: Could not verify busy_timeout: %v", err)
 	}
 
-	log.Printf("SQLite optimizations: journal_mode=%s, synchronous=%s, cache_size=%dKB, busy_timeout=%dms",
-		journalMode, synchronous, cacheSize, busyTimeout)
+	err = db.QueryRow("PRAGMA mmap_size").Scan(&mmapSize)
+	if err != nil {
+		log.Printf("Warning: Could not verify mmap_size: %v", err)
+	}
+
+	err = db.QueryRow("PRAGMA wal_autocheckpoint").Scan(&walAutocheckpoint)
+	if err != nil {
+		log.Printf("Warning: Could not verify wal_autocheckpoint: %v", err)
+	}
+
+	log.Printf("SQLite optimizations: journal_mode=%s, synchronous=%s, cache_size=%dKB, mmap_size=%dKB, wal_autocheckpoint=%d, busy_timeout=%dms",
+		journalMode, synchronous, cacheSize, mmapSize, walAutocheckpoint, busyTimeout)
 }
 
 // runMigrations runs database migrations
