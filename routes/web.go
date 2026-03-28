@@ -36,9 +36,14 @@ func setupPublicRoutes(app *fiber.App, handler *handlers.PublicHandler) {
 
 func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, passwordResetHandler *handlers.PasswordResetHandler, store *session.Store, mailerService *services.MailerService) {
 	// Guest routes (redirect if already logged in)
-	guest := app.Group("/login", middlewares.Guest(store))
-	guest.Get("/", authHandler.ShowLoginForm)
+	guest := app.Group("/", middlewares.Guest(store))
+	
+	// Login routes
+	guest.Get("/login", authHandler.ShowLoginForm)
 	guest.Post("/login", authHandler.Login, middlewares.AuthRateLimit.Limit())
+	
+	// Register routes
+	guest.Get("/register", authHandler.ShowRegisterForm)
 	guest.Post("/register", authHandler.Register, middlewares.AuthRateLimit.Limit())
 
 	// OAuth routes

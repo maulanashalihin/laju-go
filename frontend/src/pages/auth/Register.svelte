@@ -44,7 +44,7 @@
         serverError = "";
         isLoading = true;
 
-        router.post("/login/register", form, {
+        router.post("/register", form, {
             onFinish: () => {
                 setTimeout(() => {
                     isLoading = false;
