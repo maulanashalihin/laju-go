@@ -92,10 +92,10 @@ func (m *MailerService) SendPasswordResetEmail(email string, userID int64, reset
                 <strong>⚠️ Important:</strong> This link will expire in 1 hour.
             </div>
             <p>If you didn't request this, you can safely ignore this email. Your password will remain unchanged.</p>
-            <p>Best regards,<br>The VeloStack Team</p>
+            <p>Best regards,<br>The Laju Team</p>
         </div>
         <div class="footer">
-            <p>&copy; 2026 VeloStack. All rights reserved.</p>
+            <p>&copy; 2026 Laju. All rights reserved.</p>
         </div>
     </div>
 </body>

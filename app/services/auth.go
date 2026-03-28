@@ -2,11 +2,12 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 
-	"github.com/velostack/velostack-go/app/models"
-	"github.com/velostack/velostack-go/app/repositories"
+	"github.com/maulanashalihin/laju-go/app/models"
+	"github.com/maulanashalihin/laju-go/app/repositories"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -133,9 +134,12 @@ func (s *AuthService) Register(name, email, password string) (*models.User, erro
 
 	// Create user
 	user := &models.User{
-		Email:         email,
-		Name:          name,
-		Password:      hashedPassword,
+		Email: email,
+		Name:  name,
+		Password: sql.NullString{
+			String: hashedPassword,
+			Valid:  true,
+		},
 		Role:          models.RoleUser,
 		EmailVerified: false,
 	}
@@ -157,8 +161,12 @@ func (s *AuthService) Login(email, password string) (*models.User, error) {
 		return nil, err
 	}
 
-	// Check password
-	if !checkPassword(user.Password, password) {
+	// Check password - user must have a password (not OAuth-only user)
+	if !user.Password.Valid {
+		return nil, ErrInvalidCredentials
+	}
+
+	if !checkPassword(user.Password.String, password) {
 		return nil, ErrInvalidCredentials
 	}
 

@@ -10,19 +10,19 @@ import (
 
 // RateLimiterConfig holds the rate limiter configuration
 type RateLimiterConfig struct {
-	MaxRequests  int           // Maximum number of requests allowed
-	Window       time.Duration // Time window for the rate limit
-	Message      string        // Message to return when rate limit is exceeded
-	StatusCode   int           // HTTP status code to return
-	SkipFailed   bool          // Whether to skip failed requests (non-2xx)
-	CustomKeyFn  func(*fiber.Ctx) string // Custom key function (optional)
+	MaxRequests int                     // Maximum number of requests allowed
+	Window      time.Duration           // Time window for the rate limit
+	Message     string                  // Message to return when rate limit is exceeded
+	StatusCode  int                     // HTTP status code to return
+	SkipFailed  bool                    // Whether to skip failed requests (non-2xx)
+	CustomKeyFn func(*fiber.Ctx) string // Custom key function (optional)
 }
 
 // RateLimiter implements a simple in-memory rate limiter
 type RateLimiter struct {
-	mu       sync.RWMutex
-	entries  map[string]*rateLimitEntry
-	config   RateLimiterConfig
+	mu      sync.RWMutex
+	entries map[string]*rateLimitEntry
+	config  RateLimiterConfig
 }
 
 type rateLimitEntry struct {

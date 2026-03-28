@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/velostack/velostack-go/app/models"
-	"github.com/velostack/velostack-go/app/services"
-	"github.com/velostack/velostack-go/app/session"
+	"github.com/maulanashalihin/laju-go/app/models"
+	"github.com/maulanashalihin/laju-go/app/services"
+	"github.com/maulanashalihin/laju-go/app/session"
 )
 
 type AppHandler struct {
@@ -23,10 +23,11 @@ func NewAppHandler(userService *services.UserService, store *session.Store, iner
 
 // Dashboard renders the main app dashboard using Inertia
 func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
-	sess, _ := h.store.Get(c)
-	userID := sess.Get("user_id")
+	// Get user info from locals (set by AuthRequired middleware)
+	userID := c.Locals("user_id")
 
 	if userID == nil {
+		// Should not happen as AuthRequired middleware handles this
 		return c.Redirect("/login")
 	}
 
@@ -44,10 +45,11 @@ func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
 
 // Profile returns user profile (Inertia)
 func (h *AppHandler) Profile(c *fiber.Ctx) error {
-	sess, _ := h.store.Get(c)
-	userID := sess.Get("user_id")
+	// Get user info from locals (set by AuthRequired middleware)
+	userID := c.Locals("user_id")
 
 	if userID == nil {
+		// Should not happen as AuthRequired middleware handles this
 		return c.Redirect("/login")
 	}
 
@@ -65,8 +67,8 @@ func (h *AppHandler) Profile(c *fiber.Ctx) error {
 
 // UpdateProfile updates user profile (Inertia)
 func (h *AppHandler) UpdateProfile(c *fiber.Ctx) error {
-	sess, _ := h.store.Get(c)
-	userID := sess.Get("user_id")
+	// Get user info from locals (set by AuthRequired middleware)
+	userID := c.Locals("user_id")
 
 	if userID == nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -96,8 +98,8 @@ func (h *AppHandler) UpdateProfile(c *fiber.Ctx) error {
 
 // UpdatePassword updates user password (Inertia)
 func (h *AppHandler) UpdatePassword(c *fiber.Ctx) error {
-	sess, _ := h.store.Get(c)
-	userID := sess.Get("user_id")
+	// Get user info from locals (set by AuthRequired middleware)
+	userID := c.Locals("user_id")
 
 	if userID == nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

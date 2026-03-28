@@ -1,13 +1,15 @@
 {
-  "name": "velostack-go",
+  "name": "laju-go",
   "version": "1.0.0",
-  "description": "VeloStack Go - High-performance SaaS boilerplate built with Go Fiber, Svelte 5, and Inertia.js",
+  "description": "Laju Go - High-performance SaaS boilerplate built with Go Fiber, Svelte 5, and Inertia.js",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && go build -o velostack-go .",
-    "serve": "./velostack-go",
+    "dev:go": "air",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:go\"",
+    "build": "vite build && go build -o laju-go .",
+    "serve": "./laju-go",
     "test:ui": "vitest --ui",
     "test:run": "vitest run"
   },

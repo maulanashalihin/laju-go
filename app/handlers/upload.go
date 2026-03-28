@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/velostack/velostack-go/app/session"
+	"github.com/maulanashalihin/laju-go/app/session"
 )
 
 type UploadHandler struct {

@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type UserRole string
 
@@ -10,16 +13,16 @@ const (
 )
 
 type User struct {
-	ID             int64     `json:"id"`
-	Email          string    `json:"email"`
-	Name           string    `json:"name"`
-	Avatar         string    `json:"avatar"`
-	Password       string    `json:"-"` // Hashed password, never return in JSON
-	Role           UserRole  `json:"role"`
-	GoogleID       string    `json:"-"` // OAuth provider ID
-	EmailVerified  bool      `json:"email_verified"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID            int64          `json:"id"`
+	Email         string         `json:"email"`
+	Name          string         `json:"name"`
+	Avatar        string         `json:"avatar"`
+	Password      sql.NullString `json:"-"` // Hashed password, never return in JSON (NULL for OAuth users)
+	Role          UserRole       `json:"role"`
+	GoogleID      string         `json:"-"` // OAuth provider ID
+	EmailVerified bool           `json:"email_verified"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
 }
 
 // TableName returns the table name for User

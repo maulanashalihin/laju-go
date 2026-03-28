@@ -2,15 +2,23 @@
 
 High-performance SaaS boilerplate built with **Go Fiber** + **Svelte 5** + **SQLite**.
 
+## 📚 Documentation
+
+Full documentation is available in the [`docs/`](docs/) folder:
+- **[FOLDER.md](docs/FOLDER.md)** - Project structure and directory reference
+- **[DOKUMEN.md](docs/DOKUMEN.md)** - Complete documentation (architecture, deployment, API)
+
 ## 🚀 Features
 
 - **Backend**: Go Fiber (fasthttp) for blazing-fast performance
 - **Frontend**: Svelte 5 with Inertia.js for reactive SPA experience
 - **Database**: SQLite with Squirrel query builder
 - **Authentication**: Email/Password + Google OAuth
-- **Session Management**: Secure session-based authentication
-- **Role-Based Access**: Admin/User roles out of the box
+- **Password Reset**: Email-based password reset with SMTP
+- **Session Management**: Database-backed sessions (persistent)
+- **Role-Based Access**: Admin/User roles with middleware guards
 - **File Upload**: Avatar upload with validation
+- **Security**: CSRF protection, rate limiting, secure cookies
 - **Database Migrations**: Using Goose for schema management
 - **Docker Ready**: Multi-stage build for production deployment
 
@@ -63,19 +71,20 @@ laju-go/
 | Template Engine | Fiber HTML Template |
 | Database | SQLite3 |
 | Query Builder | Squirrel |
-| Session Store | Fiber Session (Memory) |
+| Session Store | Database-backed (SQLite) |
 | OAuth | golang.org/x/oauth2 |
 | Frontend | Svelte 5 |
 | Build Tool | Vite |
 | Styling | Tailwind CSS |
 | SPA Router | Inertia.js |
 | Migrations | Goose |
+| Email | SMTP (MailerService) |
 
 ## 📦 Getting Started
 
 ### Prerequisites
 
-- Go 1.22+
+- Go 1.26+
 - Node.js 18+
 - SQLite3
 
@@ -113,20 +122,55 @@ laju-go/
 
 ### Development
 
+#### Option 1: Hot Reload with Air (Recommended)
+
+Air automatically rebuilds and restarts your Go server when `.go` files change.
+
+1. **Install Air** (one-time setup)
+   ```bash
+   go install github.com/air-verse/air@latest
+   ```
+
+2. **Start Vite dev server** (for frontend HMR)
+   ```bash
+   npm run dev
+   ```
+
+3. **Start Go server with hot reload** (in another terminal)
+   ```bash
+   air
+   # Or via npm
+   npm run dev:go
+   ```
+
+4. **Open your browser**
+   - App: http://localhost:8080
+   - Edit `.go` files → Server auto-restarts (~1-2 sec)
+   - Edit `.svelte` files → Vite HMR (instant)
+
+#### Option 2: Run Both with One Command
+
+Use `concurrently` to run both Vite and Air in a single terminal:
+
+```bash
+npm run dev:all
+```
+
+#### Option 3: Manual (Without Air)
+
 1. **Start the Go server**
    ```bash
    go run .
    ```
 
-2. **Start the Vite dev server (in another terminal)**
+2. **Start the Vite dev server** (in another terminal)
    ```bash
-   cd frontend && npm run dev
+   npm run dev
    ```
 
 3. **Open your browser**
-   - App: http://localhost:8000
-   - Vite will auto-reload on frontend changes
-   - Go server will auto-reload on backend changes (Go 1.22+)
+   - App: http://localhost:8080
+   - Note: You need to manually restart the Go server after editing `.go` files
 
 ### Building for Production
 
@@ -173,21 +217,32 @@ UPDATE users SET role = 'admin' WHERE email = 'your@email.com';
 ### Public Routes
 - `GET /` - Home page
 - `GET /about` - About page
-- `GET /login` - Login page
-- `POST /login/login` - User login
-- `POST /login/register` - User registration
+
+### Authentication Routes
+- `GET /login` - Login page (Guest only)
+- `POST /login` - User login (Guest only, rate-limited)
+- `GET /register` - Registration page (Guest only)
+- `POST /register` - User registration (Guest only, rate-limited)
 - `GET /auth/google` - Google OAuth login
 - `GET /auth/google/callback` - Google OAuth callback
+- `POST /logout` - Logout (requires auth)
+- `GET /api/me` - Get current user (requires auth)
 
-### Protected Routes
-- `GET /app` - Dashboard
-- `GET /app/profile` - User profile
-- `PUT /app/profile` - Update profile
-- `POST /app/upload` - File upload
-- `POST /logout` - Logout
+### Password Reset Routes
+- `GET /forgot-password` - Request reset form
+- `POST /forgot-password` - Send reset email (rate-limited)
+- `GET /reset-password/:token` - Reset password form
+- `POST /reset-password/:token` - Process password reset
+
+### Protected App Routes
+- `GET /app` - Dashboard (requires auth, CSRF protected)
+- `GET /app/profile` - User profile (requires auth, CSRF protected)
+- `PUT /app/profile` - Update profile (requires auth, CSRF protected)
+- `PUT /app/profile/password` - Update password (requires auth, CSRF protected)
+- `POST /app/upload` - File upload (requires auth, CSRF protected)
 
 ### Admin Routes
-- `GET /admin` - Admin dashboard
+- `GET /admin` - Admin dashboard (admin only)
 
 ## 🗄️ Database Migrations
 
@@ -302,16 +357,16 @@ sudo chmod 770 /opt/laju-go/storage
 sudo systemctl daemon-reload
 
 # Enable on boot
-sudo systemctl enable velostack-go
+sudo systemctl enable laju-go
 
 # Start service
-sudo systemctl start velostack-go
+sudo systemctl start laju-go
 
 # Check status
-sudo systemctl status velostack-go
+sudo systemctl status laju-go
 
 # View logs
-sudo journalctl -u velostack-go -f
+sudo journalctl -u laju-go -f
 ```
 
 ### SQLite Production Optimizations

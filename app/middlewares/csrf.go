@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/velostack/velostack-go/app/session"
+	"github.com/maulanashalihin/laju-go/app/session"
 )
 
 // CSRFConfig holds CSRF middleware configuration
