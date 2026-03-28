@@ -23,7 +23,7 @@
         e.preventDefault();
         serverError = "";
         isLoading = true;
-        router.post("/login/login", { email: form.email, password: form.password }, {
+        router.post("/login", { email: form.email, password: form.password }, {
             onFinish: () => {
                 setTimeout(() => {
                     isLoading = false;
@@ -268,7 +268,7 @@
 
                 <p class="mt-8 text-center text-sm text-slate-400">
                     Don't have an account?
-                    <a href="/login/register" class="text-orange-400 hover:text-orange-300 font-medium transition-colors">
+                    <a href="/register" class="text-orange-400 hover:text-orange-300 font-medium transition-colors">
                         Create one
                     </a>
                 </p>
