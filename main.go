@@ -66,6 +66,30 @@ func main() {
 		Upload: handlers.NewUploadHandler(sessionStore),
 	}
 
+	// Setup CSRF middleware
+	csrfMiddleware := routes.SetupCSRFMiddleware(sessionStore, cfg.SessionSecret)
+
+	// Setup mailer service
+	mailerService := routes.SetupMailerService(
+		cfg.SMTPHost,
+		cfg.SMTPPort,
+		cfg.SMTPUser,
+		cfg.SMTPPass,
+		cfg.FromEmail,
+		cfg.FromName,
+	)
+
+	// Setup password reset handler
+	appURL := routes.GetAppURL(cfg.AppPort, cfg.AppEnv)
+	passwordResetHandler := routes.SetupPasswordResetHandler(
+		mailerService,
+		userService,
+		sessionStore,
+		inertiaService,
+		appURL,
+	)
+	routeHandlers.PasswordReset = passwordResetHandler
+
 	// Initialize Fiber app
 	engine := html.New("./templates", ".html")
 	app := fiber.New(fiber.Config{
@@ -91,7 +115,7 @@ func main() {
 	app.Static("/", "./public")
 
 	// Setup routes
-	routes.SetupRoutes(app, routeHandlers, sessionStore)
+	routes.SetupRoutes(app, routeHandlers, sessionStore, mailerService, csrfMiddleware)
 
 	// Start server
 	log.Printf("Starting server on port %s", cfg.AppPort)
