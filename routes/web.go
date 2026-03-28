@@ -27,6 +27,9 @@ func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailer
 
 	// Setup app routes (protected)
 	setupAppRoutes(app, handlers.App, handlers.Upload, store, csrfMiddleware)
+
+	// Serve uploaded files (avatars, etc.)
+	app.Static("/storage", "./storage")
 }
 
 func setupPublicRoutes(app *fiber.App, handler *handlers.PublicHandler) {
@@ -52,6 +55,9 @@ func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, password
 
 	// API: Get current user
 	app.Get("/api/me", middlewares.AuthRequired(store), authHandler.Me)
+
+	// API: Get user avatar (proxied from external URL)
+	app.Get("/api/avatar/:id", authHandler.GetAvatar)
 
 	// Password reset routes
 	app.Get("/forgot-password", passwordResetHandler.ShowForgotPasswordForm)

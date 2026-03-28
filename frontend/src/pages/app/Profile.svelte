@@ -37,7 +37,7 @@
 
     let isProfileLoading = $state(false);
     let isPasswordLoading = $state(false);
-    let previewUrl = $derived(user?.avatar || null);
+    let previewUrl = $state<string | null>(null);
     let showPassword = $state(false);
 
     $effect(() => {
@@ -45,6 +45,7 @@
             profileForm.name = user.name || "";
             profileForm.email = user.email || "";
             profileForm.avatar = user.avatar || "";
+            previewUrl = user.avatar ? `/api/avatar/${user.id}?v=${Date.now()}` : null;
         }
     });
 
@@ -55,22 +56,26 @@
             const formData = new FormData();
             formData.append("file", file);
             isProfileLoading = true;
-            fetch("/upload", {
+            fetch("/app/upload", {
                 method: "POST",
                 body: formData,
             })
                 .then((response) => response.json())
                 .then((data) => {
                     if (data.success && data.url) {
+                        // Auto-save avatar URL to database via router
                         router.put("/app/profile", {
-                            name: profileForm.name,
-                            email: profileForm.email,
                             avatar: data.url,
                         }, {
+                            onError: (error) => {
+                                isProfileLoading = false;
+                                Toast("Failed to save avatar: " + (error as any).message, "error");
+                            },
                             onFinish: () => {
                                 setTimeout(() => {
                                     isProfileLoading = false;
-                                    previewUrl = data.url + "?v=" + Date.now();
+                                    // Reload page to get fresh data from server
+                                    window.location.reload();
                                 }, 500);
                             },
                         });
@@ -82,6 +87,7 @@
                 .catch((error) => {
                     isProfileLoading = false;
                     Toast("Failed to upload avatar", "error");
+                    console.error("Upload error:", error);
                 });
         }
     }

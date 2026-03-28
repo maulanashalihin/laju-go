@@ -222,6 +222,35 @@ func (r *UserRepository) UpdatePassword(id int64, hashedPassword string) error {
 	return nil
 }
 
+// UpdateAvatar updates a user's avatar URL
+func (r *UserRepository) UpdateAvatar(id int64, avatarURL string) error {
+	query, args, err := r.psql.
+		Update("users").
+		Set("avatar", avatarURL).
+		Set("updated_at", time.Now()).
+		Where(squirrel.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	result, err := r.db.Exec(query, args...)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
+}
+
 // Delete deletes a user by ID
 func (r *UserRepository) Delete(id int64) error {
 	query, args, err := r.psql.

@@ -4,7 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -243,6 +247,76 @@ func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"user": user.ToResponse(),
 	})
+}
+
+// GetAvatar proxies user avatar from external URL (e.g., Google) or serves local file
+func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
+	userIDParam := c.Params("id")
+	if userIDParam == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "User ID required"})
+	}
+
+	// Convert userID to int64
+	userID, err := strconv.ParseInt(userIDParam, 10, 64)
+	if err != nil {
+		log.Printf("Invalid user ID: %s\n", userIDParam)
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid user ID"})
+	}
+
+	log.Printf("[GetAvatar] Fetching user %d\n", userID)
+
+	// Get user from database
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		log.Printf("[GetAvatar] User not found: %v\n", err)
+		return c.Status(404).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	log.Printf("[GetAvatar] User avatar URL: %s\n", user.Avatar)
+
+	// Check if user has avatar
+	if user.Avatar == "" {
+		log.Printf("[GetAvatar] No avatar for user %d\n", userID)
+		return c.Status(404).JSON(fiber.Map{"error": "No avatar"})
+	}
+
+	// Check if avatar is local file or external URL
+	if strings.HasPrefix(user.Avatar, "/storage/") {
+		// Local file - serve directly
+		localPath := "." + user.Avatar
+		log.Printf("[GetAvatar] Serving local file: %s\n", localPath)
+		
+		return c.SendFile(localPath)
+	}
+
+	// External URL - fetch and proxy
+	log.Printf("[GetAvatar] Fetching from external URL: %s\n", user.Avatar)
+	resp, err := http.Get(user.Avatar)
+	if err != nil {
+		log.Printf("[GetAvatar] Failed to fetch avatar: %v\n", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch avatar"})
+	}
+	defer resp.Body.Close()
+
+	log.Printf("[GetAvatar] Response status: %s, Content-Type: %s\n", resp.Status, resp.Header.Get("Content-Type"))
+
+	// Set headers
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "image/jpeg"
+	}
+	c.Set("Content-Type", contentType)
+	c.Set("Cache-Control", "public, max-age=86400") // Cache for 24 hours
+
+	// Read and send response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("[GetAvatar] Failed to read body: %v\n", err)
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to read avatar"})
+	}
+
+	log.Printf("[GetAvatar] Sending %d bytes\n", len(body))
+	return c.Send(body)
 }
 
 // generateState generates a random state string for OAuth
