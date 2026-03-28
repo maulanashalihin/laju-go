@@ -10,8 +10,11 @@ import (
 // AuthRequired is a middleware that checks if the user is authenticated
 func AuthRequired(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		log.Printf("[AuthRequired] Checking auth for path: %s\n", c.Path())
+		
 		sess, err := store.Get(c)
 		if err != nil {
+			log.Printf("[AuthRequired] Get session error: %v\n", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Failed to get session",
 			})
@@ -38,6 +41,7 @@ func AuthRequired(store *session.Store) fiber.Handler {
 		c.Locals("user_id", userID)
 		c.Locals("email", sess.Get("email"))
 		c.Locals("role", sess.Get("role"))
+		log.Printf("[AuthRequired] Auth successful, user_id=%v\n", userID)
 
 		return c.Next()
 	}

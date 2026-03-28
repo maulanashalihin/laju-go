@@ -91,7 +91,7 @@ func (s *AuthService) ProcessGoogleToken(ctx context.Context, code string) (*mod
 	user, err = s.userRepo.GetByEmail(googleUser.Email)
 	if err == nil {
 		// Link Google ID to existing account
-		user.GoogleID = googleUser.ID
+		user.GoogleID = sql.NullString{String: googleUser.ID, Valid: true}
 		if err := s.userRepo.Update(user); err != nil {
 			return nil, err
 		}
@@ -100,9 +100,12 @@ func (s *AuthService) ProcessGoogleToken(ctx context.Context, code string) (*mod
 
 	// Create new user
 	newUser := &models.User{
-		Email:         googleUser.Email,
-		Name:          googleUser.Name,
-		GoogleID:      googleUser.ID,
+		Email: googleUser.Email,
+		Name:  googleUser.Name,
+		GoogleID: sql.NullString{
+			String: googleUser.ID,
+			Valid:  true,
+		},
 		Avatar:        googleUser.Picture,
 		EmailVerified: googleUser.Verified,
 		Role:          models.RoleUser,

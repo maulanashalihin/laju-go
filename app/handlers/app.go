@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/maulanashalihin/laju-go/app/services"
@@ -31,10 +33,13 @@ func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
 		return c.Redirect("/login")
 	}
 
+	log.Printf("[Dashboard] Loading user %d\n", userID.(int64))
+	
 	user, err := h.userService.GetProfile(userID.(int64))
 	if err != nil {
+		log.Printf("[Dashboard] GetProfile error: %v\n", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to load dashboard",
+			"error": "Failed to load dashboard: " + err.Error(),
 		})
 	}
 
