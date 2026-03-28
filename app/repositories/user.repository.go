@@ -85,9 +85,10 @@ func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 
 	user := &models.User{}
 	var password sql.NullString
+	var googleID sql.NullString
 	err = r.db.QueryRow(query, args...).Scan(
 		&user.ID, &user.Email, &user.Name, &password, &user.Avatar,
-		&user.Role, &user.GoogleID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
+		&user.Role, &googleID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -96,6 +97,7 @@ func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 		return nil, err
 	}
 	user.Password = password
+	user.GoogleID = googleID
 
 	return user, nil
 }
@@ -113,9 +115,10 @@ func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 
 	user := &models.User{}
 	var password sql.NullString
+	var googleID sql.NullString
 	err = r.db.QueryRow(query, args...).Scan(
 		&user.ID, &user.Email, &user.Name, &password, &user.Avatar,
-		&user.Role, &user.GoogleID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
+		&user.Role, &googleID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -124,6 +127,7 @@ func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 		return nil, err
 	}
 	user.Password = password
+	user.GoogleID = googleID
 
 	return user, nil
 }
@@ -141,9 +145,10 @@ func (r *UserRepository) GetByGoogleID(googleID string) (*models.User, error) {
 
 	user := &models.User{}
 	var password sql.NullString
+	var googleIDNull sql.NullString
 	err = r.db.QueryRow(query, args...).Scan(
 		&user.ID, &user.Email, &user.Name, &password, &user.Avatar,
-		&user.Role, &user.GoogleID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
+		&user.Role, &googleIDNull, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -152,6 +157,7 @@ func (r *UserRepository) GetByGoogleID(googleID string) (*models.User, error) {
 		return nil, err
 	}
 	user.Password = password
+	user.GoogleID = googleIDNull
 
 	return user, nil
 }

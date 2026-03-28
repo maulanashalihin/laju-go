@@ -10,6 +10,8 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:go\"",
     "build": "vite build && go build -o laju-go .",
     "serve": "./laju-go",
+    "db:refresh": "rimraf ./data/app.db ./data/app.db-shm ./data/app.db-wal",
+    "db:migrate": "go run main.go",
     "test:ui": "vitest --ui",
     "test:run": "vitest run"
   },

@@ -19,7 +19,7 @@ type User struct {
 	Avatar        string         `json:"avatar"`
 	Password      sql.NullString `json:"-"` // Hashed password, never return in JSON (NULL for OAuth users)
 	Role          UserRole       `json:"role"`
-	GoogleID      string         `json:"-"` // OAuth provider ID
+	GoogleID      sql.NullString `json:"-"` // OAuth provider ID (NULL for email/password users)
 	EmailVerified bool           `json:"email_verified"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`

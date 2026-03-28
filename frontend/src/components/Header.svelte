@@ -109,7 +109,7 @@
                 <h1
                     class="text-xl font-black italic text-slate-900 dark:text-white"
                 >
-                    VeloStack<span class="text-orange-500">.dev</span>
+                    Laju<span class="text-orange-500">.dev</span>
                 </h1>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
                     Dashboard
@@ -148,14 +148,31 @@
 
     <!-- Dark Mode Toggle -->
     <div class="px-4 py-4 border-t border-slate-200 dark:border-slate-800/50">
-        <div class="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
+        <div
+            class="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50"
+        >
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2.25m6.364.379l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59M15.75 18.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                <div
+                    class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center"
+                >
+                    <svg
+                        class="w-4 h-4 text-purple-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 3v2.25m6.364.379l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59M15.75 18.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+                        />
                     </svg>
                 </div>
-                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Dark Mode</span>
+                <span
+                    class="text-sm font-medium text-slate-700 dark:text-slate-300"
+                    >Dark Mode</span
+                >
             </div>
             <DarkModeToggle />
         </div>
@@ -392,15 +409,34 @@
             </div>
 
             <!-- Dark Mode Toggle (Mobile) -->
-            <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                <div class="flex items-center justify-between px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50">
+            <div
+                class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50"
+            >
+                <div
+                    class="flex items-center justify-between px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50"
+                >
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2.25m6.364.379l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59M15.75 18.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                        <div
+                            class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center"
+                        >
+                            <svg
+                                class="w-4 h-4 text-purple-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 3v2.25m6.364.379l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59M15.75 18.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+                                />
                             </svg>
                         </div>
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Dark Mode</span>
+                        <span
+                            class="text-sm font-medium text-slate-700 dark:text-slate-300"
+                            >Dark Mode</span
+                        >
                     </div>
                     <DarkModeToggle />
                 </div>

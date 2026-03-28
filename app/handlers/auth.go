@@ -91,15 +91,8 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 
 	log.Printf("[Auth.Register] Session created for user %d, redirecting to /app\n", user.ID)
 
-	// For Inertia requests, return redirect response
-	if c.Get("X-Inertia") == "true" {
-		return c.Redirect("/app")
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "Registration successful",
-		"user":    user.ToResponse(),
-	})
+	// Inertia.js will automatically follow this redirect
+	return c.Redirect("/app")
 }
 
 // Login handles user login
@@ -150,15 +143,8 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 
 	log.Printf("[Auth.Login] Session created for user %d, redirecting to /app\n", user.ID)
 
-	// For Inertia requests, return redirect response
-	if c.Get("X-Inertia") == "true" {
-		return c.Redirect("/app")
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "Login successful",
-		"user":    user.ToResponse(),
-	})
+	// Inertia.js will automatically follow this redirect
+	return c.Redirect("/app")
 }
 
 // Logout handles user logout
@@ -168,11 +154,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 
 	log.Printf("[Auth.Logout] User logged out, redirecting to /login\n")
 
-	// For Inertia requests, return redirect response
-	if c.Get("X-Inertia") == "true" {
-		return c.Redirect("/login")
-	}
-
+	// Inertia.js will automatically follow this redirect
 	return c.Redirect("/login")
 }
 
@@ -234,7 +216,9 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 		})
 	}
 
-	// Redirect to app
+	log.Printf("[Auth.GoogleCallback] Session created for user %d, redirecting to /app\n", user.ID)
+
+	// Inertia.js will automatically follow this redirect
 	return c.Redirect("/app")
 }
 
