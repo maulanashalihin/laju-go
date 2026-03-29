@@ -1,6 +1,6 @@
 # Laju Go
 
-High-performance SaaS boilerplate built with **Go Fiber** + **Svelte 5** + **SQLite**.
+High-performance SaaS boilerplate built with **Go Fiber** + **Svelte 5** + **Inertia.js 3** + **SQLite**.
 
 Build production-ready web applications faster with a clean, layered architecture that combines the speed of Go with the developer experience of modern frontend frameworks.
 
