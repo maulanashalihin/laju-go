@@ -9,7 +9,6 @@
 
     let isLoading = $state(false);
     let showPassword = $state(false);
-    let serverError = $state("");
 
     interface Props {
         flash?: {
@@ -21,7 +20,6 @@
 
     function submitForm(e: Event) {
         e.preventDefault();
-        serverError = "";
         isLoading = true;
         router.post("/login", { email: form.email, password: form.password }, {
             onFinish: () => {
@@ -29,12 +27,6 @@
                     isLoading = false;
                 }, 500);
             },
-            onError: (errors) => {
-                setTimeout(() => {
-                    isLoading = false;
-                    serverError = errors.error || "Invalid email or password";
-                }, 500);
-            }
         });
     }
 </script>
@@ -165,12 +157,12 @@
                     <p class="text-slate-400 mt-2">Enter your credentials to continue</p>
                 </div>
 
-                {#if flash?.error || serverError}
+                {#if flash?.error}
                     <div class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
                         <svg class="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span class="text-red-400 text-sm">{flash?.error || serverError}</span>
+                        <span class="text-red-400 text-sm">{flash.error}</span>
                     </div>
                 {/if}
 

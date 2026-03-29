@@ -5,24 +5,49 @@ import (
 	"html/template"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/maulanashalihin/laju-go/app/session"
 )
 
 // InertiaService provides Inertia.js response helpers
 type InertiaService struct {
-	template     string        // template name for initial page load
-	assetService *AssetService // Asset service for production builds
+	template     string         // template name for initial page load
+	assetService *AssetService  // Asset service for production builds
+	store        *session.Store // Session store for flash messages
 }
 
 // NewInertiaService creates a new InertiaService
-func NewInertiaService(assetService *AssetService) *InertiaService {
+func NewInertiaService(assetService *AssetService, store *session.Store) *InertiaService {
 	return &InertiaService{
 		template:     "inertia",
 		assetService: assetService,
+		store:        store,
 	}
 }
 
 // Render renders an Inertia response (auto-detect HTML vs JSON)
 func (s *InertiaService) Render(c *fiber.Ctx, component string, props fiber.Map) error {
+	// Read flash messages from cookies and add to props
+	if s.store != nil {
+		if flashError := s.store.GetFlash(c, "error"); flashError != "" {
+			if props == nil {
+				props = fiber.Map{}
+			}
+			props["flash"] = fiber.Map{
+				"error": flashError,
+			}
+		}
+		
+		if flashSuccess := s.store.GetFlash(c, "success"); flashSuccess != "" {
+			if props == nil {
+				props = fiber.Map{}
+			}
+			if props["flash"] == nil {
+				props["flash"] = fiber.Map{}
+			}
+			props["flash"].(fiber.Map)["success"] = flashSuccess
+		}
+	}
+
 	// For Inertia requests, return JSON
 	if c.Get("X-Inertia") == "true" {
 		return s.renderJSON(c, component, props)
