@@ -122,10 +122,177 @@ npm run dev:all
 - **Repositories**: Database operations (Squirrel SQL builder)
 - **Middlewares**: Auth checks, rate limiting, CSRF
 
+### HTTP Method Conventions
+
+#### POST Requests - Always Redirect
+
+**Standard:** POST requests should **always redirect** (302/303), never return JSON directly.
+
+**Why:**
+- Prevents form resubmission on page refresh (Post/Redirect/Get pattern)
+- Consistent behavior across all form submissions
+- Inertia.js automatically follows redirects
+
+**Example (Auth):**
+```go
+func (h *AuthHandler) Login(c *fiber.Ctx) error {
+    // ... authenticate ...
+    
+    // ✅ GOOD: Redirect after successful POST
+    return c.Redirect("/app")
+}
+```
+
+```svelte
+// Frontend - router.post() will follow redirect automatically
+router.post("/login", formData, {
+    onError: (errors) => { /* handle errors */ }
+    // No need to handle success - redirect does it
+})
+```
+
+**Exception:** Use `fetch()` instead of `router.post()` when you want to stay on the same page (e.g., profile updates, settings).
+
+#### PUT/PATCH Requests - Depends on Use Case
+
+| Use Case | Frontend Pattern | Backend Response |
+|----------|-----------------|------------------|
+| Same-page update | `fetch()` | JSON `{ success: true }` |
+| Navigate after update | `router.put()` | Redirect `c.Redirect()` |
+
+**Example (Profile Update with fetch):**
+```go
+func (h *AppHandler) UpdateProfile(c *fiber.Ctx) error {
+    // ... update profile ...
+    
+    // ✅ GOOD: Return JSON for fetch() request
+    return c.JSON(fiber.Map{
+        "success": "Profile updated",
+    })
+}
+```
+
+```svelte
+// Frontend - stay on same page
+async function handleSubmit() {
+    const res = await fetch('/app/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    })
+    const result = await res.json()
+    Toast(result.success, 'success')
+}
+```
+
 ### Inertia.js Pattern
 - Initial load: Server renders HTML via `inertia.html`
 - Subsequent: XHR with `X-Inertia: true` header → JSON response
 - Frontend dynamically loads components
+
+### CSRF Protection with Inertia.js
+
+**Backend Setup:**
+```go
+// routes/web.go
+protected := app.Group("/app", middlewares.AuthRequired(store))
+protected.Use(csrfMiddleware.Protect())
+
+protected.Put("/profile", appHandler.UpdateProfile)
+protected.Post("/upload", uploadHandler.Upload)
+```
+
+**Frontend Helper (already available):**
+```javascript
+// frontend/src/lib/utils/helpers.js
+import { getCsrfToken } from '@/lib/utils/helpers'
+
+// Get CSRF token from cookie
+const token = getCsrfToken()
+```
+
+#### Pattern 1: router.put() - For Navigation & Re-renders
+
+Use `router.put()` when you want Inertia to handle the response and re-render the page:
+
+```svelte
+<script lang="ts">
+  import { router } from '@inertiajs/svelte'
+  import { getCsrfToken } from '@/lib/utils/helpers'
+
+  function handleSubmit() {
+    router.put('/app/profile', formData, {
+      headers: {
+        'X-CSRF-Token': getCsrfToken()
+      },
+      preserveState: true,  // Keep current component state
+      preserveScroll: true, // Don't scroll to top
+    })
+  }
+</script>
+```
+
+**Note:** `router.put()` will cause Inertia to re-render the component. For data updates without page changes, consider using `fetch()` (Pattern 2) to avoid flash/white screen.
+
+#### Pattern 2: fetch() - For Data Updates Without Re-render (Recommended)
+
+Use `fetch()` for smoother UX when updating data on the same page (profile, settings, etc.):
+
+```svelte
+<script lang="ts">
+  import { getCsrfToken } from '@/lib/utils/helpers'
+
+  async function handleSubmit() {
+    try {
+      const response = await fetch('/app/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken()
+        },
+        body: JSON.stringify(formData)
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        // Handle success: toast notification, manual state update
+        Toast('Profile updated successfully', 'success')
+      }
+    } catch (error) {
+      Toast('Failed to update profile', 'error')
+    }
+  }
+</script>
+```
+
+**Benefits of fetch():**
+- No automatic re-render → No flash/white screen
+- Full control over response handling
+- Better UX for in-place data updates
+- Can manually update Svelte state after success
+
+#### When to Use Which Pattern
+
+| Pattern | Use Case | Example |
+|---------|----------|---------|
+| `router.put()` | Navigation, page changes, need Inertia re-render | Moving to different page after submit |
+| `fetch()` | Same-page data updates, smoother UX | Profile update, password change, settings |
+
+---
+
+**Flow (Both Patterns):**
+1. GET request → Server sets `csrf_token` cookie + session
+2. PUT/POST/DELETE → Frontend sends token via `X-CSRF-Token` header
+3. Backend validates token vs session
+4. Reject with 403 if token mismatch/expired
+
+**Security:**
+- Token stored in session (server-side)
+- Constant-time comparison (prevents timing attacks)
+- 24h expiry (configurable)
+- `Secure: true` in production (HTTPS only)
+- `SameSite: Lax` (CSRF protection)
+- `HTTPOnly: false` (required for JavaScript access)
 
 ### Protected Routes
 
