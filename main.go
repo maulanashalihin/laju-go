@@ -57,7 +57,7 @@ func main() {
 	assetService := services.NewAssetService("./dist/.vite/manifest.json", ".vite-port")
 
 	// Initialize Inertia service (auto-detects Vite from .vite-port)
-	inertiaService := services.NewInertiaService(assetService)
+	inertiaService := services.NewInertiaService(assetService, sessionStore)
 
 	// Initialize handlers
 	routeHandlers := routes.Handlers{

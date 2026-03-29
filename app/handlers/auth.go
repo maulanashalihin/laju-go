@@ -58,22 +58,19 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 
 	// Validate input
 	if req.Name == "" || req.Email == "" || req.Password == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "All fields are required",
-		})
+		h.store.Flash(c, "error", "All fields are required")
+		return c.Redirect("/register")
 	}
 
 	// Register user
 	user, err := h.authService.Register(req.Name, req.Email, req.Password)
 	if err != nil {
 		if err.Error() == "user already exists" {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-				"error": "Email already registered",
-			})
+			h.store.Flash(c, "error", "Email already registered")
+			return c.Redirect("/register")
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to register user",
-		})
+		h.store.Flash(c, "error", "Failed to register user. Please try again.")
+		return c.Redirect("/register")
 	}
 
 	// Create session
@@ -119,13 +116,13 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	user, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
 		if err == services.ErrInvalidCredentials {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Invalid email or password",
-			})
+			// Set flash error cookie and redirect back to login
+			h.store.Flash(c, "error", "Invalid email or password")
+			return c.Redirect("/login")
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to login",
-		})
+		// Set flash error cookie and redirect back to login
+		h.store.Flash(c, "error", "Failed to login. Please try again.")
+		return c.Redirect("/login")
 	}
 
 	// Create session

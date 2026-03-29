@@ -287,3 +287,31 @@ func (s *Session) Regenerate() error {
 
 	return nil
 }
+
+// Flash sets a flash message cookie (short-lived, one-time use)
+// The flash message will be available on the next request and then cleared
+func (s *Store) Flash(c *fiber.Ctx, key string, value string) {
+	// Set flash cookie with short expiry (5 minutes)
+	c.Cookie(&fiber.Cookie{
+		Name:     "flash_" + key,
+		Value:    value,
+		Path:     "/",
+		HTTPOnly: true,
+		Secure:   false,
+		SameSite: "Lax",
+		MaxAge:   300, // 5 minutes
+	})
+}
+
+// GetFlash retrieves and clears a flash message cookie
+func (s *Store) GetFlash(c *fiber.Ctx, key string) string {
+	cookieName := "flash_" + key
+	value := c.Cookies(cookieName)
+	
+	if value != "" {
+		// Clear the flash cookie after reading (one-time use)
+		c.ClearCookie(cookieName)
+	}
+	
+	return value
+}
