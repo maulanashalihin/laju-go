@@ -18,7 +18,7 @@ import (
 	"github.com/maulanashalihin/laju-go/app/session"
 	"github.com/maulanashalihin/laju-go/routes"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func main() {
@@ -111,11 +111,7 @@ func main() {
 		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
 	}))
 
-	// Static files (production only, dev uses Vite dev server)
-	app.Static("/storage", "./storage")
-	app.Static("/", "./public")
-
-	// Setup routes
+	// Setup routes (includes static file serving)
 	routes.SetupRoutes(app, routeHandlers, sessionStore, mailerService, csrfMiddleware)
 
 	// Start server
@@ -127,7 +123,7 @@ func main() {
 
 // initDatabase initializes the SQLite database with optimized settings
 func initDatabase(dbPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +227,7 @@ func logDatabaseOptimizations(db *sql.DB) {
 // runMigrations runs database migrations
 func runMigrations(db *sql.DB, migrationsDir string) error {
 	goose.SetBaseFS(nil)
-	if err := goose.SetDialect("sqlite3"); err != nil {
+	if err := goose.SetDialect("sqlite"); err != nil {
 		return err
 	}
 

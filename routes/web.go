@@ -19,6 +19,9 @@ type Handlers struct {
 }
 
 func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
+	// Setup static file serving
+	setupStaticRoutes(app)
+
 	// Setup public routes
 	setupPublicRoutes(app, handlers.Public)
 
@@ -27,9 +30,12 @@ func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailer
 
 	// Setup app routes (protected)
 	setupAppRoutes(app, handlers.App, handlers.Upload, store, csrfMiddleware)
+}
 
-	// Serve uploaded files (avatars, etc.)
-	app.Static("/storage", "./storage")
+func setupStaticRoutes(app *fiber.App) {
+	app.Static("/dist", "./dist")      // Serve built frontend assets
+	app.Static("/public", "./public")  // Serve public assets at /public path
+	app.Static("/storage", "./storage") // Serve uploaded files (avatars, etc.)
 }
 
 func setupPublicRoutes(app *fiber.App, handler *handlers.PublicHandler) {

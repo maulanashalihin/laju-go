@@ -39,6 +39,4 @@ Thumbs.db
 *.log
 logs/
 
-# Binary
-laju-go
-laju-go.exe
+.deploy

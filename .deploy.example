@@ -1,0 +1,16 @@
+# Deployment Configuration
+# Copy this file to .deploy and fill in your server details
+
+# SSH Credentials
+SERVER_USER=admin
+SERVER_HOST=host.laju.dev
+
+# Remote server path where the application will be deployed
+SERVER_PATH=/opt/APP_NAME
+
+# Git repository URL (for cloning on first deploy)
+# Use SSH URL for private repos: git@github.com:user/repo.git
+REPO_URL=YOUR_REPO_URL
+
+# Systemd service name
+SERVICE_NAME=APP_NAME

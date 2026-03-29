@@ -2,6 +2,19 @@
 
 This guide covers deploying Laju Go to production servers, including Ubuntu/Debian deployment, systemd configuration, Nginx reverse proxy, and SSL setup.
 
+## Quick Start: One-Click Deployment
+
+For automated deployment, see [One-Click Deployment Guide](one-click-deployment.md).
+
+```bash
+# Configure deployment
+cp .deploy.example .deploy
+nano .deploy
+
+# Deploy with one command
+npm run deploy
+```
+
 ## Prerequisites
 
 ### Server Requirements
@@ -49,6 +62,26 @@ sudo useradd -r -s /bin/false www-data
 ```
 
 ## Step 2: Application Setup
+
+### Option A: Using Deployment Script (Recommended)
+
+The deployment script automates all steps below:
+
+```bash
+# From your local machine
+npm run deploy
+```
+
+This will:
+- Clone repository to server
+- Install dependencies
+- Build frontend and Go binary
+- Configure `.env` file
+- Create and start systemd service
+
+See [One-Click Deployment](one-click-deployment.md) for details.
+
+### Option B: Manual Setup
 
 ### Clone Repository
 

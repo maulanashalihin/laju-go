@@ -48,8 +48,10 @@ Deployment guides for various environments.
 | Document | Description |
 |----------|-------------|
 | [Development Workflow](deployment/development.md) | Hot reload, scripts, and development best practices |
+| [One-Click Deployment](deployment/one-click-deployment.md) | **NEW** Automated deployment via SSH with one command |
 | [Production Deployment](deployment/production.md) | Ubuntu/Debian deployment with systemd and Nginx |
 | [Docker Deployment](deployment/docker.md) | Containerized deployment with Docker |
+| [GitHub Actions CI/CD](deployment/github-actions.md) | Automated CI/CD pipeline |
 | [Performance Optimization](deployment/optimization.md) | SQLite optimization and performance tuning |
 
 ### Reference
@@ -120,9 +122,11 @@ Visit `http://localhost:8080` to see your application.
 
 | Task | Guide |
 |------|-------|
+| **One-click deploy to server** | [**One-Click Deployment**](deployment/one-click-deployment.md) |
 | Build for production | [Building](guide/building.md) |
 | Deploy to Ubuntu server | [Production Deployment](deployment/production.md) |
 | Deploy with Docker | [Docker Deployment](deployment/docker.md) |
+| Setup CI/CD pipeline | [GitHub Actions CI/CD](deployment/github-actions.md) |
 | Optimize performance | [Optimization](deployment/optimization.md) |
 | Set up SSL/TLS | [Production Deployment](deployment/production.md) |
 
