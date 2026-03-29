@@ -171,12 +171,31 @@ npm run deploy
 
 ### Manual Deployment
 
+**Build locally (cross-compile for Linux):**
+
 ```bash
-# Build for Linux
+# Build for Linux (from macOS/Windows)
 GOOS=linux GOARCH=amd64 go build -o laju-go .
 npm run build
+```
 
-# Upload to server
+**Option A: Git Pull (Recommended)**
+
+```bash
+# Push code to GitHub
+git add . && git commit -m "Update" && git push
+
+# On server: pull changes
+ssh user@vps "cd /opt/laju-go && git pull"
+
+# Restart service
+ssh user@vps "systemctl restart laju-go"
+```
+
+**Option B: SCP Upload**
+
+```bash
+# Upload binary and assets
 scp laju-go dist/ templates/ migrations/ public/ user@vps:/opt/laju-go/
 
 # Restart service
