@@ -3,14 +3,17 @@ package main
 import (
 	"database/sql"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/pressly/goose/v3"
+	"github.com/maulanashalihin/laju-go/app/cache"
 	"github.com/maulanashalihin/laju-go/app/config"
 	"github.com/maulanashalihin/laju-go/app/handlers"
 	"github.com/maulanashalihin/laju-go/app/queries"
@@ -40,6 +43,9 @@ func main() {
 	// Initialize querier
 	querier := queries.NewQuerier(db)
 
+	// Initialize user profile cache
+	userCache := cache.NewUserCache(cfg.UserCacheTTL)
+
 	// Initialize session store with database backend
 	sessionStore := session.New(querier)
 
@@ -50,7 +56,7 @@ func main() {
 		GoogleClientSecret: cfg.GoogleClientSecret,
 		GoogleRedirectURL:  cfg.GoogleRedirectURL,
 	})
-	userService := services.NewUserService(querier)
+	userService := services.NewUserService(querier, userCache)
 
 	// Initialize Asset service (for production builds with hashed filenames)
 	assetService := services.NewAssetService("./dist/.vite/manifest.json", ".vite-port")
@@ -99,12 +105,20 @@ func main() {
 	})
 
 	// Global middleware
-	app.Use(logger.New())
+	// Logger: only in development (avoids string allocation per request in prod)
+	if cfg.IsDevelopment() {
+		app.Use(logger.New())
+	}
 	app.Use(recover.New())
+
+	// Response compression (brotli > gzip, best speed for low CPU overhead)
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelBestSpeed,
+	}))
+
+	// CORS with explicit allowed origins (no AllowOriginsFunc in production)
 	app.Use(cors.New(cors.Config{
-		AllowOriginsFunc: func(origin string) bool {
-			return true // Allow all origins in development
-		},
+		AllowOrigins:     strings.Join(cfg.AllowedOrigins, ","),
 		AllowCredentials: true,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Inertia, X-Inertia-Version, X-Requested-With",
 		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
@@ -127,10 +141,11 @@ func initDatabase(dbPath string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Configure connection pooling
-	db.SetMaxOpenConns(15)                // Maximum number of open connections (optimized for SQLite single-instance)
-	db.SetMaxIdleConns(5)                 // Maximum number of idle connections
-	db.SetConnMaxLifetime(5 * time.Minute) // Maximum lifetime for a connection
+	// Configure connection pooling (optimized for SQLite single-instance)
+	db.SetMaxOpenConns(15)                  // Maximum number of open connections
+	db.SetMaxIdleConns(10)                  // Keep more idle connections ready (avoid churn)
+	db.SetConnMaxLifetime(5 * time.Minute)  // Maximum lifetime for a connection
+	db.SetConnMaxIdleTime(30 * time.Second) // Recycle stale idle connections
 
 	// Enable foreign keys
 	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
