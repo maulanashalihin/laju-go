@@ -36,6 +36,14 @@
 | Styling | Tailwind CSS | 4.2.2 |
 | SPA Bridge | Inertia.js | 3.0.0 |
 
+**Why `modernc.org/sqlite` (pure Go) instead of `mattn/go-sqlite3` (CGO)?**
+- Cross-compile: `GOOS=linux GOARCH=amd64 go build` just works — no Docker, no musl-cross, no GCC
+- Static binary: single self-contained file — no `libsqlite3` dependency
+- Docker/CI: `FROM golang:alpine` works out of the box
+- Debug: full Go stack traces in production — CGO traces are opaque
+- Speed trade-off: ~20-50% slower at raw DB benchmark, but **<1.5% difference** at full HTTP stack (Fiber + JSON + auth). Bottleneck is never the driver.
+- **Decision is final.** Only migrate if you need SQLite extensions or batch ETL where DB is 90% of CPU.
+
 ---
 
 ## Project Structure
