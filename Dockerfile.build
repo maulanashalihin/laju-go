@@ -1,0 +1,28 @@
+# Dockerfile for cross-compiling laju-go binary (Linux amd64)
+# Usage: docker build -f Dockerfile.build -o dist .
+# Or: docker run --rm -v $(pwd):/app -w /app golang:1.26-bookworm bash -c "apt-get update && apt-get install -y gcc libsqlite3-dev && go build -o laju-go ."
+
+FROM golang:1.26-bookworm AS builder
+
+# Install build dependencies for mattn/go-sqlite3 (CGO)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy go mod files and download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the binary
+# CGO_ENABLED=1 required for mattn/go-sqlite3
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o laju-go .
+
+# Final stage: just the binary (optional, for extracting from container)
+FROM scratch AS export
+COPY --from=builder /app/laju-go /laju-go

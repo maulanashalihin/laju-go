@@ -110,7 +110,7 @@ laju-go/
 |-------|------------|---------|
 | **Backend** | Go 1.26+ | Programming language |
 | **Web Framework** | Fiber v2 | High-performance HTTP framework (fasthttp) |
-| **Database** | SQLite3 | Embedded SQL database |
+| **Database** | SQLite3 (mattn/go-sqlite3) | Embedded SQL database with CGO |
 | **Query Builder** | sqlc | Compile-time type-safe SQL code generation |
 | **Migrations** | Goose | Database schema management |
 | **Frontend** | Svelte 5 | Reactive UI framework |
@@ -270,14 +270,27 @@ go build -o laju-go .
 ### Docker Deployment
 
 ```bash
-# Build the image
-docker build -t laju-go .
+# Build the image (requires CGO for mattn/go-sqlite3)
+docker build -f Dockerfile.build -t laju-go .
 
 # Run the container
 docker run -p 8080:8080 \
   -v $(pwd)/data:/root/data \
   -v $(pwd)/storage:/root/storage \
   laju-go
+```
+
+### Cross-Compile for Linux (from macOS)
+
+This project uses `mattn/go-sqlite3` which requires CGO. Cross-compilation needs a Linux toolchain:
+
+```bash
+# Option 1: Docker (recommended)
+npm run build:linux
+
+# Option 2: Install musl cross-compiler
+brew install FiloSottile/musl-cross/musl-cross
+CC=x86_64-linux-musl-gcc CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o laju-go .
 ```
 
 ### Ubuntu/Debian Server

@@ -11,7 +11,7 @@
     "build": "vite build",
     "build:all": "vite build && go build -o laju-go .",
     "build:go": "go build -o laju-go .",
-    "build:linux": "GOOS=linux GOARCH=amd64 go build -o laju-go .",
+    "build:linux": "docker run --rm -v $(pwd):/app -w /app golang:1.26-bookworm bash -c \"apt-get update && apt-get install -y gcc libsqlite3-dev && go build -o laju-go .\"",
     "deploy": "./scripts/deploy.sh",
     "serve": "./laju-go",
     "db:refresh": "rimraf ./data/app.db ./data/app.db-shm ./data/app.db-wal",
