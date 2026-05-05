@@ -87,7 +87,7 @@ laju-go/
 ├── app/                       # Backend Go code
 │   ├── handlers/              # HTTP request handlers
 │   ├── services/              # Business logic layer
-│   ├── repositories/          # Database access layer
+│   ├── queries/               # Generated SQL query code (sqlc)
 │   ├── middlewares/           # Request middleware
 │   └── models/                # Data structures
 ├── frontend/                  # Svelte 5 frontend
@@ -95,6 +95,7 @@ laju-go/
 │       ├── components/        # Reusable UI components
 │       ├── pages/             # Page components
 │       └── lib/               # Utilities and helpers
+├── queries/                   # SQL query source files (write queries here)
 ├── routes/                    # Route definitions
 ├── migrations/                # Database migrations
 ├── templates/                 # HTML templates
@@ -110,7 +111,7 @@ laju-go/
 | **Backend** | Go 1.26+ | Programming language |
 | **Web Framework** | Fiber v2 | High-performance HTTP framework (fasthttp) |
 | **Database** | SQLite3 | Embedded SQL database |
-| **Query Builder** | Squirrel | SQL query construction |
+| **Query Builder** | sqlc | Compile-time type-safe SQL code generation |
 | **Migrations** | Goose | Database schema management |
 | **Frontend** | Svelte 5 | Reactive UI framework |
 | **Build Tool** | Vite 5 | Fast build tooling and dev server |
@@ -307,6 +308,43 @@ goose -dir migrations sqlite3 data/app.db status
 
 # Rollback last migration
 goose -dir migrations sqlite3 data/app.db down
+```
+
+## 📝 SQL Queries (sqlc)
+
+This project uses [sqlc](https://sqlc.dev/) for compile-time type-safe SQL queries. Write your SQL in `queries/*.sql`, then generate Go code:
+
+```bash
+# Install sqlc
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+# Generate Go code from SQL files
+npm run db:generate
+```
+
+### Directory Structure
+
+| Directory | Purpose |
+|-----------|---------|
+| `queries/` | SQL source files — **write your queries here** |
+| `app/queries/` | Generated Go code + wrapper — **do not edit manually** |
+
+### Adding a New Query
+
+1. Add the query to `queries/user.sql` or create a new `.sql` file:
+```sql
+-- name: GetUserCount :one
+SELECT COUNT(*) FROM users;
+```
+
+2. Regenerate:
+```bash
+npm run db:generate
+```
+
+3. Use in your service:
+```go
+count, err := s.querier.GetUserCount(ctx)
 ```
 
 ## 🧪 Testing

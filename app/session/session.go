@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -8,12 +9,11 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/maulanashalihin/laju-go/app/models"
-	"github.com/maulanashalihin/laju-go/app/repositories"
+	"github.com/maulanashalihin/laju-go/app/queries"
 )
 
 type Store struct {
-	repo        *repositories.SessionRepository
+	querier     *queries.Querier
 	sessionName string
 }
 
@@ -35,9 +35,9 @@ type SessionData struct {
 }
 
 // New creates a new session store with database backend
-func New(repo *repositories.SessionRepository) *Store {
+func New(querier *queries.Querier) *Store {
 	return &Store{
-		repo:        repo,
+		querier:     querier,
 		sessionName: "session_id",
 	}
 }
@@ -66,7 +66,7 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 	
 	if cookieValue != "" {
 		// Find session in database
-		dbSession, err := s.repo.GetByID(cookieValue)
+		dbSession, err := s.querier.GetSessionByID(context.Background(), cookieValue)
 		if err == nil {
 			// Session found in database
 			session.id = dbSession.ID
@@ -159,28 +159,28 @@ func (s *Session) Save() error {
 		}
 		s.id = sessionID
 
-		dbSession := &models.Session{
+		dbSession := &queries.Session{
 			ID:        s.id,
 			UserID:    sessionData.UserID,
 			Data:      string(jsonData),
 			ExpiresAt: s.expiresAt,
 		}
 
-		if err := s.store.repo.Create(dbSession); err != nil {
+		if err := s.store.querier.CreateSession(context.Background(), dbSession); err != nil {
 			log.Printf("[Session] Create error: %v\n", err)
 			return err
 		}
 		log.Printf("[Session] Created new session: id=%s, user_id=%d\n", s.id, sessionData.UserID)
 	} else {
 		// Update existing session
-		dbSession := &models.Session{
+		dbSession := &queries.Session{
 			ID:        s.id,
 			UserID:    sessionData.UserID,
 			Data:      string(jsonData),
 			ExpiresAt: s.expiresAt,
 		}
 
-		if err := s.store.repo.Update(dbSession); err != nil {
+		if err := s.store.querier.UpdateSession(context.Background(), dbSession); err != nil {
 			log.Printf("[Session] Update error: %v\n", err)
 			return err
 		}
@@ -206,7 +206,7 @@ func (s *Session) Save() error {
 func (s *Session) Destroy() error {
 	if s.id != "" {
 		// Delete from database
-		s.store.repo.Delete(s.id)
+		s.store.querier.DeleteSession(context.Background(), s.id)
 	}
 
 	s.values = make(map[string]interface{})
@@ -223,14 +223,6 @@ func (s *Session) Regenerate() error {
 	newID, err := generateSessionID()
 	if err != nil {
 		return err
-	}
-
-	// Update session ID in database
-	dbSession := &models.Session{
-		ID:        newID,
-		UserID:    s.userID,
-		Data:      "", // Will be re-encoded
-		ExpiresAt: s.expiresAt,
 	}
 
 	// Re-encode data
@@ -261,15 +253,20 @@ func (s *Session) Regenerate() error {
 		return err
 	}
 
-	dbSession.Data = string(jsonData)
-
 	// Create new session
-	if err := s.store.repo.Create(dbSession); err != nil {
+	dbSession := &queries.Session{
+		ID:        newID,
+		UserID:    sessionData.UserID,
+		Data:      string(jsonData),
+		ExpiresAt: s.expiresAt,
+	}
+
+	if err := s.store.querier.CreateSession(context.Background(), dbSession); err != nil {
 		return err
 	}
 
 	// Delete old session
-	s.store.repo.Delete(s.id)
+	s.store.querier.DeleteSession(context.Background(), s.id)
 
 	// Update local ID
 	s.id = newID

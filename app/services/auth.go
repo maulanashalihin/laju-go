@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"github.com/maulanashalihin/laju-go/app/models"
-	"github.com/maulanashalihin/laju-go/app/repositories"
+	"github.com/maulanashalihin/laju-go/app/queries"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -19,7 +19,7 @@ var (
 )
 
 type AuthService struct {
-	userRepo      *repositories.UserRepository
+	querier       *queries.Querier
 	sessionSecret string
 	oauthConfig   *oauth2.Config
 }
@@ -31,9 +31,9 @@ type AuthServiceConfig struct {
 	GoogleRedirectURL  string
 }
 
-func NewAuthService(userRepo *repositories.UserRepository, cfg AuthServiceConfig) *AuthService {
+func NewAuthService(querier *queries.Querier, cfg AuthServiceConfig) *AuthService {
 	return &AuthService{
-		userRepo:      userRepo,
+		querier:       querier,
 		sessionSecret: cfg.SessionSecret,
 		oauthConfig: &oauth2.Config{
 			ClientID:     cfg.GoogleClientID,
@@ -79,20 +79,20 @@ func (s *AuthService) ProcessGoogleToken(ctx context.Context, code string) (*mod
 	}
 
 	// Check if user exists by Google ID
-	user, err := s.userRepo.GetByGoogleID(googleUser.ID)
+	user, err := s.querier.GetUserByGoogleID(ctx, googleUser.ID)
 	if err == nil {
 		return user, nil
 	}
-	if !errors.Is(err, repositories.ErrUserNotFound) {
+	if !errors.Is(err, queries.ErrUserNotFound) {
 		return nil, err
 	}
 
 	// Check if user exists by email
-	user, err = s.userRepo.GetByEmail(googleUser.Email)
+	user, err = s.querier.GetUserByEmail(ctx, googleUser.Email)
 	if err == nil {
 		// Link Google ID to existing account
 		user.GoogleID = sql.NullString{String: googleUser.ID, Valid: true}
-		if err := s.userRepo.Update(user); err != nil {
+		if err := s.querier.UpdateUser(ctx, user); err != nil {
 			return nil, err
 		}
 		return user, nil
@@ -111,7 +111,7 @@ func (s *AuthService) ProcessGoogleToken(ctx context.Context, code string) (*mod
 		Role:          models.RoleUser,
 	}
 
-	if err := s.userRepo.CreateWithGoogleID(newUser); err != nil {
+	if err := s.querier.CreateUserWithGoogleID(ctx, newUser); err != nil {
 		return nil, err
 	}
 
@@ -121,11 +121,11 @@ func (s *AuthService) ProcessGoogleToken(ctx context.Context, code string) (*mod
 // Register creates a new user with email/password
 func (s *AuthService) Register(name, email, password string) (*models.User, error) {
 	// Check if user already exists
-	_, err := s.userRepo.GetByEmail(email)
+	_, err := s.querier.GetUserByEmail(context.Background(), email)
 	if err == nil {
-		return nil, repositories.ErrUserAlreadyExists
+		return nil, queries.ErrUserAlreadyExists
 	}
-	if !errors.Is(err, repositories.ErrUserNotFound) {
+	if !errors.Is(err, queries.ErrUserNotFound) {
 		return nil, err
 	}
 
@@ -147,7 +147,7 @@ func (s *AuthService) Register(name, email, password string) (*models.User, erro
 		EmailVerified: false,
 	}
 
-	if err := s.userRepo.Create(user); err != nil {
+	if err := s.querier.CreateUser(context.Background(), user); err != nil {
 		return nil, err
 	}
 
@@ -156,9 +156,9 @@ func (s *AuthService) Register(name, email, password string) (*models.User, erro
 
 // Login authenticates a user with email/password
 func (s *AuthService) Login(email, password string) (*models.User, error) {
-	user, err := s.userRepo.GetByEmail(email)
+	user, err := s.querier.GetUserByEmail(context.Background(), email)
 	if err != nil {
-		if errors.Is(err, repositories.ErrUserNotFound) {
+		if errors.Is(err, queries.ErrUserNotFound) {
 			return nil, ErrInvalidCredentials
 		}
 		return nil, err
@@ -178,7 +178,7 @@ func (s *AuthService) Login(email, password string) (*models.User, error) {
 
 // GetUserByID retrieves a user by ID
 func (s *AuthService) GetUserByID(id int64) (*models.User, error) {
-	return s.userRepo.GetByID(id)
+	return s.querier.GetUserByID(context.Background(), id)
 }
 
 // hashPassword hashes a password using bcrypt
