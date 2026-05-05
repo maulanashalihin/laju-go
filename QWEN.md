@@ -28,7 +28,7 @@
 |-------|------------|---------|
 | Language | Go | 1.26+ |
 | Web Framework | Go Fiber v2 | 2.52.5 |
-| Database | SQLite (modernc.org) | 1.39.1 |
+| Database | SQLite (mattn/go-sqlite3) | 1.14.44 |
 | SQL Queries | sqlc | 1.31.1 |
 | Migrations | Goose | 3.20.0 |
 | Frontend | Svelte | 5.55.0 |
@@ -461,6 +461,34 @@ goose -dir migrations sqlite ./data/app.db down
 - `mmap_size=268435456` - 256MB memory-mapped I/O
 - `busy_timeout=5000` - 5s lock wait timeout
 - `max_open_conns=15` - Connection pool
+
+### Building with CGO (mattn/go-sqlite3)
+
+This project uses `mattn/go-sqlite3` which requires CGO. Native compilation works on macOS/Linux with GCC/Clang installed.
+
+**Local build (macOS/Linux):**
+```bash
+go build -o laju-go .
+```
+
+**Cross-compile for Linux (from macOS):**
+
+Option 1: Docker (recommended)
+```bash
+npm run build:linux
+# Or manually:
+docker run --rm -v $(pwd):/app -w /app golang:1.26-bookworm \
+  bash -c "apt-get update && apt-get install -y gcc libsqlite3-dev && go build -o laju-go ."
+```
+
+Option 2: Install musl cross-compiler
+```bash
+brew install FiloSottile/musl-cross/musl-cross
+CC=x86_64-linux-musl-gcc CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o laju-go .
+```
+
+Option 3: GitHub Actions CI/CD
+Use the provided `Dockerfile.build` for reproducible builds.
 
 ---
 
