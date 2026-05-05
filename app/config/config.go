@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -17,6 +19,8 @@ type Config struct {
 	GoogleClientSecret string
 	GoogleRedirectURL  string
 	FrontendURL        string
+	// CORS
+	AllowedOrigins []string
 	// Email configuration
 	SMTPHost string
 	SMTPPort int
@@ -24,6 +28,8 @@ type Config struct {
 	SMTPPass string
 	FromEmail string
 	FromName  string
+	// Cache
+	UserCacheTTL time.Duration
 }
 
 var AppConfig *Config
@@ -43,6 +49,7 @@ func Load() *Config {
 		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", ""),
 		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:5173"),
+		AllowedOrigins:     parseAllowedOrigins(),
 		// Email configuration
 		SMTPHost:  getEnv("SMTP_HOST", "smtp.gmail.com"),
 		SMTPPort:  getEnvAsInt("SMTP_PORT", 587),
@@ -50,6 +57,8 @@ func Load() *Config {
 		SMTPPass:  getEnv("SMTP_PASS", ""),
 		FromEmail: getEnv("FROM_EMAIL", "noreply@example.com"),
 		FromName:  getEnv("FROM_NAME", "Laju"),
+		// Cache
+		UserCacheTTL: getUserCacheTTL(),
 	}
 
 	return AppConfig
@@ -81,4 +90,32 @@ func (c *Config) GetDSN() string {
 
 func (c *Config) IsDevelopment() bool {
 	return c.AppEnv == "development"
+}
+
+// parseAllowedOrigins parses ALLOWED_ORIGINS env var (comma-separated).
+// Defaults to http://localhost:5173 in dev, empty (strict) in prod.
+func parseAllowedOrigins() []string {
+	val := os.Getenv("ALLOWED_ORIGINS")
+	if val == "" {
+		return []string{"http://localhost:5173"}
+	}
+	var origins []string
+	for _, o := range strings.Split(val, ",") {
+		trimmed := strings.TrimSpace(o)
+		if trimmed != "" {
+			origins = append(origins, trimmed)
+		}
+	}
+	return origins
+}
+
+// getUserCacheTTL returns the user profile cache TTL from env.
+// Default: 15 minutes. Set to 0 to disable caching.
+func getUserCacheTTL() time.Duration {
+	val := getEnv("USER_CACHE_TTL", "15m")
+	d, err := time.ParseDuration(val)
+	if err != nil {
+		return 15 * time.Minute
+	}
+	return d
 }
