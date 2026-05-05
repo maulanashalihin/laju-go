@@ -1,25 +1,26 @@
 package services
 
 import (
+	"context"
 	"errors"
 
 	"github.com/maulanashalihin/laju-go/app/models"
-	"github.com/maulanashalihin/laju-go/app/repositories"
+	"github.com/maulanashalihin/laju-go/app/queries"
 )
 
 type UserService struct {
-	userRepo *repositories.UserRepository
+	querier *queries.Querier
 }
 
-func NewUserService(userRepo *repositories.UserRepository) *UserService {
+func NewUserService(querier *queries.Querier) *UserService {
 	return &UserService{
-		userRepo: userRepo,
+		querier: querier,
 	}
 }
 
 // GetProfile retrieves a user's profile
 func (s *UserService) GetProfile(userID int64) (*models.UserResponse, error) {
-	user, err := s.userRepo.GetByID(userID)
+	user, err := s.querier.GetUserByID(context.Background(), userID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,22 +31,22 @@ func (s *UserService) GetProfile(userID int64) (*models.UserResponse, error) {
 
 // GetProfileByEmail retrieves a user's profile by email
 func (s *UserService) GetProfileByEmail(email string) (*models.User, error) {
-	return s.userRepo.GetByEmail(email)
+	return s.querier.GetUserByEmail(context.Background(), email)
 }
 
 // UpdatePassword updates a user's password
 func (s *UserService) UpdatePassword(userID int64, hashedPassword string) error {
-	return s.userRepo.UpdatePassword(userID, hashedPassword)
+	return s.querier.UpdateUserPassword(context.Background(), userID, hashedPassword)
 }
 
 // UpdateAvatar updates a user's avatar URL
 func (s *UserService) UpdateAvatar(userID int64, avatarURL string) error {
-	return s.userRepo.UpdateAvatar(userID, avatarURL)
+	return s.querier.UpdateUserAvatar(context.Background(), userID, avatarURL)
 }
 
 // UpdateProfile updates a user's profile
 func (s *UserService) UpdateProfile(userID int64, req models.UpdateProfileRequest) (*models.UserResponse, error) {
-	user, err := s.userRepo.GetByID(userID)
+	user, err := s.querier.GetUserByID(context.Background(), userID)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func (s *UserService) UpdateProfile(userID int64, req models.UpdateProfileReques
 		user.Avatar = req.Avatar
 	}
 
-	if err := s.userRepo.Update(user); err != nil {
+	if err := s.querier.UpdateUser(context.Background(), user); err != nil {
 		return nil, err
 	}
 
@@ -68,7 +69,7 @@ func (s *UserService) UpdateProfile(userID int64, req models.UpdateProfileReques
 
 // ChangePassword changes a user's password
 func (s *UserService) ChangePassword(userID int64, oldPassword, newPassword string) error {
-	user, err := s.userRepo.GetByID(userID)
+	user, err := s.querier.GetUserByID(context.Background(), userID)
 	if err != nil {
 		return err
 	}
@@ -88,17 +89,17 @@ func (s *UserService) ChangePassword(userID int64, oldPassword, newPassword stri
 		return err
 	}
 
-	return s.userRepo.UpdatePassword(userID, hashedPassword)
+	return s.querier.UpdateUserPassword(context.Background(), userID, hashedPassword)
 }
 
 // DeleteAccount deletes a user's account
 func (s *UserService) DeleteAccount(userID int64) error {
-	return s.userRepo.Delete(userID)
+	return s.querier.DeleteUser(context.Background(), userID)
 }
 
 // IsAdmin checks if a user is an admin
 func (s *UserService) IsAdmin(userID int64) (bool, error) {
-	user, err := s.userRepo.GetByID(userID)
+	user, err := s.querier.GetUserByID(context.Background(), userID)
 	if err != nil {
 		return false, err
 	}

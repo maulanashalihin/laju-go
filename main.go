@@ -13,7 +13,7 @@ import (
 	"github.com/pressly/goose/v3"
 	"github.com/maulanashalihin/laju-go/app/config"
 	"github.com/maulanashalihin/laju-go/app/handlers"
-	"github.com/maulanashalihin/laju-go/app/repositories"
+	"github.com/maulanashalihin/laju-go/app/queries"
 	"github.com/maulanashalihin/laju-go/app/services"
 	"github.com/maulanashalihin/laju-go/app/session"
 	"github.com/maulanashalihin/laju-go/routes"
@@ -37,21 +37,20 @@ func main() {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	// Initialize repositories
-	userRepo := repositories.NewUserRepository(db)
-	sessionRepo := repositories.NewSessionRepository(db)
+	// Initialize querier
+	querier := queries.NewQuerier(db)
 
 	// Initialize session store with database backend
-	sessionStore := session.New(sessionRepo)
+	sessionStore := session.New(querier)
 
 	// Initialize services
-	authService := services.NewAuthService(userRepo, services.AuthServiceConfig{
+	authService := services.NewAuthService(querier, services.AuthServiceConfig{
 		SessionSecret:      cfg.SessionSecret,
 		GoogleClientID:     cfg.GoogleClientID,
 		GoogleClientSecret: cfg.GoogleClientSecret,
 		GoogleRedirectURL:  cfg.GoogleRedirectURL,
 	})
-	userService := services.NewUserService(userRepo)
+	userService := services.NewUserService(querier)
 
 	// Initialize Asset service (for production builds with hashed filenames)
 	assetService := services.NewAssetService("./dist/.vite/manifest.json", ".vite-port")

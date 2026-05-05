@@ -6,7 +6,7 @@
 - **Backend**: Go Fiber (fasthttp-based web framework)
 - **Frontend**: Svelte 5 with Inertia.js for SPA experience
 - **Database**: SQLite with production optimizations (WAL mode, connection pooling)
-- **Architecture**: Clean layered architecture (Routes → Middleware → Handler → Service → Repository → Database)
+- **Architecture**: Clean layered architecture (Routes → Middleware → Handler → Service → Queries → Database)
 
 ### Key Features
 - User authentication (email/password + Google OAuth)
@@ -29,7 +29,7 @@
 | Language | Go | 1.26+ |
 | Web Framework | Go Fiber v2 | 2.52.5 |
 | Database | SQLite (modernc.org) | 1.39.1 |
-| Query Builder | Squirrel | 1.5.4 |
+| SQL Queries | sqlc | 1.31.1 |
 | Migrations | Goose | 3.20.0 |
 | Frontend | Svelte | 5.55.0 |
 | Build Tool | Vite | 8.0.3 |
@@ -46,15 +46,20 @@ laju-go/
 ├── go.mod                   # Go dependencies
 ├── package.json             # Node.js dependencies
 ├── .deploy.example          # Deployment config template
+├── sqlc.yaml                # sqlc configuration
 │
 ├── app/                     # Backend code
 │   ├── config/              # Environment configuration
 │   ├── handlers/            # HTTP controllers
 │   ├── middlewares/         # Auth guards, rate limiting
 │   ├── models/              # Data structures
-│   ├── repositories/        # Database queries (Squirrel)
+│   ├── queries/             # Generated SQL query code (sqlc) + Querier wrapper
 │   ├── services/            # Business logic
 │   └── session/             # Session infrastructure
+│
+├── queries/                 # SQL source files — write queries here
+│   ├── user.sql             # User-related queries
+│   └── session.sql          # Session-related queries
 │
 ├── routes/
 │   └── web.go               # Route definitions & static files
@@ -110,6 +115,7 @@ npm run dev:all
 | `npm run db:migrate:status` | Check migration status |
 | `npm run db:migrate:down` | Rollback last migration |
 | `npm run db:migrate:create` | Create new migration |
+| `npm run db:generate` | Generate Go code from SQL files (sqlc) |
 | `npm run db:refresh` | Reset database |
 
 ---
@@ -119,8 +125,36 @@ npm run dev:all
 ### Code Organization
 - **Handlers**: Parse requests, call services, return responses
 - **Services**: Business logic, auth flows, email sending
-- **Repositories**: Database operations (Squirrel SQL builder)
+- **Queries** (`queries/`): Write SQL in `.sql` files, sqlc generates Go code
+- **Querier** (`app/queries/querier.go`): Wrapper with error handling + model conversion
 - **Middlewares**: Auth checks, rate limiting, CSRF
+
+### SQL Queries (sqlc)
+
+Write queries in `queries/*.sql`, then run `npm run db:generate` to produce Go code in `app/queries/`.
+
+**Query types:**
+```sql
+-- name: GetUserByID :one       → returns (User, error)
+-- name: GetUsers :many         → returns ([]User, error)
+-- name: DeleteUser :execrows   → returns (int64, error) — rows affected
+-- name: UpdateCount :exec      → returns error only
+```
+
+**Workflow:**
+1. Write SQL in `queries/user.sql` or `queries/session.sql`
+2. Run `npm run db:generate`
+3. Call from service: `s.querier.GetUserByID(ctx, id)`
+
+**Adding a new query file:**
+```sql
+-- queries/analytics.sql
+-- name: GetDailySignups :many
+SELECT DATE(created_at) as day, COUNT(*) as count
+FROM users GROUP BY day ORDER BY day;
+```
+
+Then regenerate: `npm run db:generate`
 
 ### HTTP Method Conventions
 

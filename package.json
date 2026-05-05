@@ -19,6 +19,7 @@
     "db:migrate:status": "goose -dir migrations sqlite ./data/app.db status",
     "db:migrate:down": "goose -dir migrations sqlite ./data/app.db down",
     "db:migrate:create": "goose -dir migrations create",
+    "db:generate": "sqlc generate",
     "test:ui": "vitest --ui",
     "test:run": "vitest run"
   },
