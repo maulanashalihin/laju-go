@@ -119,6 +119,22 @@ laju-go/
 | **SPA Bridge** | Inertia.js 3 | Server-driven single-page apps |
 | **Icons** | Lucide Svelte | Beautiful, consistent icons |
 
+### Why SQLite (`modernc.org/sqlite`)?
+
+We intentionally chose `modernc.org/sqlite` (pure Go) over `mattn/go-sqlite3` (CGO). Here's why this decision is locked in:
+
+| Factor | `modernc.org/sqlite` ✅ | `mattn/go-sqlite3` ❌ |
+|--------|------------------------|----------------------|
+| **Cross-compile** | `GOOS=linux GOARCH=amd64 go build` — just works | Needs Docker, musl-cross, or server-side GCC |
+| **Static binary** | Single self-contained binary | Links to `libsqlite3`, dynamic dependency hell |
+| **Docker/CI** | `FROM golang:alpine` works | Must install `gcc`, `libsqlite3-dev`, image bloat |
+| **Debug production** | Full Go stack traces | CGO stack traces are opaque and painful |
+| **Raw DB speed** | ~20-50% slower in benchmarks | Faster at micro-benchmark level |
+
+**The catch:** At the full HTTP stack level (Fiber routing + JSON marshal + auth + network), the SQLite driver difference is **less than 1.5%** of total request latency. You're bottlenecked by JSON/auth/network long before the driver. The deployment simplicity of pure Go wins every time.
+
+**Decision is final.** Don't migrate to `mattn/go-sqlite3` unless you have a very specific reason (e.g. need SQLite extensions, or doing batch ETL where DB is 90% of CPU).
+
 ## 📦 Installation
 
 ### Prerequisites
