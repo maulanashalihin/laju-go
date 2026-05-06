@@ -2,15 +2,14 @@ package services
 
 import (
 	"encoding/json"
-	"html/template"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/session"
+	"github.com/maulanashalihin/laju-go/templates"
 )
 
 // InertiaService provides Inertia.js response helpers
 type InertiaService struct {
-	template     string         // template name for initial page load
 	assetService *AssetService  // Asset service for production builds
 	store        *session.Store // Session store for flash messages
 }
@@ -18,7 +17,6 @@ type InertiaService struct {
 // NewInertiaService creates a new InertiaService
 func NewInertiaService(assetService *AssetService, store *session.Store) *InertiaService {
 	return &InertiaService{
-		template:     "inertia",
 		assetService: assetService,
 		store:        store,
 	}
@@ -73,25 +71,20 @@ func (s *InertiaService) renderJSON(c *fiber.Ctx, component string, props fiber.
 
 // renderHTML renders initial HTML page load
 func (s *InertiaService) renderHTML(c *fiber.Ctx, component string, props fiber.Map) error {
-	// Marshal page data to JSON string for template
 	pageData, _ := json.Marshal(fiber.Map{
 		"component": component,
 		"props":     props,
 		"url":       c.OriginalURL(),
 	})
 
-	templateData := fiber.Map{
-		"Title":     props["Title"],
-		"Component": component,
-		"Page":      template.JS(string(pageData)),
-	}
+	title, _ := props["Title"].(string)
+	assetData := s.assetService.GetAssetData()
+	viteServerURL, _ := assetData["ViteServerURL"].(string)
+	mainJS, _ := assetData["MainJS"].(string)
+	mainCSS, _ := assetData["MainCSS"].(string)
 
-	// Merge asset data (Vite dev server or production assets)
-	for k, v := range s.assetService.GetAssetData() {
-		templateData[k] = v
-	}
-
-	return c.Render(s.template, templateData)
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return templates.InertiaPage(title, string(pageData), viteServerURL, mainJS, mainCSS, nil).Render(c.Context(), c.Response().BodyWriter())
 }
 
 // RenderWithMeta renders an Inertia response with additional metadata
@@ -122,9 +115,8 @@ func (s *InertiaService) RenderWithMeta(c *fiber.Ctx, component string, props fi
 		"meta":      meta,
 	})
 
-	return c.Render(s.template, fiber.Map{
-		"Title":     props["Title"],
-		"Component": component,
-		"Page":      template.JS(string(pageData)),
-	})
+	title, _ := props["Title"].(string)
+
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return templates.InertiaPage(title, string(pageData), "", "", "", nil).Render(c.Context(), c.Response().BodyWriter())
 }

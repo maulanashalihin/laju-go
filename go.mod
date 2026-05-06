@@ -3,11 +3,11 @@ module github.com/maulanashalihin/laju-go
 go 1.26
 
 require (
+	github.com/a-h/templ v0.3.1001
 	github.com/gofiber/fiber/v2 v2.52.13
-	github.com/gofiber/template/html/v2 v2.1.3
 	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.20.0
-	golang.org/x/crypto v0.21.0
+	golang.org/x/crypto v0.40.0
 	golang.org/x/oauth2 v0.18.0
 	modernc.org/sqlite v1.39.1
 )
@@ -17,8 +17,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/gofiber/template v1.8.3 // indirect
-	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
@@ -35,7 +33,7 @@ require (
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
-	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

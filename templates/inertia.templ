@@ -1,0 +1,34 @@
+package templates
+
+// InertiaPage is the base Inertia.js layout template.
+// It renders the HTML shell that contains the Inertia app mount point
+// and the page data JSON blob that Inertia uses to hydrate the SPA.
+templ InertiaPage(title string, pageJSON string, viteServerURL string, mainJS string, mainCSS string, styles []string) {
+	<!doctype html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } - Laju</title>
+			<meta name="description" content="Laju Go Fiber - High Performance SaaS Boilerplate"/>
+			<link rel="icon" href="/public/favicon.png"/>
+			for _, style := range styles {
+				<link rel="stylesheet" href={ style }/>
+			}
+		</head>
+		<body class="bg-gray-50 text-gray-900">
+			<div id="app"></div>
+			<script data-page="app" type="application/json">
+				{ pageJSON }
+			</script>
+			if viteServerURL != "" {
+				<script type="module" src={ viteServerURL + "/@vite/client" }></script>
+				<link rel="stylesheet" href={ viteServerURL + "/src/app.css" }/>
+				<script type="module" src={ viteServerURL + "/src/main.ts" }></script>
+			} else {
+				<link rel="stylesheet" href={ mainCSS }/>
+				<script type="module" src={ mainJS }></script>
+			}
+		</body>
+	</html>
+}

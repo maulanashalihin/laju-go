@@ -332,28 +332,45 @@ dist/
 
 ---
 
-### `/templates` - HTML Templates
+### `/templates` - Templ Templates
+
+HTML templates written as [templ](https://templ.guide/) components — type-safe, compiled Go templates with JSX-like syntax.
 
 ```
 templates/
-├── index.html                 # Landing page template
-└── inertia.html               # Inertia.js base template
+├── index.templ                # Landing page template
+├── index_templ.go             # Generated Go code (do not edit)
+├── inertia.templ              # Inertia.js base template
+└── inertia_templ.go           # Generated Go code (do not edit)
 ```
 
 **Example**:
-```html
-<!-- inertia.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ .title }}</title>
-    {{ .inertiaHead }}
-</head>
-<body>
-    {{ .inertia }}
-</body>
-</html>
+```templ
+// inertia.templ
+package templates
+
+templ InertiaPage(title string, pageJSON string, viteServerURL string, mainJS string, mainCSS string, styles []string) {
+    <!doctype html>
+    <html lang="en">
+        <head>
+            <meta charset="UTF-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            <title>{ title } - Laju</title>
+        </head>
+        <body class="bg-gray-50 text-gray-900">
+            <div id="app"></div>
+            <script data-page="app" type="application/json">
+                { pageJSON }
+            </script>
+        </body>
+    </html>
+}
 ```
+
+**Workflow**:
+1. Edit `.templ` files
+2. Run `templ generate` (or `templ generate -watch` for auto-regeneration)
+3. Commit both `.templ` source and `_templ.go` generated files
 
 ---
 
@@ -475,14 +492,15 @@ NPM scripts and dependencies:
 Go module dependencies:
 
 ```go
-module laju-go
+module github.com/maulanashalihin/laju-go
 
 go 1.26
 
 require (
-    github.com/gofiber/fiber/v2 v2.52.0
-    github.com/mattn/go-sqlite3 v1.14.22
-    github.com/Masterminds/squirrel v1.5.4
+    github.com/gofiber/fiber/v2 v2.52.13
+    github.com/a-h/templ v0.3.1001
+    github.com/pressly/goose/v3 v3.20.0
+    modernc.org/sqlite v1.39.1
 )
 ```
 

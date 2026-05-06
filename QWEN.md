@@ -34,6 +34,7 @@
 | Frontend | Svelte | 5.55.0 |
 | Build Tool | Vite | 8.0.3 |
 | Styling | Tailwind CSS | 4.2.2 |
+| Templating | templ | 0.3.1001 |
 | SPA Bridge | Inertia.js | 3.0.0 |
 
 **Why `modernc.org/sqlite` (pure Go) instead of `mattn/go-sqlite3` (CGO)?**
@@ -79,7 +80,7 @@ laju-go/
 │       └── main.ts          # Entry point
 │
 ├── migrations/              # Database migrations (Goose)
-├── templates/               # HTML templates
+├── templates/               # Templ templates (HTML + Go typed components)
 ├── scripts/                 # Deployment scripts
 │   ├── deploy.sh            # Main deployment script
 │   ├── first-deploy.sh      # First deploy setup
@@ -227,7 +228,7 @@ async function handleSubmit() {
 ```
 
 ### Inertia.js Pattern
-- Initial load: Server renders HTML via `inertia.html`
+- Initial load: Server renders HTML via `templates.InertiaPage` (templ component)
 - Subsequent: XHR with `X-Inertia: true` header → JSON response
 - Frontend dynamically loads components
 
