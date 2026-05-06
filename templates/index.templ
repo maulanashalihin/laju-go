@@ -591,50 +591,37 @@ templ LandingPage(title string, viteServerURL string, mainCSS string) {
 						<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 32px; align-items: center;">
 							<!-- Go -->
 							<div style="display: flex; align-items: center; gap: 10px; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-									<path d="M1.818 10.535c.06-.12.12-.255.18-.39.06-.135.105-.27.15-.39.045-.12.075-.21.09-.27.06-.24.045-.42-.045-.54-.09-.12-.27-.165-.54-.135l-1.485.195.27-1.59c1.11-.51 2.37-.915 3.765-1.215 1.395-.3 2.835-.45 4.32-.45 2.325 0 4.17.63 5.535 1.89 1.365 1.26 2.04 2.94 2.025 5.04h.015c0 .33-.015.66-.045.99-.03.33-.075.66-.135.99-.06.33-.135.645-.225.945-.09.3-.195.57-.315.81-.12.24-.255.435-.405.585-.15.15-.315.225-.495.225-.18 0-.405-.045-.675-.135-.27-.09-.555-.195-.855-.315-.3-.12-.615-.24-.945-.36-.33-.12-.66-.21-.99-.27-.33-.06-.66-.09-.99-.09-.66 0-1.245.12-1.755.36-.51.24-.945.555-1.305.945-.36.39-.645.84-.855 1.35-.21.51-.36 1.035-.45 1.575-.045.27-.06.54-.045.81.015.27.06.525.135.765.075.24.18.45.315.63.135.18.3.315.495.405.33.18.705.27 1.125.27.42 0 .84-.06 1.26-.18.42-.12.825-.27 1.215-.45.39-.18.765-.375 1.125-.585.36-.21.69-.405.99-.585l-.585 3.465c-1.02.48-2.16.87-3.42 1.17-1.26.3-2.535.45-3.825.45-1.23 0-2.355-.165-3.375-.495-1.02-.33-1.905-.81-2.655-1.44-.75-.63-1.335-1.395-1.755-2.295-.42-.9-.63-1.935-.63-3.105 0-1.02.165-1.98.495-2.88.33-.9.795-1.68 1.395-2.34zm8.76-3.465c-.57 0-1.11.045-1.62.135-.51.09-.99.21-1.44.36-.45.15-.87.33-1.26.54-.39.21-.75.435-1.08.675l.27-1.59h.015c.27-.63.675-1.17 1.215-1.62.54-.45 1.17-.81 1.89-1.08.72-.27 1.485-.405 2.295-.405.945 0 1.755.18 2.43.54.675.36 1.2.855 1.575 1.485.375.63.57 1.35.585 2.16h-.015c0 .18-.015.36-.045.54-.03.18-.075.36-.135.54-.06.18-.135.36-.225.54l-3.465-.405c.15-.33.27-.675.36-1.035.09-.36.135-.72.135-1.08 0-.39-.075-.705-.225-.945-.15-.24-.42-.36-.81-.36-.33 0-.63.075-.9.225-.27.15-.495.345-.675.585-.18.24-.315.51-.405.81-.09.3-.135.6-.135.9 0 .45.105.81.315 1.08.21.27.54.435.99.495.45.06.975-.045 1.575-.315.6-.27 1.23-.675 1.89-1.215l-.42 2.505c-.63.39-1.29.705-1.98.945-.69.24-1.395.36-2.115.36-.81 0-1.515-.12-2.115-.36-.6-.24-1.095-.57-1.485-.99-.39-.42-.675-.915-.855-1.485-.18-.57-.27-1.185-.27-1.845 0-.72.105-1.395.315-2.025.21-.63.51-1.185.9-1.665.39-.48.87-.87 1.44-1.17.57-.3 1.215-.45 1.935-.45.66 0 1.26.12 1.8.36.54.24.99.57 1.35.99.36.42.63.915.81 1.485.18.57.27 1.185.27 1.845 0 .15-.015.3-.045.45-.03.15-.06.285-.09.405h-1.59z" fill="#00ADD8"/>
-								</svg>
+								<img src="/public/images/go-logo-white.svg" alt="Go" style="height: 32px; width: auto;"/>
 								<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Go 1.26+</span>
 							</div>
 
 							<!-- Fiber -->
 							<div style="display: flex; align-items: center; gap: 10px; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="#00ADD8">
-									<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-								</svg>
+								<img src="/public/images/fiber-logo.svg" alt="Fiber" style="height: 32px; width: auto;"/>
 								<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Fiber v2</span>
 							</div>
 
-							<!-- Svelte -->
-							<div style="display: flex; align-items: center; gap: 10px; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="#FF3E00">
-									<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-								</svg>
-								<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Svelte 5</span>
-							</div>
+						<!-- Svelte -->
+						<div style="display: flex; align-items: center; gap: 10px; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+							<img src="/public/images/svelte-logo.svg" alt="Svelte" style="height: 32px; width: auto;"/>
+							<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Svelte 5</span>
+						</div>
 
 							<!-- Inertia.js -->
 							<div style="display: flex; align-items: center; gap: 10px; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="#8b5cf6">
-									<path d="M12 2L2 22h20L12 2zm0 3.5L18.5 20h-13L12 5.5z"/>
-								</svg>
+								<img src="/public/images/inertia-logo.svg" alt="Inertia.js" style="height: 32px; width: auto;"/>
 								<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Inertia.js 3</span>
 							</div>
 
 							<!-- SQLite -->
 							<div style="display: flex; align-items: center; gap: 10px; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="#003B57">
-									<rect width="24" height="24" rx="4" fill="#003B57"/>
-									<text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">SQL</text>
-								</svg>
+								<img src="/public/images/sqlite-logo.svg" alt="SQLite" style="height: 32px; width: auto;"/>
 								<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">SQLite</span>
 							</div>
 
 							<!-- sqlc -->
 							<div style="display: flex; align-items: center; gap: 10px; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="#ec4899">
-									<path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
-								</svg>
+								<img src="/public/images/sqlc-logo.png" alt="sqlc" style="height: 32px; width: auto;"/>
 								<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">sqlc</span>
 							</div>
 
@@ -648,18 +635,13 @@ templ LandingPage(title string, viteServerURL string, mainCSS string) {
 
 							<!-- Vite -->
 							<div style="display: flex; align-items: center; gap: 10px; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="#646cff">
-									<path d="M12 2L2 19h20L12 2zm0 3.5L18.5 18h-13L12 5.5z"/>
-								</svg>
+								<img src="/public/images/vite-logo.svg" alt="Vite" style="height: 32px; width: auto;"/>
 								<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Vite 5</span>
 							</div>
 
 							<!-- templ -->
 							<div style="display: flex; align-items: center; gap: 10px; opacity: 0.7; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="#f59e0b">
-									<rect x="3" y="3" width="18" height="18" rx="2" fill="#f59e0b"/>
-									<text x="12" y="17" text-anchor="middle" fill="white" font-size="10" font-weight="bold">T</text>
-								</svg>
+								<img src="/public/images/templ-logo.png" alt="templ" style="height: 32px; width: auto;"/>
 								<span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">templ</span>
 							</div>
 						</div>
