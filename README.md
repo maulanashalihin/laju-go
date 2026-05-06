@@ -98,7 +98,7 @@ laju-go/
 ├── queries/                   # SQL query source files (write queries here)
 ├── routes/                    # Route definitions
 ├── migrations/                # Database migrations
-├── templates/                 # HTML templates
+├── templates/                 # Templ templates (HTML + Go typed components)
 └── docs/                      # Documentation
 ```
 
@@ -116,6 +116,7 @@ laju-go/
 | **Frontend** | Svelte 5 | Reactive UI framework |
 | **Build Tool** | Vite 5 | Fast build tooling and dev server |
 | **Styling** | Tailwind CSS 4 | Utility-first CSS framework |
+| **Templating** | templ | Type-safe HTML components for Go |
 | **SPA Bridge** | Inertia.js 3 | Server-driven single-page apps |
 | **Icons** | Lucide Svelte | Beautiful, consistent icons |
 

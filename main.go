@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/gofiber/template/html/v2"
 	"github.com/pressly/goose/v3"
 	"github.com/maulanashalihin/laju-go/app/cache"
 	"github.com/maulanashalihin/laju-go/app/config"
@@ -97,11 +97,9 @@ func main() {
 	routeHandlers.PasswordReset = passwordResetHandler
 
 	// Initialize Fiber app
-	engine := html.New("./templates", ".html")
 	app := fiber.New(fiber.Config{
 		AppName:      "Laju",
 		ErrorHandler: customErrorHandler,
-		Views:        engine,
 	})
 
 	// Global middleware
@@ -250,6 +248,11 @@ func runMigrations(db *sql.DB, migrationsDir string) error {
 	}
 
 	return nil
+}
+
+func Render(c *fiber.Ctx, component templ.Component) error {
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return component.Render(c.Context(), c.Response().BodyWriter())
 }
 
 // customErrorHandler handles Fiber errors

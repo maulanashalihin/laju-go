@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/services"
+	"github.com/maulanashalihin/laju-go/templates"
 )
 
 type PublicHandler struct {
@@ -23,16 +24,12 @@ func NewPublicHandler(authService *services.AuthService, userService *services.U
 
 // Index renders the home page
 func (h *PublicHandler) Index(c *fiber.Ctx) error {
-	data := fiber.Map{
-		"Title": "Welcome to Laju",
-	}
+	assetData := h.assetService.GetAssetData()
+	viteServerURL, _ := assetData["ViteServerURL"].(string)
+	mainCSS, _ := assetData["MainCSS"].(string)
 
-	// Merge asset data (Vite dev server or production assets)
-	for k, v := range h.assetService.GetAssetData() {
-		data[k] = v
-	}
-
-	return c.Render("index", data)
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return templates.LandingPage("Welcome to Laju", viteServerURL, mainCSS).Render(c.Context(), c.Response().BodyWriter())
 }
 
 // About renders the about page
