@@ -18,9 +18,7 @@ templ InertiaPage(title string, pageJSON string, viteServerURL string, mainJS st
 		</head>
 		<body class="bg-gray-50 text-gray-900">
 			<div id="app"></div>
-			<script data-page="app" type="application/json">
-				{ pageJSON }
-			</script>
+			@templ.Raw(`<script data-page="app" type="application/json">` + pageJSON + `</script>`)
 			if viteServerURL != "" {
 				<script type="module" src={ viteServerURL + "/@vite/client" }></script>
 				<link rel="stylesheet" href={ viteServerURL + "/src/app.css" }/>

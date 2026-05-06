@@ -68,7 +68,11 @@ func InertiaPage(title string, pageJSON string, viteServerURL string, mainJS str
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</head><body class=\"bg-gray-50 text-gray-900\"><div id=\"app\"></div><script data-page=\"app\" type=\"application/json\">\n\t\t\t\t{ pageJSON }\n\t\t\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</head><body class=\"bg-gray-50 text-gray-900\"><div id=\"app\"></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ.Raw(`<script data-page="app" type="application/json">`+pageJSON+`</script>`).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -80,7 +84,7 @@ func InertiaPage(title string, pageJSON string, viteServerURL string, mainJS str
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(viteServerURL + "/@vite/client")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 25, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 23, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -93,7 +97,7 @@ func InertiaPage(title string, pageJSON string, viteServerURL string, mainJS str
 			var templ_7745c5c3_Var5 templ.SafeURL
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(viteServerURL + "/src/app.css")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 26, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 24, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -106,7 +110,7 @@ func InertiaPage(title string, pageJSON string, viteServerURL string, mainJS str
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(viteServerURL + "/src/main.ts")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 27, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 25, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -124,7 +128,7 @@ func InertiaPage(title string, pageJSON string, viteServerURL string, mainJS str
 			var templ_7745c5c3_Var7 templ.SafeURL
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(mainCSS)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 29, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 27, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -137,7 +141,7 @@ func InertiaPage(title string, pageJSON string, viteServerURL string, mainJS str
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(mainJS)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 30, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inertia.templ`, Line: 28, Col: 38}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
