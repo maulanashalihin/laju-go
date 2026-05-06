@@ -58,9 +58,9 @@
 
 <section class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex">
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-40 -right-40 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
         <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
     </div>
 
     <!-- Left Side - Branding (Desktop) -->
@@ -84,11 +84,11 @@
                         >
                             <stop
                                 offset="0%"
-                                style="stop-color:#f97316;stop-opacity:1"
+                                style="stop-color:#8b5cf6;stop-opacity:1"
                             />
                             <stop
                                 offset="100%"
-                                style="stop-color:#ea580c;stop-opacity:1"
+                                style="stop-color:#7c3aed;stop-opacity:1"
                             />
                         </linearGradient>
                     </defs>
@@ -113,8 +113,8 @@
             </p>
             <div class="mt-12 space-y-4">
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                        <Sparkles class="w-5 h-5 text-orange-400" />
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                        <Sparkles class="w-5 h-5 text-purple-400" />
                     </div>
                     <div>
                         <div class="text-white font-medium">Lightning Fast</div>
@@ -122,8 +122,8 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                        <Lock class="w-5 h-5 text-orange-400" />
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                        <Lock class="w-5 h-5 text-purple-400" />
                     </div>
                     <div>
                         <div class="text-white font-medium">Secure by Default</div>
@@ -131,8 +131,8 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                         </svg>
                     </div>
@@ -167,11 +167,11 @@
                         >
                             <stop
                                 offset="0%"
-                                style="stop-color:#f97316;stop-opacity:1"
+                                style="stop-color:#8b5cf6;stop-opacity:1"
                             />
                             <stop
                                 offset="100%"
-                                style="stop-color:#ea580c;stop-opacity:1"
+                                style="stop-color:#7c3aed;stop-opacity:1"
                             />
                         </linearGradient>
                     </defs>
@@ -205,7 +205,7 @@
                 {/if}
 
                 <a href="/auth/google"
-                   class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-slate-600 bg-slate-700/50 text-white font-medium hover:bg-slate-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:ring-offset-2 focus:ring-offset-slate-800">
+                   class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-slate-600 bg-slate-700/50 text-white font-medium hover:bg-slate-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-slate-800">
                     <svg class="h-5 w-5" viewBox="0 0 24 24">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -237,7 +237,7 @@
                                 type="text"
                                 name="name"
                                 id="name"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
                                 placeholder="John Doe"
                             />
                         </div>
@@ -255,7 +255,7 @@
                                 type="email"
                                 name="email"
                                 id="email"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
                                 placeholder="you@example.com"
                             />
                         </div>
@@ -274,7 +274,7 @@
                                 name="password"
                                 id="password"
                                 placeholder="••••••••"
-                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
                             />
                             <button
                                 type="button"
@@ -291,7 +291,7 @@
                         <button
                             type="button"
                             onclick={generatePassword}
-                            class="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1"
+                            class="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
                         >
                             <Sparkles class="w-3 h-3" />
                             Generate secure password
@@ -311,7 +311,7 @@
                                 name="confirm-password"
                                 id="confirm-password"
                                 placeholder="••••••••"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
                             />
                         </div>
                         {#if passwordError}
@@ -322,7 +322,7 @@
                     <button
                         type="submit"
                         disabled={isLoading}
-                        class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+                        class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold hover:from-purple-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
                     >
                         {#if isLoading}
                             <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -339,7 +339,7 @@
 
                 <p class="mt-6 text-center text-sm text-slate-400">
                     Already have an account?
-                    <a href="/login" class="text-orange-400 hover:text-orange-300 font-medium transition-colors">
+                    <a href="/login" class="text-purple-400 hover:text-purple-300 font-medium transition-colors">
                         Sign in
                     </a>
                 </p>

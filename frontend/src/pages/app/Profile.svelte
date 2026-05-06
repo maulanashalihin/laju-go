@@ -144,7 +144,7 @@
     <!-- Background Effects -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         <div
-            class="absolute top-0 -left-4 w-96 h-96 bg-orange-500/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"
+            class="absolute top-0 -left-4 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"
         ></div>
         <div
             class="absolute top-0 -right-4 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"
@@ -161,7 +161,7 @@
             >
                 <a
                     href="/app"
-                    class="hover:text-orange-400 transition-colors"
+                    class="hover:text-purple-400 transition-colors"
                 >Dashboard</a>
                 <svg
                     class="w-4 h-4"
@@ -253,7 +253,7 @@
                 <!-- Avatar -->
                 <div class="relative group">
                     <div
-                        class="w-28 h-28 rounded-2xl bg-gradient-to-br from-orange-500 to-purple-500 p-1 shadow-2xl shadow-orange-500/20"
+                        class="w-28 h-28 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-500 p-1 shadow-2xl shadow-purple-500/20"
                     >
                         <div
                             class="w-full h-full rounded-xl bg-white dark:bg-slate-900 overflow-hidden"
@@ -269,14 +269,14 @@
                                     class="w-full h-full flex items-center justify-center"
                                 >
                                     <span
-                                        class="text-4xl font-bold text-orange-500"
+                                        class="text-4xl font-bold text-purple-500"
                                     >{user?.name?.charAt(0)?.toUpperCase() || ""}</span>
                                 </div>
                             {/if}
                         </div>
                     </div>
                     <label
-                        class="absolute bottom-0 right-0 w-10 h-10 bg-orange-500 hover:bg-orange-600 text-white rounded-xl flex items-center justify-center cursor-pointer transition-all shadow-lg shadow-orange-500/30 group-hover:scale-110"
+                        class="absolute bottom-0 right-0 w-10 h-10 bg-purple-500 hover:bg-purple-600 text-white rounded-xl flex items-center justify-center cursor-pointer transition-all shadow-lg shadow-purple-500/30 group-hover:scale-110"
                     >
                         <Upload class="w-5 h-5" />
                         <input
@@ -302,10 +302,10 @@
                         class="flex flex-wrap justify-center sm:justify-start gap-2"
                     >
                         <span
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20"
                         >
                             <div
-                                class="w-1.5 h-1.5 rounded-full bg-orange-500"
+                                class="w-1.5 h-1.5 rounded-full bg-purple-500"
                             ></div>
                             Active Member
                         </span>
@@ -426,7 +426,7 @@
                                 bind:value={profileForm.name}
                                 type="text"
                                 id="name"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
                                 placeholder="Your full name"
                             />
                         </div>
@@ -445,7 +445,7 @@
                                 bind:value={profileForm.email}
                                 type="email"
                                 id="email"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
                                 placeholder="you@example.com"
                             />
                         </div>
@@ -455,7 +455,7 @@
                         <button
                             type="submit"
                             disabled={isProfileLoading}
-                            class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-semibold transition-all shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-semibold transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {#if isProfileLoading}
                                 <svg
@@ -536,7 +536,7 @@
                                 bind:value={passwordForm.current_password}
                                 type={showPassword ? "text" : "password"}
                                 id="current_password"
-                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
+                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
                                 placeholder="••••••••"
                             />
                         </div>
@@ -555,7 +555,7 @@
                                 bind:value={passwordForm.new_password}
                                 type={showPassword ? "text" : "password"}
                                 id="new_password"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
                                 placeholder="••••••••"
                                 minlength="8"
                             />
@@ -575,7 +575,7 @@
                                 bind:value={passwordForm.confirm_password}
                                 type={showPassword ? "text" : "password"}
                                 id="confirm_password"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-900 dark:text-white placeholder-slate-500 transition-all outline-none"
                                 placeholder="••••••••"
                             />
                         </div>
@@ -586,7 +586,7 @@
                             type="checkbox"
                             id="show_password"
                             bind:checked={showPassword}
-                            class="w-4 h-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500"
+                            class="w-4 h-4 rounded border-slate-300 text-purple-500 focus:ring-purple-500"
                         />
                         <label for="show_password" class="text-sm text-slate-600 dark:text-slate-400">
                             Show passwords
