@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Scan templates folder for class usage */
-@source "../../templates/**/*.{html,eta}";
+@source "../../templates/**/*.{html,eta,templ}";
 
 @theme {
     --font-family-sans: "Inter", sans-serif;
