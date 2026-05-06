@@ -39,7 +39,7 @@
 
 <section class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-40 -right-40 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
         <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
     </div>
 
@@ -62,11 +62,11 @@
                     >
                         <stop
                             offset="0%"
-                            style="stop-color:#f97316;stop-opacity:1"
+                            style="stop-color:#8b5cf6;stop-opacity:1"
                         />
                         <stop
                             offset="100%"
-                            style="stop-color:#ea580c;stop-opacity:1"
+                            style="stop-color:#7c3aed;stop-opacity:1"
                         />
                     </linearGradient>
                 </defs>
@@ -86,8 +86,8 @@
 
         <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
             <div class="text-center mb-8">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-500/20 flex items-center justify-center">
-                    <Key class="w-8 h-8 text-orange-400" />
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <Key class="w-8 h-8 text-purple-400" />
                 </div>
                 <h2 class="text-2xl font-bold text-white">Reset password</h2>
                 <p class="text-slate-400 mt-2">Enter your new password below</p>
@@ -123,7 +123,7 @@
                             type={showPassword ? "text" : "password"}
                             name="password"
                             id="password"
-                            class="w-full pl-12 pr-12 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-colors duration-200"
+                            class="w-full pl-12 pr-12 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
                             placeholder="••••••••"
                             required
                             minlength="8"
@@ -159,7 +159,7 @@
                             type={showPassword ? "text" : "password"}
                             name="password_confirmation"
                             id="password_confirmation"
-                            class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-colors duration-200"
+                            class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
                             placeholder="••••••••"
                             required
                         />
@@ -169,7 +169,7 @@
                 <button
                     type="submit"
                     disabled={isLoading}
-                    class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold hover:from-purple-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {#if isLoading}
                         <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">

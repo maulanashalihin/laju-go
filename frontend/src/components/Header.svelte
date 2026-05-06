@@ -85,11 +85,11 @@
                     >
                         <stop
                             offset="0%"
-                            style="stop-color:#f97316;stop-opacity:1"
+                            style="stop-color:#8b5cf6;stop-opacity:1"
                         />
                         <stop
                             offset="100%"
-                            style="stop-color:#ea580c;stop-opacity:1"
+                            style="stop-color:#7c3aed;stop-opacity:1"
                         />
                     </linearGradient>
                 </defs>
@@ -109,7 +109,7 @@
                 <h1
                     class="text-xl font-black italic text-slate-900 dark:text-white"
                 >
-                    Laju<span class="text-orange-500">.dev</span>
+                    Laju<span class="text-purple-500">.dev</span>
                 </h1>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
                     Dashboard
@@ -126,20 +126,20 @@
                 href={item.href}
                 class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group {item.group ===
                 group
-                    ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                    ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 border border-transparent'}"
             >
                 <Icon
                     size="20"
                     class={item.group === group
-                        ? "text-orange-400"
+                        ? "text-purple-400"
                         : "text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"}
                     stroke-width="2"
                 />
                 {item.label}
                 {#if item.group === group}
                     <div
-                        class="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500"
+                        class="ml-auto w-1.5 h-1.5 rounded-full bg-purple-500"
                     ></div>
                 {/if}
             </a>
@@ -186,7 +186,7 @@
             >
                 <div class="flex items-center gap-3 mb-3">
                     <div
-                        class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
+                        class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
                     >
                         {user.name.charAt(0).toUpperCase()}
                     </div>
@@ -223,7 +223,7 @@
             >
             <a
                 href="/login/register"
-                class="block w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white text-sm font-medium transition-all text-center shadow-lg shadow-orange-500/25"
+                class="block w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white text-sm font-medium transition-all text-center shadow-lg shadow-purple-500/25"
                 >Get Started</a
             >
         </div>
@@ -239,7 +239,7 @@
         <a href="/app" class="flex items-center gap-2">
             <span
                 class="text-lg font-black italic text-slate-900 dark:text-white"
-                >Laju<span class="text-orange-500">.dev</span></span
+                >Laju<span class="text-purple-500">.dev</span></span
             >
         </a>
 
@@ -253,7 +253,7 @@
                 >
                     <button
                         onclick={() => (isUserMenuOpen = !isUserMenuOpen)}
-                        class="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
+                        class="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
                     >
                         {user.name.charAt(0).toUpperCase()}
                     </button>
@@ -362,7 +362,7 @@
                         href={item.href}
                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all {item.group ===
                         group
-                            ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                            ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
                             : 'text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 border border-transparent'}"
                     >
                         <Icon size="20" stroke-width="2" />
@@ -415,7 +415,7 @@
                     >
                         <div class="flex items-center gap-3">
                             <div
-                                class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-bold text-sm"
+                                class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm"
                             >
                                 {user.name.charAt(0).toUpperCase()}
                             </div>
@@ -452,7 +452,7 @@
                     >
                     <a
                         href="/login/register"
-                        class="block w-full px-4 py-3 rounded-lg bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-medium transition-all text-center shadow-lg shadow-orange-500/25"
+                        class="block w-full px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-medium transition-all text-center shadow-lg shadow-purple-500/25"
                         >Get Started</a
                     >
                 </div>
