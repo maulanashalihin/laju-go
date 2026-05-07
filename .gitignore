@@ -15,9 +15,6 @@ data/*.db-shm
 storage/*
 !storage/.gitkeep
 
-# Frontend build
-dist/*
-!dist/.gitkeep
 
 # Node
 node_modules/
