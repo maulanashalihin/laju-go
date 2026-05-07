@@ -95,7 +95,7 @@ Laju Go follows a **layered architecture** pattern:
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  Repositories   │ → Database queries
+│  Queries (sqlc) │ → Type-safe generated SQL queries
 └────────┬────────┘
          │
 ┌────────▼────────┐
