@@ -23,7 +23,7 @@ In-depth guides for building applications.
 | [Architecture](guide/architecture.md) | Layered architecture, design patterns, and best practices |
 | [Routing](guide/routing.md) | Route definitions, middleware, and request handling |
 | [Handlers](guide/handlers.md) | Building HTTP handlers, request/response handling |
-| [Database](guide/database.md) | SQLite setup, migrations, and query building with Squirrel |
+| [Database](guide/database.md) | SQLite setup, migrations, and type-safe queries with sqlc |
 | [Authentication](guide/authentication.md) | Auth flows, OAuth, sessions, and password reset |
 | [Frontend](guide/frontend.md) | Svelte 5 components and Inertia.js integration |
 | [File Upload](guide/file-upload.md) | File handling, validation, and storage |
@@ -149,7 +149,7 @@ Visit `http://localhost:8080` to see your application.
 - [Inertia.js Documentation](https://inertiajs.com/)
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 - [SQLite Documentation](https://www.sqlite.org/docs.html)
-- [Squirrel Query Builder](https://github.com/Masterminds/squirrel)
+- [sqlc — Type-safe SQL](https://sqlc.dev/)
 - [Goose Migrations](https://github.com/pressly/goose)
 
 ### Community

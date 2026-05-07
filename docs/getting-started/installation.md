@@ -84,9 +84,9 @@ go list -m all
 
 You should see packages like:
 - `github.com/gofiber/fiber/v2`
-- `github.com/mattn/go-sqlite3`
-- `github.com/Masterminds/squirrel`
+- `modernc.org/sqlite`
 - `github.com/pressly/goose/v3`
+- `github.com/a-h/templ`
 
 ## Step 3: Install Node.js Dependencies
 
