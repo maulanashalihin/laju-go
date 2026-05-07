@@ -46,29 +46,33 @@ nano .deploy
 ```bash
 # Deployment Configuration
 
+# Application name (used for binary name, service name, and paths)
+APP_NAME=your-app
+
 # SSH Credentials
 SERVER_USER=root
 SERVER_HOST=your.server.com
 
 # Remote server path where the application will be deployed
-SERVER_PATH=/opt/your-app
+SERVER_PATH=/opt/$APP_NAME
 
-# Git repository URL (for cloning on first deploy)
+# Git repository URL (for reference)
 REPO_URL=https://github.com/yourusername/your-repo.git
 
-# Systemd service name
-SERVICE_NAME=your-app
+# Systemd service name (defaults to APP_NAME if not set)
+# SERVICE_NAME=
 ```
 
 ### Configuration Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
+| `APP_NAME` | Application name (binary + service name) | `my-app` |
 | `SERVER_USER` | SSH username | `root` or `deploy` |
 | `SERVER_HOST` | Server IP or domain | `192.168.1.100` or `example.com` |
 | `SERVER_PATH` | Remote deployment path | `/opt/my-app` |
 | `REPO_URL` | Git repository URL | `https://github.com/user/repo.git` |
-| `SERVICE_NAME` | Systemd service name | `my-app` |
+| `SERVICE_NAME` | Systemd service name (defaults to APP_NAME) | `my-app` |
 
 ## Step 2: Setup SSH Access
 
@@ -107,17 +111,17 @@ Or directly:
 ### What Happens During Deployment
 
 **First Deploy:**
-1. ✅ Creates remote directory
-2. ✅ Clones Git repository
-3. ✅ Sets up `.env` file (with interactive prompts)
-4. ✅ Creates systemd service
-5. ✅ Starts the application
+1. ✅ Builds locally (frontend + binary)
+2. ✅ Uploads artifacts (binary, `dist/`, `migrations/`) to server
+3. ✅ Creates remote data/storage directories
+4. ✅ Sets up `.env` file (with interactive prompts)
+5. ✅ Creates systemd service
+6. ✅ Starts the application
 
 **Update Deploy:**
-1. ✅ Pulls latest changes
-2. ✅ Builds frontend
-3. ✅ Builds Go binary
-4. ✅ Restarts systemd service
+1. ✅ Builds frontend + Go binary **locally**
+2. ✅ Uploads updated artifacts to server
+3. ✅ Restarts systemd service
 
 ## First Deploy Interactive Prompts
 
@@ -196,7 +200,7 @@ Auto-detects whether it's a first deploy or update:
 # 1. Loads .deploy configuration
 # 2. Tests SSH connection
 # 3. Builds assets locally
-# 4. Commits and pushes changes
+# 4. Uploads artifacts (binary + dist + migrations) to server
 # 5. Calls first-deploy.sh or update-deploy.sh
 ```
 
@@ -206,10 +210,10 @@ Sets up the application from scratch:
 
 ```bash
 #!/bin/bash
-# 1. Creates remote directory
-# 2. Clones Git repository
-# 3. Creates .env from .env.example (with auto-configuration)
-# 4. Creates and starts systemd service
+# 1. Creates remote data/storage directories
+# 2. Creates .env from .env.example (with auto-configuration)
+# 3. Creates systemd service file and starts it
+# 4. Sets up permissions
 ```
 
 ### update-deploy.sh (Updates)
@@ -218,10 +222,9 @@ Updates existing deployment:
 
 ```bash
 #!/bin/bash
-# 1. Pulls latest changes
-# 2. Builds frontend
-# 3. Builds Go binary
-# 4. Restarts systemd service
+# 1. Stops service
+# 2. Restarts service (artifacts already uploaded by deploy.sh)
+# 3. Verifies service is running
 ```
 
 ## Useful Commands
@@ -313,66 +316,53 @@ cat .deploy
 bash -x scripts/deploy.sh
 ```
 
-### Build Fails on Server
+### Build Fails
 
-**Check Go version on server:**
+The deploy script builds **locally**, so there's no Go/Node build on the server. If the build fails:
+
+**Check your local environment:**
 
 ```bash
-ssh root@your.server.com 'go version'
+go version    # Needs Go 1.26+
+node --version  # Needs Node.js 18+
 ```
 
-**Check Node.js version:**
+**Rebuild locally and re-deploy:**
 
 ```bash
-ssh root@your.server.com 'node --version'
-```
-
-**Manual rebuild:**
-
-```bash
-ssh root@your.server.com
-cd /opt/your-app
-npm install
-npm run build
-go build -o laju-go .
-systemctl restart your-app
+npm run build:linux
+./scripts/deploy.sh
 ```
 
 ## Manual Deployment (Alternative)
 
 If the automated script doesn't work, you can deploy manually:
 
-### 1. Connect to Server
+### 1. Build Locally
+
+```bash
+# Build frontend + Go binary for Linux
+npm run build:linux
+```
+
+### 2. Upload to Server
+
+```bash
+# Create directory on server
+ssh root@your.server.com "mkdir -p /opt/your-app/{data,storage,backups}"
+
+# Upload artifacts
+scp your-app root@your.server.com:/opt/your-app/
+scp -r dist root@your.server.com:/opt/your-app/dist
+scp -r migrations root@your.server.com:/opt/your-app/migrations
+scp .env.example root@your.server.com:/opt/your-app/
+```
+
+### 3. Configure Environment
 
 ```bash
 ssh root@your.server.com
-```
-
-### 2. Clone Repository
-
-```bash
-mkdir -p /opt/your-app
 cd /opt/your-app
-git clone https://github.com/yourusername/your-repo.git .
-```
-
-### 3. Install Dependencies
-
-```bash
-go mod download
-npm install
-```
-
-### 4. Build Application
-
-```bash
-npm run build
-go build -o laju-go .
-```
-
-### 5. Configure Environment
-
-```bash
 cp .env.example .env
 nano .env
 ```

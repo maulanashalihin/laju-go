@@ -37,64 +37,7 @@ npm run deploy
 sudo apt update && sudo apt upgrade -y
 ```
 
-### Install Dependencies
-
-```bash
-# Install build tools
-sudo apt install -y build-essential git curl
-
-# Install Go (if not using pre-built binary)
-wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-source ~/.bashrc
-
-# Install Node.js (for building frontend)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-```
-
-### Create Application User
-
-```bash
-# Create www-data user if not exists
-sudo useradd -r -s /bin/false www-data
-```
-
-## Step 2: Application Setup
-
-### Option A: Using Deployment Script (Recommended)
-
-The deployment script automates all steps below:
-
-```bash
-# From your local machine
-npm run deploy
-```
-
-This will:
-- Clone repository to server
-- Install dependencies
-- Build frontend and Go binary
-- Configure `.env` file
-- Create and start systemd service
-
-See [One-Click Deployment](one-click-deployment.md) for details.
-
-### Option B: Manual Setup
-
-### Clone Repository
-
-```bash
-# Create application directory
-sudo mkdir -p /opt/laju-go
-cd /opt/laju-go
-
-# Clone repository
-sudo git clone https://github.com/maulanashalihin/laju-go.git .
-```
-
-### Install Dependencies
+### Install Dependencies (Build Tools Required)
 
 ```bash
 # Install Go dependencies
@@ -114,6 +57,65 @@ sudo npm run build
 
 ```bash
 sudo go build -o laju-go .
+```
+
+### Create Application User
+
+```bash
+# Create www-data user if not exists
+sudo useradd -r -s /bin/false www-data
+```
+
+## Step 2: Application Setup
+
+### Option A: Using Deployment Script (Recommended)
+
+The deployment script automates all steps below and **builds everything locally**:
+
+```bash
+# From your local machine
+npm run deploy
+```
+
+This will:
+- Build frontend and Go binary **on your local machine**
+- Upload only runtime artifacts (`laju-go`, `dist/`, `migrations/`) to server
+- Configure `.env` file
+- Create and start systemd service
+
+> **No build tools needed on the server.** The server only runs the pre-built binary.
+
+See [One-Click Deployment](one-click-deployment.md) for details.
+
+### Option B: Manual Build Locally (Recommended for Custom Setups)
+
+### Build on Your Local Machine
+
+```bash
+# Create application directory on server
+ssh user@your-server "sudo mkdir -p /opt/laju-go"
+
+# Build locally
+npm run build:linux
+
+# Upload artifacts
+scp laju-go user@your-server:/opt/laju-go/
+scp -r dist user@your-server:/opt/laju-go/dist
+scp -r migrations user@your-server:/opt/laju-go/migrations
+scp .env.example user@your-server:/opt/laju-go/.env
+```
+
+### Option C: Build on Server (Not Recommended)
+
+Building on the server installs Go, Node.js, and npm — leaving build tools and cache (`node_modules/`, `go/pkg/`) that are unnecessary at runtime.
+
+```bash
+# Create application directory
+sudo mkdir -p /opt/laju-go
+cd /opt/laju-go
+
+# Clone repository
+sudo git clone https://github.com/maulanashalihin/laju-go.git .
 ```
 
 ### Configure Environment
