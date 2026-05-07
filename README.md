@@ -1,8 +1,8 @@
 # Laju Go
 
-High-performance SaaS boilerplate built with **Go Fiber** + **Svelte 5** + **Inertia.js 3** + **SQLite**.
+High-performance SaaS boilerplate built with **Go Fiber** + **Inertia.js 3** + **SQLite**.
 
-Build production-ready web applications faster with a clean, layered architecture that combines the speed of Go with the developer experience of modern frontend frameworks.
+Build production-ready web applications faster with a clean, layered architecture that combines the speed of Go with the developer experience of modern frontend frameworks. Ships with **Svelte 5** by default, but Inertia.js makes it trivial to swap to **React** or **Vue 3** without changing any Go code.
 
 ## 🚀 Quick Start
 
@@ -56,8 +56,9 @@ Visit `http://localhost:8080` to see your application running.
 ### Development Experience
 - **Hot Module Replacement** - Vite HMR for instant frontend updates
 - **Go Hot Reload** - Air automatically rebuilds on Go file changes
-- **Clean Architecture** - Separated layers (handlers, services, repositories)
+- **Clean Architecture** - Separated layers (handlers, services, queries)
 - **TypeScript Ready** - Full type safety in frontend code
+- **Framework Agnostic** - Swap Svelte, React, or Vue without touching Go
 
 ### Production Ready
 - **SQLite Optimized** - WAL mode, connection pooling, production-tuned
@@ -74,7 +75,7 @@ Visit `http://localhost:8080` to see your application running.
 | [Routing & Handlers](docs/guide/routing.md) | Route definitions, middleware, and request handling |
 | [Database](docs/guide/database.md) | SQLite setup, migrations, and query building |
 | [Authentication](docs/guide/authentication.md) | Auth flows, OAuth, sessions, and password reset |
-| [Frontend](docs/guide/frontend.md) | Svelte 5 components and Inertia.js integration |
+| [Frontend](docs/guide/frontend.md) | Svelte 5 (default), React & Vue support via Inertia.js |
 | [Deployment](docs/deployment/development.md) | Development workflow, production deployment, Docker |
 | [API Reference](docs/reference/api-reference.md) | Complete endpoint documentation |
 | [Troubleshooting](docs/reference/troubleshooting.md) | Common issues and solutions |
@@ -90,7 +91,7 @@ laju-go/
 │   ├── queries/               # Generated SQL query code (sqlc)
 │   ├── middlewares/           # Request middleware
 │   └── models/                # Data structures
-├── frontend/                  # Svelte 5 frontend
+├── frontend/                  # Svelte 5 frontend (swappable to React/Vue)
 │   └── src/
 │       ├── components/        # Reusable UI components
 │       ├── pages/             # Page components
@@ -113,7 +114,7 @@ laju-go/
 | **Database** | SQLite3 | Embedded SQL database |
 | **Query Builder** | sqlc | Compile-time type-safe SQL code generation |
 | **Migrations** | Goose | Database schema management |
-| **Frontend** | Svelte 5 | Reactive UI framework |
+| **Frontend** | Svelte 5 (default) | Reactive UI framework — swap to React or Vue via Inertia.js |
 | **Build Tool** | Vite 5 | Fast build tooling and dev server |
 | **Styling** | Tailwind CSS 4 | Utility-first CSS framework |
 | **Templating** | templ | Type-safe HTML components for Go |
@@ -266,7 +267,7 @@ npm run test:run     # Run frontend tests
 
 | You Edit | What Happens |
 |----------|--------------|
-| `.svelte` files | Vite HMR updates instantly |
+| `.svelte` / `.tsx` / `.vue` files | Vite HMR updates instantly |
 | `.go` files | Air rebuilds and restarts (~1-2 sec) |
 | `.css` files | Hot reload (instant) |
 | `migrations/` | Auto-run on server start |
