@@ -159,95 +159,35 @@ func checkIntegrity(db *sql.DB) error {
 
 ### Layer 2: Automated Backups
 
-#### Option A: SQLite Online Backup (Recommended)
+#### Option A: SQLite Online Backup via CLI (Recommended)
 
-Creates consistent backup without locking the database.
+Use the `sqlite3` CLI for consistent online backups. This works with any Go SQLite driver.
 
-```go
-// app/services/backup.go
-package services
+```bash
+#!/bin/bash
+# scripts/backup.sh
 
-import (
-    "context"
-    "database/sql"
-    "fmt"
-    "log"
-    "os"
-    "path/filepath"
-    "sort"
-    "strings"
-    "time"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="/opt/laju-go/backups"
+DB_PATH="/opt/laju-go/data/app.db"
 
-    _ "github.com/mattn/go-sqlite3"
-)
+# Create backup directory
+mkdir -p "$BACKUP_DIR"
 
-type BackupService struct {
-    db        *sql.DB
-    backupDir string
-}
+# Online backup (no downtime)
+sqlite3 "$DB_PATH" ".backup '$BACKUP_DIR/app-$DATE.db'"
 
-func NewBackupService(db *sql.DB, backupDir string) *BackupService {
-    return &BackupService{
-        db:        db,
-        backupDir: backupDir,
-    }
-}
+# Delete backups older than 30 days
+find "$BACKUP_DIR" -name "app-*.db" -mtime +30 -delete
 
-// CreateBackup creates online backup without locking
-func (s *BackupService) CreateBackup() (string, error) {
-    timestamp := time.Now().Format("20060102_150405")
-    backupPath := filepath.Join(s.backupDir, fmt.Sprintf("backup_%s.db", timestamp))
+echo "Backup completed: $DATE"
+```
 
-    // Create backup directory
-    if err := os.MkdirAll(s.backupDir, 0755); err != nil {
-        return "", err
-    }
-
-    // Open backup database
-    backupDB, err := sql.Open("sqlite3", backupPath)
-    if err != nil {
-        return "", err
-    }
-    defer backupDB.Close()
-
-    // Use SQLite backup API
-    rawConn, err := s.db.Conn(context.Background())
-    if err != nil {
-        return "", err
-    }
-    defer rawConn.Close()
-
-    err = rawConn.Raw(func(driverConn interface{}) error {
-        conn := driverConn.(*sqlite3.SQLiteConn)
-        return conn.Backup(backupDB, "main", "main")
-    })
-
-    if err != nil {
-        return "", err
-    }
-
-    log.Printf("Backup created: %s", backupPath)
-    return backupPath, nil
-}
-
-// AutoBackup starts automated backup scheduler
-func (s *BackupService) AutoBackup(interval time.Duration, keepCount int) {
-    go func() {
-        ticker := time.NewTicker(interval)
-        defer ticker.Stop()
-
-        for range ticker.C {
-            backupPath, err := s.CreateBackup()
-            if err != nil {
-                log.Printf("Backup failed: %v", err)
-                continue
-            }
-
-            // Cleanup old backups
-            s.cleanupOldBackups(keepCount)
-        }
-    }()
-}
+**Schedule with cron**:
+```bash
+# Daily backup at 2 AM
+0 2 * * * /opt/laju-go/scripts/backup.sh
+```
 
 func (s *BackupService) cleanupOldBackups(keepCount int) {
     files, _ := os.ReadDir(s.backupDir)

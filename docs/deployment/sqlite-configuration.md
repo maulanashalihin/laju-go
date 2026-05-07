@@ -17,7 +17,7 @@ The default configuration in `main.go` is optimized for **Vultr High Frequency 1
 ```go
 // main.go - initDatabase()
 db.SetMaxOpenConns(15)                    // Connection pool size
-db.SetMaxIdleConns(5)                     // Idle connections
+db.SetMaxIdleConns(10)                    // Keep idle connections ready
 db.SetConnMaxLifetime(5 * time.Minute)    // Connection lifetime
 
 db.Exec("PRAGMA journal_mode = WAL")           // Write-Ahead Logging
