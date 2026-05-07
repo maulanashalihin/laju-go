@@ -1,15 +1,46 @@
 # Frontend Development
 
-This guide covers frontend development with Svelte 5 and Inertia.js in Laju Go.
+This guide covers frontend development with Inertia.js in Laju Go.
 
 ## Overview
 
-Laju Go uses **Svelte 5** for the frontend with **Inertia.js** as the bridge between backend and frontend. This gives you:
+Laju Go ships with **Svelte 5** as the default frontend framework, but the frontend layer is **swappable** — thanks to [Inertia.js](https://inertiajs.com/), you can use React, Vue, or Svelte interchangeably without changing any backend code.
 
-- **SPA Experience** - Client-side navigation without page reloads
-- **Server-Driven** - Backend controls routing and business logic
-- **No API Required** - Return data directly from controllers
-- **Simple Mental Model** - Traditional HTTP requests with modern UX
+### How Inertia.js Works
+
+Inertia.js bridges your backend and frontend without building a separate API:
+
+```
+Initial page load:
+  Browser ──GET──► Server
+                      │
+                      ▼
+               InertiaService.Render("Component", props)
+                      │
+                      ├──► JSON {component, props, url}
+                      │         embedded in HTML shell
+                      │
+                      ◄── Full HTML page with Svelte/React/Vue app
+
+Subsequent navigation:
+  Browser ──XHR (X-Inertia: true)──► Server
+                                        │
+                                        ▼
+                                 InertiaService.Render("Component", props)
+                                        │
+                                        ◄── JSON {component, props, url}
+  Browser swaps components without full page reload
+```
+
+**Key insight**: Backend routes return `inertiaService.Render(componentName, props)` — they don't render HTML directly. The frontend framework handles rendering. This is what makes framework migration possible without touching Go code.
+
+### Framework Support
+
+| Framework | Inertia Adapter | Package | Status |
+|-----------|----------------|---------|--------|
+| **Svelte 5** | `@inertiajs/svelte` | Included | ✅ Default |
+| **React** | `@inertiajs/react` | Swap required | ✅ Supported |
+| **Vue 3** | `@inertiajs/vue3` | Swap required | ✅ Supported |
 
 ## Project Structure
 
@@ -17,858 +48,437 @@ Laju Go uses **Svelte 5** for the frontend with **Inertia.js** as the bridge bet
 frontend/
 ├── src/
 │   ├── components/        # Reusable UI components
-│   ├── pages/             # Page components
-│   ├── lib/               # Utilities and helpers
-│   ├── main.ts            # Inertia.js entry point
-│   └── app.css            # Global styles
+│   ├── pages/             # Page components (matched by Inertia component name)
+│   ├── layouts/           # Layout components
+│   ├── lib/               # Utilities (api, i18n, types, utils)
+│   ├── main.ts            # Inertia app entry point (framework-specific)
+│   └── app.css            # Global styles (Tailwind)
 ├── package.json
-└── vite.config.js
+├── vite.config.js
+└── tsconfig.json
 ```
 
-## Svelte 5 Basics
+The only framework-specific files are:
 
-### Component Structure
-
-```svelte
-<!-- frontend/src/components/Card.svelte -->
-<script>
-  // Props with default values
-  export let title = '';
-  export let subtitle = '';
-  
-  // Reactive state
-  let count = $state(0);
-  
-  // Functions
-  function increment() {
-    count++;
-  }
-</script>
-
-<div class="card">
-  <h2>{title}</h2>
-  {#if subtitle}
-    <p>{subtitle}</p>
-  {/if}
-  
-  <button onclick={increment}>
-    Count: {count}
-  </button>
-  
-  <slot />
-</div>
-
-<style>
-  .card {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 16px;
-    margin: 16px;
-  }
-</style>
-```
-
-### Reactive State
-
-Svelte 5 uses `$state` for reactive variables:
-
-```svelte
-<script>
-  // Reactive state
-  let count = $state(0);
-  let user = $state({ name: '', email: '' });
-  
-  // Derived values (automatically reactive)
-  $: doubled = count * 2;
-  
-  // Side effects
-  $effect(() => {
-    console.log('Count changed:', count);
-  });
-</script>
-```
-
-### Using Components
-
-```svelte
-<!-- frontend/src/pages/app/Dashboard.svelte -->
-<script>
-  import Card from '../../components/Card.svelte';
-</script>
-
-<Card title="Welcome" subtitle="Dashboard">
-  <p>Dashboard content here</p>
-</Card>
-```
+| File | Purpose | Changes when migrating |
+|------|---------|-----------------------|
+| `main.ts` | Inertia app initialization | Swap adapter + imports |
+| `components/` | UI components | Rewrite in target framework |
+| `pages/` | Page components | Rewrite in target framework |
+| `layouts/` | Layout components | Rewrite in target framework |
+| `package.json` | Dependencies | Swap framework packages |
+| `vite.config.js` | Vite plugin | Swap Svelte → React plugin |
 
 ## Inertia.js Integration
 
-### Page Component
+### Page Component (Framework-Agnostic)
 
-```svelte
-<!-- frontend/src/pages/app/Dashboard.svelte -->
-<script>
-  import { page } from '@inertiajs/svelte';
-  
-  // Access props from server
-  const props = $page.props;
-  const user = props.user;
-  const stats = props.stats;
-</script>
-
-<h1>Welcome, {user.name}!</h1>
-
-<div class="stats">
-  <div class="stat">
-    <span class="value">{stats.totalUsers}</span>
-    <span class="label">Total Users</span>
-  </div>
-</div>
-```
-
-### Server Props
-
-From the backend:
+The backend renders pages by name. The frontend maps these names to components:
 
 ```go
-// app/handlers/app.go
+// Go handler — never changes regardless of frontend framework
 func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
-    return h.inertiaService.Render(c, "Dashboard", fiber.Map{
-        "user": c.Locals("user"),
+    return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
+        "user": user,
         "stats": fiber.Map{
-            "totalUsers": 100,
+            "totalUsers":  100,
             "activeUsers": 50,
         },
     })
 }
 ```
 
+The component name `"app/Dashboard"` maps to `frontend/src/pages/app/Dashboard.svelte` (or `.tsx` for React).
+
+### Server Props
+
+Props from the server are available via the Inertia page object:
+
+```go
+// Backend — always the same pattern
+inertiaService.Render(c, "PageName", fiber.Map{
+    "key": value,
+})
+```
+
 ## Navigation
+
+Inertia provides client-side navigation without page reloads:
 
 ### Inertia Links
 
 ```svelte
+<!-- Svelte -->
 <script>
   import { Link } from '@inertiajs/svelte';
 </script>
+<Link href="/app">Dashboard</Link>
+```
 
-<nav>
-  <Link href="/">Home</Link>
-  <Link href="/about">About</Link>
-  <Link href="/app" class="active-class">Dashboard</Link>
-</nav>
+```tsx
+// React
+import { Link } from '@inertiajs/react';
+<Link href="/app">Dashboard</Link>
 ```
 
 ### Programmatic Navigation
 
 ```svelte
+<!-- Svelte -->
 <script>
   import { router } from '@inertiajs/svelte';
-  
-  function goToProfile() {
-    router.visit('/app/profile');
-  }
+  router.visit('/app/profile');
 </script>
+```
 
-<button onclick={goToProfile}>
-  Go to Profile
-</button>
+```tsx
+// React
+import { router } from '@inertiajs/react';
+router.visit('/app/profile');
 ```
 
 ## Form Handling
 
-### Basic Form
+Forms use Inertia's `router.post()` / `router.put()` — no manual fetch/AJAX:
 
 ```svelte
-<!-- frontend/src/pages/auth/Login.svelte -->
+<!-- Svelte -->
 <script>
   import { router } from '@inertiajs/svelte';
-  
+
   let email = $state('');
   let password = $state('');
-  let processing = $state(false);
-  
+
   function submit() {
-    processing = true;
-    
-    router.post('/login/login', {
-      email,
-      password,
-    }, {
-      onSuccess: () => {
-        // Redirect happens automatically
-      },
-      onError: (errors) => {
-        console.log('Validation errors:', errors);
-        processing = false;
-      },
+    router.post('/login', { email, password }, {
+      onSuccess: () => { /* redirect happens automatically */ },
+      onError: (errors) => { /* handle validation errors */ },
     });
   }
 </script>
-
-<form onsubmit={(e) => { e.preventDefault(); submit(); }}>
-  <div>
-    <label for="email">Email</label>
-    <input 
-      type="email" 
-      id="email" 
-      bind:value={email}
-      required
-    />
-  </div>
-  
-  <div>
-    <label for="password">Password</label>
-    <input 
-      type="password" 
-      id="password" 
-      bind:value={password}
-      required
-    />
-  </div>
-  
-  <button type="submit" disabled={processing}>
-    {processing ? 'Logging in...' : 'Login'}
-  </button>
-</form>
 ```
 
-### Handling Validation Errors
+```tsx
+// React
+import { router } from '@inertiajs/react';
+
+function submit(e: React.FormEvent) {
+  e.preventDefault();
+  router.post('/login', { email, password }, {
+    onSuccess: () => {},
+    onError: (errors) => {},
+  });
+}
+```
+
+---
+
+## Svelte 5 (Default)
+
+This section documents the current default frontend stack.
+
+### Entry Point (`frontend/src/main.ts`)
+
+```typescript
+import { createInertiaApp } from '@inertiajs/svelte';
+import { mount } from 'svelte';
+
+createInertiaApp({
+  resolve: (name) => {
+    const pages = import.meta.glob('./pages/**/*.svelte', { eager: true });
+    return pages[`./pages/${name}.svelte`];
+  },
+  setup({ el, App, props }) {
+    mount(App, { target: el, props });
+  },
+});
+```
+
+### Component Basics
+
+```svelte
+<script>
+  let count = $state(0);
+  let user = $state({ name: '', email: '' });
+  $: doubled = count * 2;
+</script>
+
+<button onclick={() => count++}>
+  Count: {count}
+</button>
+```
+
+### Props from Server
 
 ```svelte
 <script>
   import { page } from '@inertiajs/svelte';
-  
-  let email = $state('');
-  
-  // Access errors from server
-  $: errors = $page.props.errors || {};
+  const props = $page.props;
+  const user = props.user;
 </script>
 
-<form>
-  <div>
-    <label for="email">Email</label>
-    <input 
-      type="email" 
-      id="email" 
-      bind:value={email}
-      class:error={errors.email}
-    />
-    {#if errors.email}
-      <span class="error">{errors.email}</span>
-    {/if}
-  </div>
-</form>
-
-<style>
-  .error {
-    color: red;
-    font-size: 0.875rem;
-  }
-  
-  input.error {
-    border-color: red;
-  }
-</style>
+<h1>Welcome, {user.name}!</h1>
 ```
 
-### File Upload
+### Existing Components
 
+| Component | File | Purpose |
+|-----------|------|---------|
+| `Button` | `components/Button.svelte` | Styled button with variants |
+| `Input` | `components/Input.svelte` | Form input with label and error |
+| `Header` | `components/Header.svelte` | App header/navigation |
+| `DarkModeToggle` | `components/DarkModeToggle.svelte` | Light/dark theme toggle |
+
+---
+
+## Migration Guide: Svelte → React
+
+This guide walks through migrating from Svelte 5 to React using an **AI Agent** (Claude, Cursor, Copilot, etc.). The backend Go code requires **zero changes** — only the `frontend/` directory needs modification.
+
+### What Changes
+
+| Aspect | Before (Svelte) | After (React) |
+|--------|-----------------|---------------|
+| `package.json` deps | `@inertiajs/svelte` + `svelte` | `@inertiajs/react` + `react` + `react-dom` |
+| `vite.config.js` | `@sveltejs/vite-plugin-svelte` | `@vitejs/plugin-react` |
+| `main.ts` | `createInertiaApp` from `@inertiajs/svelte` | `createInertiaApp` from `@inertiajs/react` |
+| Components | `.svelte` files | `.tsx` files |
+| Reactivity | `$state`, `$derived` | `useState`, `useMemo` |
+| Inertia adapter | `@inertiajs/svelte` | `@inertiajs/react` |
+
+### What Does NOT Change
+
+- All Go backend code (`handlers/`, `services/`, `routes/`, `main.go`)
+- `inertiaService.Render()` calls in handlers
+- Tailwind CSS classes
+- `app.css`
+- `templates/inertia.templ` (HTML shell)
+
+### Step-by-Step Migration
+
+#### Step 1: Update Dependencies
+
+```bash
+# Remove Svelte packages
+npm uninstall svelte @sveltejs/vite-plugin-svelte @inertiajs/svelte @tsconfig/svelte
+
+# Install React packages
+npm install react react-dom @types/react @types/react-dom
+npm install -D @vitejs/plugin-react
+npm install @inertiajs/react
+```
+
+#### Step 2: Update Vite Config
+
+```diff
+// vite.config.js
+- import { svelte } from '@sveltejs/vite-plugin-svelte';
++ import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+-  plugins: [svelte()],
++  plugins: [react()],
+   build: { outDir: 'dist', manifest: true },
+});
+```
+
+#### Step 3: Update Entry Point
+
+```diff
+// frontend/src/main.ts
+- import { createInertiaApp } from '@inertiajs/svelte';
+- import { mount } from 'svelte';
++ import { createInertiaApp } from '@inertiajs/react';
++ import { createRoot } from 'react-dom/client';
+
+createInertiaApp({
+   resolve: (name) => {
+-    const pages = import.meta.glob('./pages/**/*.svelte', { eager: true });
+-    return pages[`./pages/${name}.svelte`];
++    const pages = import.meta.glob('./pages/**/*.tsx', { eager: true });
++    return pages[`./pages/${name}.tsx`];
+   },
+-  setup({ el, App, props }) {
+-    mount(App, { target: el, props });
+-  },
++  setup({ el, App, props }) {
++    createRoot(el).render(<App {...props} />);
++  },
+});
+```
+
+#### Step 4: Convert Components (.svelte → .tsx)
+
+This is the bulk of the work. Use the AI Agent prompt below.
+
+---
+
+### AI Agent Migration Prompt
+
+Copy the following prompt and paste it to an AI Agent (Claude, Cursor, Copilot, etc.) along with your project files:
+
+```
+You are migrating a Svelte 5 + Inertia.js project to React + Inertia.js.
+The Inertia.js backend (Go/Fiber) stays exactly the same — only the frontend/ directory changes.
+
+## Migration Rules
+
+1. Convert every `.svelte` file in `frontend/src/` to `.tsx`
+2. Keep the same file names and directory structure (e.g., `pages/auth/Login.svelte` → `pages/auth/Login.tsx`)
+3. Use TypeScript for all `.tsx` files
+4. Replace Svelte syntax with React equivalents:
+
+   | Svelte | React |
+   |--------|-------|
+   | `{#if condition}` | `{condition && (...)}` or ternary |
+   | `{#each items as item}` | `{items.map(item => (...))}` |
+   | `{#snippet name()}` | Helper function component |
+   | `{@render name()}` | `<Name />` |
+   | `$state()` | `useState()` |
+   | `$derived()` | `useMemo()` |
+   | `$effect()` | `useEffect()` |
+   | `onclick={handler}` | `onClick={handler}` |
+   | `bind:value={var}` | `value={var} onChange={e => setVar(e.target.value)}` |
+   | `class:active={cond}` | `className={cond ? 'active' : ''}` |
+   | `$page.props` from `@inertiajs/svelte` | `usePage().props` from `@inertiajs/react` |
+   | `import { Link, router } from '@inertiajs/svelte'` | `import { Link, router } from '@inertiajs/react'` |
+   | Svelte `export let prop` | React `interface Props { prop: type }` |
+   | `<slot />` | `{children}` prop |
+   | `import Component from './Component.svelte'` | `import Component from './Component'` |
+
+5. Keep all Tailwind CSS classes exactly as they are
+6. Keep `main.ts` as the entry point (update its content for React)
+7. Do NOT change any Go backend code
+
+## Files to Convert
+
+- frontend/src/main.ts → (update entry point for React)
+- frontend/src/components/*.svelte → *.tsx
+- frontend/src/pages/**/*.svelte → *.tsx
+- frontend/src/layouts/*.svelte → *.tsx
+
+## Files to Keep (no changes needed)
+
+- frontend/src/app.css
+- frontend/src/lib/** (utility files may need minor import changes)
+```
+
+### Example Conversion
+
+**Before** (`pages/auth/Login.svelte`):
 ```svelte
 <script>
   import { router } from '@inertiajs/svelte';
-  
-  let avatar = $state(null);
-  let preview = $state(null);
-  
-  function handleFileChange(event) {
-    const file = event.target.files[0];
-    if (file) {
-      avatar = file;
-      preview = URL.createObjectURL(file);
-    }
-  }
-  
-  function upload() {
-    if (!avatar) return;
-    
-    const formData = new FormData();
-    formData.append('avatar', avatar);
-    
-    router.post('/upload', formData, {
-      onSuccess: () => {
-        alert('Upload successful!');
-      },
-      onError: (errors) => {
-        alert('Upload failed: ' + (errors.avatar || 'Unknown error'));
-      },
-    });
+  let email = $state('');
+  let password = $state('');
+
+  function submit() {
+    router.post('/login', { email, password });
   }
 </script>
 
-<div>
-  {#if preview}
-    <img src={preview} alt="Preview" />
-  {/if}
-  
-  <input 
-    type="file" 
-    accept="image/*" 
-    onchange={handleFileChange}
-  />
-  
-  <button onclick={upload}>
-    Upload Avatar
-  </button>
-</div>
+<form onsubmit={(e) => { e.preventDefault(); submit(); }}>
+  <input type="email" bind:value={email} />
+  <input type="password" bind:value={password} />
+  <button type="submit">Login</button>
+</form>
 ```
 
-## Components
+**After** (`pages/auth/Login.tsx`):
+```tsx
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
 
-### Button Component
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-```svelte
-<!-- frontend/src/components/Button.svelte -->
-<script>
-  export let variant = 'primary';
-  export let size = 'md';
-  export let disabled = false;
-  export let loading = false;
-  
-  let variants = {
-    primary: 'bg-blue-500 hover:bg-blue-600 text-white',
-    secondary: 'bg-gray-500 hover:bg-gray-600 text-white',
-    danger: 'bg-red-500 hover:bg-red-600 text-white',
-  };
-  
-  let sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
-  };
-</script>
-
-<button 
-  class="{variants[variant]} {sizes[size]}"
-  disabled={disabled || loading}
->
-  {#if loading}
-    <span class="spinner">Loading...</span>
-  {:else}
-    <slot />
-  {/if}
-</button>
-
-<style>
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    router.post('/login', { email, password });
   }
-</style>
-```
 
-### Input Component
-
-```svelte
-<!-- frontend/src/components/Input.svelte -->
-<script>
-  export let label = '';
-  export let type = 'text';
-  export let value = '';
-  export let error = '';
-  export let required = false;
-  
-  import { createEventDispatcher } from 'svelte';
-  const dispatch = createEventDispatcher();
-  
-  function handleInput(event) {
-    dispatch('input', event.target.value);
-  }
-</script>
-
-<div class="input-group">
-  {#if label}
-    <label>
-      {label}
-      {#if required}<span class="required">*</span>{/if}
-    </label>
-  {/if}
-  
-  <input 
-    type={type}
-    value={value}
-    oninput={handleInput}
-    class:error={!!error}
-    required={required}
-  />
-  
-  {#if error}
-    <span class="error-message">{error}</span>
-  {/if}
-</div>
-
-<style>
-  .input-group {
-    margin-bottom: 1rem;
-  }
-  
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-  }
-  
-  .required {
-    color: red;
-  }
-  
-  input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  
-  input.error {
-    border-color: red;
-  }
-  
-  .error-message {
-    color: red;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-  }
-</style>
-```
-
-### Header Component
-
-```svelte
-<!-- frontend/src/components/Header.svelte -->
-<script>
-  import { page, router } from '@inertiajs/svelte';
-  import DarkModeToggle from './DarkModeToggle.svelte';
-  
-  const user = $page.props.user;
-  
-  function logout() {
-    if (confirm('Are you sure you want to logout?')) {
-      router.post('/logout');
-    }
-  }
-</script>
-
-<header class="header">
-  <div class="container">
-    <nav>
-      <a href="/" class="logo">Laju Go</a>
-      
-      <div class="nav-links">
-        {#if user}
-          <a href="/app">Dashboard</a>
-          <a href="/app/profile">Profile</a>
-          <DarkModeToggle />
-          <button onclick={logout}>Logout</button>
-        {:else}
-          <a href="/login">Login</a>
-          <a href="/register">Register</a>
-        {/if}
-      </div>
-    </nav>
-  </div>
-</header>
-
-<style>
-  .header {
-    background: white;
-    border-bottom: 1px solid #ddd;
-    padding: 1rem 0;
-  }
-  
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1rem;
-  }
-  
-  nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .logo {
-    font-weight: bold;
-    font-size: 1.5rem;
-    color: #333;
-    text-decoration: none;
-  }
-  
-  .nav-links {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-  }
-  
-  .nav-links a {
-    color: #333;
-    text-decoration: none;
-  }
-  
-  .nav-links a:hover {
-    text-decoration: underline;
-  }
-</style>
-```
-
-## Dark Mode
-
-### DarkModeToggle Component
-
-```svelte
-<!-- frontend/src/components/DarkModeToggle.svelte -->
-<script>
-  import { onMount } from 'svelte';
-  import { Sun, Moon } from 'lucide-svelte';
-  
-  let isDark = $state(false);
-  
-  onMount(() => {
-    // Check localStorage
-    const stored = localStorage.getItem('theme');
-    if (stored) {
-      isDark = stored === 'dark';
-    } else {
-      // Check system preference
-      isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    
-    applyTheme();
-  });
-  
-  function toggle() {
-    isDark = !isDark;
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    applyTheme();
-  }
-  
-  function applyTheme() {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }
-</script>
-
-<button onclick={toggle} class="theme-toggle" aria-label="Toggle theme">
-  {#if isDark}
-    <Sun size={20} />
-  {:else}
-    <Moon size={20} />
-  {/if}
-</button>
-
-<style>
-  .theme-toggle {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 4px;
-    color: inherit;
-  }
-  
-  .theme-toggle:hover {
-    background: rgba(128, 128, 128, 0.1);
-  }
-</style>
-```
-
-### Global Styles with Dark Mode
-
-```css
-/* frontend/src/app.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --bg-primary: #ffffff;
-  --text-primary: #1a1a1a;
-}
-
-.dark {
-  --bg-primary: #1a1a1a;
-  --text-primary: #ffffff;
-}
-
-body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  return (
+    <form onSubmit={submit}>
+      <input type="email" value={email} onChange={e => setEmail(e.target.value)} />
+      <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+      <button type="submit">Login</button>
+    </form>
+  );
 }
 ```
 
-## Utilities
+### Post-Migration Checklist
 
-### Helper Functions
+- [ ] `npm run dev` starts without errors
+- [ ] All pages render correctly (login, register, dashboard, profile)
+- [ ] Form submissions work with Inertia POST/PUT
+- [ ] Navigation via `Link` and `router.visit()` works
+- [ ] Flash messages (error/success) display correctly
+- [ ] File uploads function properly
+- [ ] Dark mode toggle works (may need React conversion)
+- [ ] `npm run build` produces valid `dist/` output
+- [ ] `go build` succeeds with the new frontend build
 
-```javascript
-// frontend/src/lib/utils/helpers.js
+### Testing
 
-// Click outside action
-export function clickOutside(node, callback) {
-  const handleClick = (event) => {
-    if (node && !node.contains(event.target)) {
-      callback();
-    }
-  };
-  
-  document.addEventListener('click', handleClick, true);
-  
-  return {
-    destroy() {
-      document.removeEventListener('click', handleClick, true);
-    }
-  };
-}
-
-// Debounce function
-export function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-// Get CSRF token from cookie
-export function getCsrfToken() {
-  const match = document.cookie.match(/csrf_token=([^;]+)/);
-  return match ? match[1] : null;
-}
-
-// Fetch wrapper with CSRF token
-export async function fetchWithCsrf(url, options = {}) {
-  const csrfToken = getCsrfToken();
-  
-  const headers = {
-    ...options.headers,
-    'X-CSRF-Token': csrfToken,
-  };
-  
-  if (options.body && !(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-  }
-  
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-  
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  
-  return response;
-}
+```bash
+npm run dev:all      # Test in development
+npm run build:all    # Test production build
 ```
 
-### Using Actions
+### Rolling Back
 
-```svelte
-<script>
-  import { clickOutside } from '../lib/utils/helpers';
-  
-  let dropdownOpen = $state(false);
-  
-  function closeDropdown() {
-    dropdownOpen = false;
-  }
-</script>
-
-<div class="dropdown" use:clickOutside={closeDropdown}>
-  <button onclick={() => dropdownOpen = !dropdownOpen}>
-    Menu
-  </button>
-  
-  {#if dropdownOpen}
-    <div class="dropdown-content">
-      <!-- Dropdown items -->
-    </div>
-  {/if}
-</div>
+```bash
+git checkout -- frontend/
+git checkout -- package.json package-lock.json
+npm install
 ```
 
-## Toast Notifications
-
-```svelte
-<script>
-  // frontend/src/lib/utils/toast.js
-  
-  let toasts = $state([]);
-  
-  export function toast(message, type = 'info', duration = 3000) {
-    const id = Date.now();
-    toasts = [...toasts, { id, message, type }];
-    
-    setTimeout(() => {
-      toasts = toasts.filter(t => t.id !== id);
-    }, duration);
-  }
-  
-  export function getToasts() {
-    return toasts;
-  }
-</script>
-```
-
-```svelte
-<!-- Usage in component -->
-<script>
-  import { toast, getToasts } from '../lib/utils/toast';
-  
-  const toasts = getToasts();
-  
-  function handleSuccess() {
-    toast('Operation successful!', 'success');
-  }
-  
-  function handleError() {
-    toast('Something went wrong', 'error');
-  }
-</script>
-
-<div class="toast-container">
-  {#each toasts as t (t.id)}
-    <div class="toast toast-{t.type}">
-      {t.message}
-    </div>
-  {/each}
-</div>
-```
-
-## Layouts
-
-### Base Layout
-
-```svelte
-<!-- frontend/src/layouts/AppLayout.svelte -->
-<script>
-  import Header from '../components/Header.svelte';
-</script>
-
-<div class="layout">
-  <Header />
-  <main class="main">
-    <slot />
-  </main>
-</div>
-
-<style>
-  .layout {
-    min-height: 100vh;
-  }
-  
-  .main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-</style>
-```
-
-### Using Layouts
-
-```svelte
-<!-- frontend/src/pages/app/Dashboard.svelte -->
-<script>
-  import AppLayout from '../../layouts/AppLayout.svelte';
-</script>
-
-<AppLayout>
-  <h1>Dashboard</h1>
-  <p>Dashboard content here</p>
-</AppLayout>
-```
+Go backend is untouched, so the app remains functional.
 
 ## Best Practices
 
-### 1. Keep Components Small
+### 1. Framework-Agnostic Go Handlers
 
-```svelte
-<!-- ✅ Good: Small, focused component -->
-<script>
-  export let user;
-</script>
-
-<div class="user-card">
-  <img src={user.avatar} alt={user.name} />
-  <h3>{user.name}</h3>
-</div>
-
-<!-- ❌ Bad: Large component with too much logic -->
+```go
+// ✅ Works with any frontend framework
+func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
+    return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
+        "user": user,
+    })
+}
 ```
 
-### 2. Use TypeScript
+### 2. Use Flash Messages
+
+Flash messages set in Go handlers are auto-injected into Inertia props:
+
+```go
+// Go handler
+h.store.Flash(c, "error", "Invalid email or password")
+return c.Redirect("/login")
+```
 
 ```svelte
-<!-- frontend/src/pages/app/Dashboard.svelte -->
+<!-- Frontend: flash is available in props.flash -->
+<script>
+  import { page } from '@inertiajs/svelte';
+  $: flash = $page.props.flash;
+</script>
+```
+
+### 3. Use TypeScript
+
+```svelte
 <script lang="ts">
-  interface User {
-    id: number;
-    name: string;
-    email: string;
-  }
-  
-  interface Props {
-    user: User;
-  }
-  
-  let { user }: Props = $props();
+  interface User { id: number; name: string; email: string; }
+  let { user }: { user: User } = $props();
 </script>
-```
-
-### 3. Extract Reusable Logic
-
-```svelte
-<!-- Use stores for shared state -->
-<script>
-  import { writable } from 'svelte/store';
-  
-  export const userStore = writable(null);
-</script>
-```
-
-### 4. Handle Loading States
-
-```svelte
-<script>
-  let loading = $state(false);
-  
-  async function loadData() {
-    loading = true;
-    try {
-      // Fetch data
-    } finally {
-      loading = false;
-    }
-  }
-</script>
-
-{#if loading}
-  <div>Loading...</div>
-{:else}
-  <!-- Content -->
-{/if}
 ```
 
 ## Next Steps
 
-- [Styling Guide](styling.md) - Tailwind CSS styling
-- [Forms Guide](forms.md) - Form handling and validation
-- [Inertia.js Guide](inertia.md) - Deep dive into Inertia.js
+- [Architecture Guide](architecture.md) — How frontend fits into the architecture
+- [Styling Guide](styling.md) — Tailwind CSS styling
+- [Inertia.js Guide](inertia.md) — Deep dive into Inertia.js
