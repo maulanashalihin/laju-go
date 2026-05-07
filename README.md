@@ -253,8 +253,10 @@ npm run dev:go       # Start Go server with Air hot reload
 npm run dev:all      # Run both Vite and Air concurrently
 
 # Production
-npm run build        # Build frontend and Go binary
-npm run serve        # Run production binary
+npm run build        # Build frontend only (vite build)
+npm run build:all    # Full production build: vite + go build
+npm run build:linux  # Cross-compile binary for Linux (pure Go, no CGO)
+npm run serve        # Run production binary (./laju-go)
 
 # Testing
 npm run test:run     # Run frontend tests
@@ -271,18 +273,93 @@ npm run test:run     # Run frontend tests
 
 ## 🚀 Production Deployment
 
-### Quick Deploy
+> **Important**: Build everything locally, then upload only the runtime artifacts to your server.
+> No build tools (Go, Node, npm) are needed on the server — just the binary and assets.
+
+### 1. Build Locally
 
 ```bash
-# Build frontend assets
-npm run build
+# Full production build (frontend + Go binary)
+npm run build:all
 
-# Build Go binary
-go build -o laju-go .
-
-# Run the server
-./laju-go
+# Or for Linux deployment from macOS:
+npm run build:linux
 ```
+
+This produces two things:
+- **`laju-go`** — Static Go binary (pure Go SQLite, no CGO)
+- **`dist/`** — Frontend assets (CSS/JS built by Vite)
+
+### 2. Deploy Artifacts to Server
+
+Only these files are needed at runtime:
+
+| Artifact | Purpose |
+|----------|---------|
+| `laju-go` | Go binary (the application) |
+| `dist/` | Frontend assets |
+| `migrations/` | SQL migrations (auto-run on startup) |
+| `.env` | Environment configuration |
+
+```bash
+# Example: upload via scp
+scp laju-go user@server:/opt/laju-go/
+scp -r dist user@server:/opt/laju-go/dist
+scp -r migrations user@server:/opt/laju-go/migrations
+scp .env user@server:/opt/laju-go/.env
+```
+
+### 3. Run with systemd (Production)
+
+Set up a systemd service for auto-start and process management:
+
+```bash
+# On the server, create service file
+sudo nano /etc/systemd/system/laju-go.service
+```
+
+```ini
+[Unit]
+Description=Laju Go Application
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/laju-go
+ExecStart=/opt/laju-go/laju-go
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/laju-go/.env
+
+[Install]
+WantedBy=multi-target.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable laju-go
+sudo systemctl start laju-go
+```
+
+### One-Click Deploy Script
+
+For automated deployment, configure and use the deploy script:
+
+```bash
+cp .deploy.example .deploy
+# Edit .deploy with your server details and APP_NAME
+
+npm run deploy
+```
+
+This script:
+1. ✅ Builds frontend + Go binary **locally**
+2. ✅ Uploads only runtime artifacts (binary, `dist/`, `migrations/`) to server
+3. ✅ Detects first deploy or update
+4. ✅ Sets up `.env` and systemd service (first deploy)
+5. ✅ Restarts the service (update)
+
+> See [One-Click Deployment Guide](docs/deployment/one-click-deployment.md) for full instructions.
 
 ### Docker Deployment
 
@@ -297,7 +374,7 @@ docker run -p 8080:8080 \
   laju-go
 ```
 
-### Ubuntu/Debian Server
+### Ubuntu/Debian Server Setup
 
 For complete production deployment instructions including systemd service setup, Nginx reverse proxy, and SSL configuration, see [Production Deployment Guide](docs/deployment/production.md).
 

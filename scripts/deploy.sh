@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Laju Go - One-Click Deploy Script
-# Auto-detects first deploy vs update and handles everything
+# Builds locally, uploads only required artifacts, deploys to server.
+# No build tools needed on the server — no Go, no Node, no npm.
 
 set -e
 
@@ -10,7 +11,6 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
@@ -35,6 +35,10 @@ fi
 
 source "$PROJECT_ROOT/.deploy"
 
+# Set defaults
+APP_NAME=${APP_NAME:-laju-go}
+SERVICE_NAME=${SERVICE_NAME:-$APP_NAME}
+
 # Validate required variables
 if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PATH" ]; then
     echo -e "${RED}Error: Missing required variables in .deploy file${NC}"
@@ -42,14 +46,9 @@ if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PATH" ]; then
     exit 1
 fi
 
-if [ -z "$REPO_URL" ]; then
-    echo -e "${RED}Error: REPO_URL is not set in .deploy file${NC}"
-    exit 1
-fi
-
+echo -e "${GREEN}App:      ${YELLOW}$APP_NAME${NC}"
 echo -e "${GREEN}Server:   ${YELLOW}$SERVER_USER@$SERVER_HOST${NC}"
 echo -e "${GREEN}Path:     ${YELLOW}$SERVER_PATH${NC}"
-echo -e "${GREEN}Repo:     ${YELLOW}$REPO_URL${NC}"
 echo ""
 
 # Test SSH connection
@@ -62,7 +61,7 @@ fi
 echo -e "${GREEN}✓ SSH connection successful${NC}"
 echo ""
 
-# Build assets locally before deploy
+# Build assets locally
 echo -e "${BLUE}Building assets locally...${NC}"
 
 # Build frontend
@@ -70,41 +69,44 @@ echo -e "${YELLOW}Building frontend...${NC}"
 npm run build
 echo -e "${GREEN}✓ Frontend built${NC}"
 
-# Build Go binary for Linux
+# Build Go binary for Linux (pure Go SQLite = no CGO needed)
 echo -e "${YELLOW}Building Go binary (linux/amd64)...${NC}"
-GOOS=linux GOARCH=amd64 go build -o laju-go .
-echo -e "${GREEN}✓ Binary built${NC}"
-
-# Commit and push all changes (source code + build artifacts)
-echo -e "${YELLOW}Committing all changes...${NC}"
-git add .
-
-# Check if there are changes to commit
-if git diff --staged --quiet; then
-    echo -e "${CYAN}      No changes to commit${NC}"
-else
-    # Count changed files for commit message
-    CHANGED_FILES=$(git diff --staged --name-only | wc -l | tr -d ' ')
-    git commit -m "Deploy: ${CHANGED_FILES} files changed"
-fi
-
-git push origin main
-echo -e "${GREEN}✓ Changes pushed${NC}"
+GOOS=linux GOARCH=amd64 go build -o "$APP_NAME" .
+echo -e "${GREEN}✓ Binary built: $APP_NAME${NC}"
 
 echo ""
 
-# Check if deployment exists (check both service and directory)
+# Detect first vs update deploy by checking if service exists
 echo -e "${BLUE}Checking deployment status...${NC}"
-
-# Check if directory and git repo exist
-if ssh "$SERVER_USER@$SERVER_HOST" "[ -d '$SERVER_PATH/.git' ]" 2>/dev/null; then
+IS_FIRST=false
+if ssh "$SERVER_USER@$SERVER_HOST" "systemctl is-active $SERVICE_NAME" > /dev/null 2>&1; then
     echo -e "${GREEN}→ Existing deployment detected${NC}"
-    echo ""
-    "$SCRIPT_DIR/update-deploy.sh"
 else
     echo -e "${YELLOW}→ No existing deployment found${NC}"
-    echo ""
+    IS_FIRST=true
+fi
+echo ""
+
+# Upload artifacts — only what's needed at runtime
+echo -e "${BLUE}Uploading artifacts...${NC}"
+
+# Create remote directory if needed
+ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p $SERVER_PATH"
+
+# Upload binary, frontend assets, and migrations
+scp "$APP_NAME" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
+scp -r dist "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/dist"
+scp -r migrations "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/migrations"
+ssh "$SERVER_USER@$SERVER_HOST" "chmod +x $SERVER_PATH/$APP_NAME"
+echo -e "${GREEN}✓ Binary + assets uploaded${NC}"
+
+echo ""
+
+# Run first-deploy or update-deploy
+if [ "$IS_FIRST" = true ]; then
     "$SCRIPT_DIR/first-deploy.sh"
+else
+    "$SCRIPT_DIR/update-deploy.sh"
 fi
 
 # Final status
@@ -114,11 +116,16 @@ echo -e "${BLUE}║        Deployment Status             ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""
 
-# Set default service name if not set
-SERVICE_NAME=${SERVICE_NAME:-crm-maulanabuilds}
-
-ssh "$SERVER_USER@$SERVER_HOST" "systemctl is-active $SERVICE_NAME &>/dev/null && echo -e '${GREEN}✓ Service is running${NC}' || echo -e '${RED}✗ Service is not running${NC}'"
-ssh "$SERVER_USER@$SERVER_HOST" "systemctl is-enabled $SERVICE_NAME &>/dev/null && echo -e '${GREEN}✓ Service enabled (auto-start on boot)${NC}' || echo -e '${YELLOW}! Service not enabled${NC}'"
+if ssh "$SERVER_USER@$SERVER_HOST" "systemctl is-active $SERVICE_NAME" &>/dev/null; then
+    echo -e "${GREEN}✓ Service $SERVICE_NAME is running${NC}"
+else
+    echo -e "${RED}✗ Service $SERVICE_NAME is not running${NC}"
+fi
+if ssh "$SERVER_USER@$SERVER_HOST" "systemctl is-enabled $SERVICE_NAME" &>/dev/null; then
+    echo -e "${GREEN}✓ Service enabled (auto-start on boot)${NC}"
+else
+    echo -e "${YELLOW}! Service not enabled${NC}"
+fi
 
 echo ""
 echo -e "${CYAN}Useful commands:${NC}"
