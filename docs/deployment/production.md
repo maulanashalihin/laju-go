@@ -37,28 +37,6 @@ npm run deploy
 sudo apt update && sudo apt upgrade -y
 ```
 
-### Install Dependencies (Build Tools Required)
-
-```bash
-# Install Go dependencies
-sudo go mod download
-
-# Install Node.js dependencies
-sudo npm install
-```
-
-### Build Frontend
-
-```bash
-sudo npm run build
-```
-
-### Build Go Binary
-
-```bash
-sudo go build -o laju-go .
-```
-
 ### Create Application User
 
 ```bash
@@ -513,8 +491,8 @@ systemctl status laju-go
 ## Deployment Checklist
 
 - [ ] Server updated (`apt update && apt upgrade`)
-- [ ] Go and Node.js installed
-- [ ] Repository cloned
+- [ ] Binary + assets uploaded (`laju-go`, `dist/`, `migrations/`)
+- [ ] Environment configured (`.env`)
 - [ ] Dependencies installed
 - [ ] Frontend built (`npm run build`)
 - [ ] Go binary built (`go build`)

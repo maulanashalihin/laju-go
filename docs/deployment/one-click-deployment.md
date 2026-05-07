@@ -22,7 +22,9 @@ The deployment system consists of three scripts:
 - **CPU**: 1 core minimum (2+ recommended)
 - **SSH Access**: Root or sudo user with SSH key authentication
 
-### Local Requirements
+### Local Requirements (for building)
+
+Build tools are only needed on your local machine — the server does not need Go or Node.js.
 
 - Go 1.26+ installed
 - Node.js 18+ installed
