@@ -53,6 +53,7 @@ Deployment guides for various environments.
 | [Docker Deployment](deployment/docker.md) | Containerized deployment with Docker |
 | [GitHub Actions CI/CD](deployment/github-actions.md) | Automated CI/CD pipeline |
 | [Performance Optimization](deployment/optimization.md) | SQLite optimization and performance tuning |
+| [Litestream DR](deployment/litestream.md) | SQLite disaster recovery with continuous replication to S3 |
 
 ### Reference
 

@@ -365,6 +365,8 @@ sqlite3 /var/lib/laju/app.db "PRAGMA journal_mode;"
 
 ## Step 7: Backup Strategy
 
+> 💡 **For production apps, consider [Litestream](litestream.md)** for continuous replication to S3 with point-in-time recovery. The cron backup below is simpler but has up to 24h of potential data loss.
+
 ### Database Backup Script
 
 ```bash
