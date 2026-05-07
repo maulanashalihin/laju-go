@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(go *)"
+      "Bash(go *)",
+      "Bash(sqlc *)",
+      "Bash(rm *)",
+      "Bash(git rm *)",
+      "Bash(git pull *)",
+      "Bash(git stash)"
     ]
-  }
+  },
+  "$version": 3
 }
