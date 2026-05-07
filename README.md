@@ -65,6 +65,7 @@ Visit `http://localhost:8080` to see your application running.
 - **Database Migrations** - Goose-based schema version control
 - **Docker Support** - Multi-stage builds for efficient containerization
 - **Systemd Ready** - Production deployment with process management
+- **Litestream DR** - Continuous SQLite replication to S3 for disaster recovery
 
 ## 📚 Documentation
 
@@ -76,7 +77,7 @@ Visit `http://localhost:8080` to see your application running.
 | [Database](docs/guide/database.md) | SQLite setup, migrations, and query building |
 | [Authentication](docs/guide/authentication.md) | Auth flows, OAuth, sessions, and password reset |
 | [Frontend](docs/guide/frontend.md) | Svelte 5 (default), React & Vue support via Inertia.js |
-| [Deployment](docs/deployment/development.md) | Development workflow, production deployment, Docker |
+| [Deployment](docs/deployment/development.md) | Development workflow, production deployment, Docker, Litestream DR |
 | [API Reference](docs/reference/api-reference.md) | Complete endpoint documentation |
 | [Troubleshooting](docs/reference/troubleshooting.md) | Common issues and solutions |
 
