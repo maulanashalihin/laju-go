@@ -10,22 +10,37 @@ Laju Go applies these optimizations automatically on startup:
 
 ```go
 // main.go
-func applySQLiteOptimizations(db *sql.DB) {
-    optimizations := []string{
-        "PRAGMA journal_mode=WAL",           // Write-Ahead Logging
-        "PRAGMA synchronous=NORMAL",         // Balance speed/durability
-        "PRAGMA cache_size=-64000",          // 64MB cache
-        "PRAGMA temp_store=MEMORY",          // Memory temp tables
-        "PRAGMA busy_timeout=5000",          // 5 second lock wait
-        "PRAGMA foreign_keys=ON",            // Enable foreign keys
+func initDatabase(dbPath string) (*sql.DB, error) {
+    db, err := sql.Open("sqlite", dbPath)
+    if err != nil {
+        return nil, err
     }
-    
-    for _, pragma := range optimizations {
-        _, err := db.Exec(pragma)
-        if err != nil {
-            log.Printf("Warning: Failed to set %s: %v", pragma, err)
-        }
-    }
+
+    db.SetMaxOpenConns(15)
+    db.SetMaxIdleConns(10)
+    db.SetConnMaxLifetime(5 * time.Minute)
+    db.SetConnMaxIdleTime(30 * time.Second)
+
+    // Enable foreign keys
+    db.Exec("PRAGMA foreign_keys = ON")
+
+    // WAL mode for better concurrency
+    db.Exec("PRAGMA journal_mode = WAL")
+    db.Exec("PRAGMA synchronous = NORMAL")
+
+    // 16MB page cache (negative value = KB)
+    db.Exec("PRAGMA cache_size = -16000")
+
+    // 256MB memory-mapped I/O for NVMe performance
+    db.Exec("PRAGMA mmap_size = 268435456")
+
+    // Store temp tables in memory
+    db.Exec("PRAGMA temp_store = MEMORY")
+
+    // 5 second busy timeout
+    db.Exec("PRAGMA busy_timeout = 5000")
+
+    return db, nil
 }
 ```
 
@@ -35,7 +50,8 @@ func applySQLiteOptimizations(db *sql.DB) {
 |---------|-------|---------|
 | `journal_mode=WAL` | WAL | Better write concurrency, readers don't block writers |
 | `synchronous=NORMAL` | NORMAL | Safe for WAL mode, faster than FULL |
-| `cache_size=-64000` | 64MB | Reduces disk I/O for frequent queries |
+| `cache_size=-16000` | **16MB** | Reduces disk I/O for frequent queries |
+| `mmap_size=268435456` | **256MB** | NVMe memory-mapped I/O for faster reads |
 | `temp_store=MEMORY` | MEMORY | Faster temporary table operations |
 | `busy_timeout=5000` | 5000ms | Automatic retry on database locks |
 | `foreign_keys=ON` | ON | Enforce referential integrity |
@@ -50,7 +66,10 @@ sqlite3 data/app.db "PRAGMA synchronous;"
 # Output: 1 (NORMAL)
 
 sqlite3 data/app.db "PRAGMA cache_size;"
-# Output: -64000
+# Output: -16000
+
+sqlite3 data/app.db "PRAGMA mmap_size;"
+# Output: 268435456
 ```
 
 ### Manual Optimization
@@ -61,9 +80,11 @@ If settings aren't applied, run manually:
 sqlite3 data/app.db <<EOF
 PRAGMA journal_mode=WAL;
 PRAGMA synchronous=NORMAL;
-PRAGMA cache_size=-64000;
+PRAGMA cache_size=-16000;
+PRAGMA mmap_size=268435456;
 PRAGMA temp_store=MEMORY;
 PRAGMA busy_timeout=5000;
+PRAGMA foreign_keys=ON;
 EOF
 ```
 
@@ -73,18 +94,20 @@ EOF
 
 ```go
 // main.go
-db.SetMaxOpenConns(25)           // Maximum open connections
-db.SetMaxIdleConns(5)            // Idle connections to keep
-db.SetConnMaxLifetime(5 * time.Minute)  // Max connection lifetime
+db.SetMaxOpenConns(15)                  // Maximum open connections
+db.SetMaxIdleConns(10)                  // Keep idle connections ready
+db.SetConnMaxLifetime(5 * time.Minute)  // Recycle connections
+db.SetConnMaxIdleTime(30 * time.Second) // Free stale idle connections
 ```
 
 ### Tuning Connection Pool
 
-| Setting | Recommended | Description |
-|---------|-------------|-------------|
-| `MaxOpenConns` | 25 | Maximum concurrent connections |
-| `MaxIdleConns` | 5 | Minimum idle connections |
-| `ConnMaxLifetime` | 5m | Connection reuse duration |
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `MaxOpenConns` | 15 | Maximum concurrent connections |
+| `MaxIdleConns` | 10 | Idle connections to keep warm |
+| `ConnMaxLifetime` | 5m | Max connection reuse duration |
+| `ConnMaxIdleTime` | 30s | Recycle stale idle connections |
 
 ### When to Adjust
 
@@ -96,7 +119,17 @@ db.SetConnMaxLifetime(5 * time.Minute)  // Max connection lifetime
 **Decrease `MaxOpenConns`** if:
 - Memory usage is high
 - Database locks are frequent
-- Server has limited resources
+- Server has limited resources (512MB RAM)
+
+**Tuning by Server RAM**:
+
+| RAM | MaxOpenConns | cache_size | mmap_size |
+|-----|-------------|------------|-----------|
+| 512MB ⚠️ | 10 | 8MB | 128MB |
+| **1-2GB ✅** | **15** | **16MB** | **256MB** |
+| 4GB | 25 | 32MB | 512MB |
+| 8GB | 50 | 256MB | 1GB |
+| 16GB+ | 100 | 500MB+ | 2GB |
 
 ## Index Optimization
 
@@ -143,74 +176,59 @@ sqlite3 data/app.db "ANALYZE;"
 sqlite3 data/app.db "SELECT * FROM sqlite_stat1;"
 ```
 
-## Query Optimization
+## Query Optimization with sqlc
+
+Laju Go uses [sqlc](https://sqlc.dev/) for type-safe query generation. Optimizations happen at the SQL level — write efficient queries and sqlc generates efficient Go code.
 
 ### Use Parameterized Queries
 
-```go
-// ✅ Good: Parameterized query (fast, safe)
-query := psql.
-    Select("*").
-    From("users").
-    Where(squirrel.Eq{"email": email})
+sqlc queries are always parameterized — SQL injection is impossible by design:
 
-// ❌ Bad: String concatenation (slow, SQL injection risk)
-query := fmt.Sprintf("SELECT * FROM users WHERE email = '%s'", email)
+```sql
+-- queries/user.sql
+-- name: GetUserByEmail :one
+SELECT * FROM users WHERE email = ? LIMIT 1;
 ```
+
+The `?` placeholder is type-checked at compile time by sqlc.
 
 ### Select Only Needed Columns
 
-```go
-// ✅ Good: Select specific columns
-query := psql.
-    Select("id", "email", "name").
-    From("users")
+```sql
+-- ✅ Good: Select specific columns
+-- name: GetUserName :one
+SELECT id, name FROM users WHERE id = ?;
 
-// ❌ Bad: Select all columns
-query := psql.
-    Select("*").
-    From("users")
+-- ❌ Avoid SELECT * when you only need a few columns
+-- name: GetUserByID :one  -- pulls all columns including JSON session data
+SELECT * FROM users WHERE id = ?;
 ```
 
 ### Use LIMIT for Large Tables
 
-```go
-// ✅ Good: Limit results
-query := psql.
-    Select("*").
-    From("users").
-    Limit(100)
-
-// ❌ Bad: No limit on large table
-query := psql.
-    Select("*").
-    From("users")
+```sql
+-- name: ListRecentUsers :many
+SELECT id, email, name FROM users ORDER BY created_at DESC LIMIT ?;
 ```
 
 ### Batch Operations
 
-```go
-// ✅ Good: Batch insert
-func (r *UserRepository) BatchInsert(users []User) error {
-    query := psql.Insert("users").Columns("email", "name", "password")
-    
-    for _, user := range users {
-        query = query.Values(user.Email, user.Name, user.Password)
-    }
-    
-    sql, args, err := query.ToSql()
-    if err != nil {
-        return err
-    }
-    
-    _, err = r.db.Exec(sql, args...)
-    return err
-}
+For batch operations, write the SQL directly:
 
-// ❌ Bad: Individual inserts
+```sql
+-- name: CreateUsers :exec
+INSERT INTO users (email, name, password) VALUES (?, ?, ?);
+```
+
+Insert multiple rows in a transaction:
+
+```go
+tx, _ := db.Begin()
 for _, user := range users {
-    r.db.Exec("INSERT INTO users ...")  // Slow!
+    tx.Exec("INSERT INTO users (email, name, password) VALUES (?, ?, ?)",
+        user.Email, user.Name, user.Password)
 }
+tx.Commit()
 ```
 
 ## WAL Mode Management
@@ -296,94 +314,72 @@ cp data/app-backup.db data/app.db
 
 ## Application-Level Optimization
 
-### Caching
+### User Profile Cache
 
-Implement caching for frequently accessed data:
+Laju Go includes a built-in **in-memory TTL cache** for user profiles (`app/cache/user_cache.go`):
 
 ```go
-// Simple in-memory cache
-type Cache struct {
-    data sync.Map
-}
-
-func (c *Cache) Get(key string) (interface{}, bool) {
-    return c.data.Load(key)
-}
-
-func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
-    c.data.Store(key, value)
-    
-    // Auto-expire
-    go func() {
-        time.Sleep(ttl)
-        c.data.Delete(key)
-    }()
-}
-
-// Usage
-func (s *UserService) GetByID(id int) (*User, error) {
+// UserService uses the cache automatically
+func (s *UserService) GetProfile(userID int64) (*models.UserResponse, error) {
     // Check cache first
-    if cached, ok := s.cache.Get(fmt.Sprintf("user:%d", id)); ok {
-        return cached.(*User), nil
+    if user := s.cache.Get(userID); user != nil {
+        response := user.ToResponse()
+        return &response, nil
     }
-    
-    // Fetch from database
-    user, err := s.userRepo.GetByID(id)
+
+    // Cache miss: query DB via sqlc
+    user, err := s.querier.GetUserByID(context.Background(), userID)
     if err != nil {
         return nil, err
     }
-    
-    // Cache for 5 minutes
-    s.cache.Set(fmt.Sprintf("user:%d", id), user, 5*time.Minute)
-    
-    return user, nil
+
+    // Store in cache
+    s.cache.Set(user)
+    response := user.ToResponse()
+    return &response, nil
 }
 ```
 
-### Lazy Loading
+**Cache features**:
+- **TTL-based expiry** — configurable via `USER_CACHE_TTL` env var (default: 15m)
+- **Auto-invalidation** — cache cleared automatically on profile updates, password changes, avatar uploads
+- **Thread-safe** — uses `sync.RWMutex`
+- **Configurable** — set to `0` to disable caching
 
-```go
-// ✅ Good: Load related data only when needed
-type User struct {
-    ID       int
-    Email    string
-    Name     string
-    Sessions []Session `json:"-"`  // Don't serialize by default
+### Avoid N+1 Queries
+
+With sqlc, write a single query instead of looping:
+
+```sql
+-- ❌ Bad: N queries (one per user)
+for _, id := range userIDs {
+    user, _ := querier.GetUserByID(ctx, id)
 }
 
-func (h *UserHandler) GetUser(c *fiber.Ctx) error {
-    user, _ := h.userRepo.GetByID(id)
-    
-    // Only load sessions if requested
-    if c.Query("include") == "sessions" {
-        user.Sessions, _ = h.sessionRepo.GetByUserID(user.ID)
-    }
-    
-    return c.JSON(user)
-}
+-- ✅ Good: 1 query
+-- name: GetUsersByIDs :many
+SELECT * FROM users WHERE id IN (sqlc.slice('ids'));
 ```
 
 ### Pagination
 
+```sql
+-- queries/user.sql
+-- name: ListUsersPaginated :many
+SELECT id, email, name, created_at FROM users
+ORDER BY created_at DESC LIMIT ? OFFSET ?;
+```
+
 ```go
-// ✅ Good: Paginate large result sets
-func (r *UserRepository) GetUsers(page, limit int) ([]User, error) {
-    offset := (page - 1) * limit
-    
-    query := psql.
-        Select("id", "email", "name", "created_at").
-        From("users").
-        OrderBy("created_at DESC").
-        Limit(limit).
-        Offset(offset)
-    
-    // ...
-}
+offset := (page - 1) * limit
+users, err := s.querier.ListUsersPaginated(ctx, limit, offset)
 ```
 
 ## Frontend Optimization
 
 ### Build Optimization
+
+Vite handles code splitting automatically. For custom chunks:
 
 ```javascript
 // vite.config.js
@@ -392,8 +388,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Split vendor chunks
-          'vendor': ['@inertiajs/svelte'],
+          'vendor': ['@inertiajs/svelte'],  // or @inertiajs/react
           'utils': ['dayjs', 'axios'],
         },
       },
@@ -404,16 +399,9 @@ export default defineConfig({
 
 ### Lazy Loading Components
 
-```svelte
-<!-- ✅ Good: Lazy load heavy components -->
-<script>
-  import { lazy } from 'svelte';
-  const HeavyComponent = lazy(() => import('./HeavyComponent.svelte'));
-</script>
-
-{#if showHeavyComponent}
-  <HeavyComponent />
-{/if}
+```javascript
+// Works with any framework via dynamic import + Inertia
+const HeavyComponent = () => import('./HeavyComponent');
 ```
 
 ### Asset Optimization
@@ -423,8 +411,7 @@ export default defineConfig({
 npm install -g imagemin-cli
 imagemin public/images/* --out-dir=public/images
 
-# Use WebP format
-# Convert PNG/JPG to WebP for smaller file sizes
+# Use WebP format for smaller file sizes
 ```
 
 ## Monitoring Performance
@@ -507,9 +494,9 @@ EOF
 - [ ] Connection pool configured
 - [ ] Indexes created for frequent queries
 - [ ] Query performance analyzed
-- [ ] Caching implemented for hot data
-- [ ] Pagination for large result sets
-- [ ] Frontend assets optimized
+- [ ] User profile cache configured (`USER_CACHE_TTL` env var)
+- [ ] sqlc queries use LIMIT/OFFSET for pagination
+- [ ] Frontend assets optimized (code splitting, compression)
 - [ ] Monitoring in place
 - [ ] Regular backup schedule
 - [ ] Database maintenance scheduled
@@ -553,12 +540,11 @@ PRAGMA busy_timeout=10000;
 3. Check for memory leaks
 
 ```go
-db.SetMaxOpenConns(10)  // Reduce from 25
-db.Exec("PRAGMA cache_size=-16000")  // Reduce to 16MB
+db.SetMaxOpenConns(10)  // Reduce from 15
+db.Exec("PRAGMA cache_size=-8000")  // Reduce to 8MB
 ```
 
 ## Next Steps
 
 - [Production Deployment](production.md) - Complete deployment guide
-- [Monitoring Guide](monitoring.md) - Application monitoring
-- [Scaling Guide](scaling.md) - Horizontal scaling strategies
+- [SQLite Configuration](sqlite-configuration.md) - Tuning SQLite for your server
