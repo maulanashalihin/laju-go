@@ -123,7 +123,7 @@ laju-go/
 
 ### Why SQLite (`modernc.org/sqlite`)?
 
-We intentionally chose `modernc.org/sqlite` (pure Go) over `mattn/go-sqlite3` (CGO). Here's why this decision is locked in:
+We intentionally chose `modernc.org/sqlite` (pure Go) over `mattn/go-sqlite3` (CGO). Here's why — backed by [real benchmarks](https://github.com/maulanashalihin/go-sqlite-benchmark-mattn-vs-modernc).
 
 | Factor | `modernc.org/sqlite` ✅ | `mattn/go-sqlite3` ❌ |
 |--------|------------------------|----------------------|
@@ -131,9 +131,31 @@ We intentionally chose `modernc.org/sqlite` (pure Go) over `mattn/go-sqlite3` (C
 | **Static binary** | Single self-contained binary | Links to `libsqlite3`, dynamic dependency hell |
 | **Docker/CI** | `FROM golang:alpine` works | Must install `gcc`, `libsqlite3-dev`, image bloat |
 | **Debug production** | Full Go stack traces | CGO stack traces are opaque and painful |
-| **Raw DB speed** | ~20-50% slower in benchmarks | Faster at micro-benchmark level |
+| **Restart safety** | No stale CGO state — clean restarts every time | Stale C threads can cause crashes after restart |
 
-**The catch:** At the full HTTP stack level (Fiber routing + JSON marshal + auth + network), the SQLite driver difference is **less than 1.5%** of total request latency. You're bottlenecked by JSON/auth/network long before the driver. The deployment simplicity of pure Go wins every time.
+### Benchmark Reality (Apple M4 + Go Fiber + wrk)
+
+Under real HTTP load with Fiber routing + SQLite + JSON response:
+
+| Metric | `modernc.org/sqlite` | `mattn/go-sqlite3` |
+|--------|---------------------|-------------------|
+| **Throughput** | ~108K RPS | ~198K RPS |
+| **Latency (avg)** | 4.01 ms | 5.07 ms |
+| **Latency (stdev)** | **2.99 ms** ✅ | 10.46 ms |
+| **Latency (max)** | **42.69 ms** ✅ | 152.19 ms |
+
+**modernc wins on consistency**: lower jitter, predictable tail latency. mattn wins on raw throughput (~2x) but with 3-4x higher latency variance.
+
+### The Real Trade-off
+
+For most SaaS apps, both drivers handle **100K+ RPS** — far beyond what a typical app needs. The practical difference is deployment:
+
+- **modernc**: Single static binary, CI just works, `FROM alpine` or even `scratch`
+- **mattn**: Must install `gcc`, configure `CC` env, bloated Docker images, fragile CGO stack traces
+
+> **Bottom line**: Pick modernc for deployment simplicity. If you ever outgrow SQLite (50K+ RPS), migrate to PostgreSQL — but the driver choice won't be why you hit that wall.
+
+[Full benchmark →](https://github.com/maulanashalihin/go-sqlite-benchmark-mattn-vs-modernc)
 
 **Decision is final.** Don't migrate to `mattn/go-sqlite3` unless you have a very specific reason (e.g. need SQLite extensions, or doing batch ETL where DB is 90% of CPU).
 
