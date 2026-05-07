@@ -4,430 +4,611 @@ This document explains the architectural patterns and design decisions behind La
 
 ## Overview
 
-Laju Go follows a **layered architecture** (also known as n-tier architecture) that separates concerns into distinct layers. This pattern makes the codebase maintainable, testable, and scalable.
+Laju Go follows a **layered architecture** that separates concerns into distinct layers. This pattern makes the codebase maintainable, testable, and scalable while keeping the overall structure simple — a single Go binary with no `cmd/` directory.
 
 ## High-Level Architecture
 
-```mermaid
-graph TB
-    Client[Browser/Client]
-    Routes[Routes Layer]
-    Middleware[Middleware Layer]
-    Handler[Handler Layer]
-    Service[Service Layer]
-    Repository[Repository Layer]
-    DB[(SQLite Database)]
-    
-    Client --> Routes
-    Routes --> Middleware
-    Middleware --> Handler
-    Handler --> Service
-    Service --> Repository
-    Repository --> DB
+```
+┌──────────────────────────────────────────────────────┐
+│                   Browser / Client                    │
+└──────────────────┬───────────────────────────────────┘
+                   │ HTTP Request
+                   ▼
+┌──────────────────────────────────────────────────────┐
+│                routes/web.go                          │
+│         Route definitions + middleware chains         │
+└──────────────────┬───────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────┐
+│             app/middlewares/                          │
+│   AuthRequired · AdminRequired · Guest · CSRF · Rate │
+└──────────────────┬───────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────┐
+│               app/handlers/                           │
+│      Parse request → call service → return response   │
+│      (no business logic — thin layer)                 │
+└──────────────────┬───────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────┐
+│               app/services/                           │
+│      Business logic · Auth flows · External APIs      │
+└──────────────────┬───────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────┐
+│               app/queries/  (sqlc generated)          │
+│      Type-safe SQL queries · Data access layer        │
+└──────────────────┬───────────────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────────────┐
+│                  SQLite Database                      │
+│           (modernc.org/sqlite — pure Go)              │
+└──────────────────────────────────────────────────────┘
 ```
 
 ## Architecture Layers
 
 ### 1. Routes Layer (`routes/web.go`)
 
-**Purpose**: Define URL endpoints and map them to handlers.
+**Purpose**: Define URL endpoints, apply middleware chains, and wire handlers.
 
 **Responsibilities**:
-- Define HTTP methods and paths
-- Apply middleware chains
-- Set up CSRF protection
-- Configure route-specific settings
+- Map HTTP methods and paths to handler methods
+- Apply middleware chains (auth, CSRF, rate limiting)
+- Configure static file serving (`/dist`, `/public`, `/storage`)
+- Define route groups (public, auth, protected, admin)
 
-**Example**:
+**Route Groups and Handlers**:
+
+| Route Group | Middleware | Handler |
+|-------------|-----------|---------|
+| `/`, `/about` | None | `PublicHandler` |
+| `/login`, `/register` | `Guest` | `AuthHandler` |
+| `/auth/google` | None | `AuthHandler` |
+| `/logout` | `AuthRequired` | `AuthHandler` |
+| `/api/me`, `/api/avatar/:id` | `AuthRequired` | `AuthHandler` |
+| `/forgot-password`, `/reset-password/:token` | None | `PasswordResetHandler` |
+| `/app/*` | `AuthRequired` + `CSRF` | `AppHandler`, `UploadHandler` |
+| `/admin/*` | `AuthRequired` + `AdminRequired` | Inline |
+
+**Handlers Struct** — routes package defines a `Handlers` struct that bundles all handler instances:
+
 ```go
-// routes/web.go
-func SetupRoutes(app *fiber.App) {
-    // Public routes
-    app.Get("/", PublicHandler.Index)
-    app.Get("/about", PublicHandler.About)
-    
-    // Protected routes with auth middleware
-    app.Get("/app", middlewares.AuthRequired(store), AppHandler.Dashboard)
-    app.Get("/app/profile", middlewares.AuthRequired(store), AppHandler.Profile)
-    
-    // Admin-only routes
-    app.Get("/admin", middlewares.AuthRequired(store), middlewares.AdminRequired, AdminHandler.Dashboard)
+type Handlers struct {
+    Public        *handlers.PublicHandler
+    Auth          *handlers.AuthHandler
+    App           *handlers.AppHandler
+    Upload        *handlers.UploadHandler
+    PasswordReset *handlers.PasswordResetHandler
 }
 ```
 
+**Route setup**:
+```go
+func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
+    setupStaticRoutes(app)
+    setupPublicRoutes(app, handlers.Public)
+    setupAuthRoutes(app, handlers.Auth, handlers.PasswordReset, store, mailerService)
+    setupAppRoutes(app, handlers.App, handlers.Upload, store, csrfMiddleware)
+}
+```
+
+---
+
 ### 2. Middleware Layer (`app/middlewares/`)
 
-**Purpose**: Process requests before they reach handlers.
-
-**Responsibilities**:
-- Authentication checks
-- Authorization (role-based access)
-- CSRF token validation
-- Rate limiting
-- Logging
-- Request/response modification
+**Purpose**: Process requests before they reach handlers — gatekeeping, validation, and enrichment.
 
 **Available Middleware**:
 
 | Middleware | File | Purpose |
 |------------|------|---------|
-| `AuthRequired` | `auth.go` | Ensure user is authenticated |
+| `AuthRequired` | `auth.go` | Ensure user is authenticated (checks session for `user_id`) |
 | `AdminRequired` | `auth.go` | Ensure user has admin role |
-| `Guest` | `auth.go` | Redirect authenticated users away from auth pages |
+| `Guest` | `auth.go` | Redirect authenticated users away from login/register pages |
 | `CSRF` | `csrf.go` | Validate CSRF tokens on state-changing requests |
-| `RateLimit` | `rate-limit.go` | Throttle requests per IP/user |
+| `AuthRateLimit` | `rate-limit.go` | Throttle login/register attempts per IP |
+| `PasswordResetRateLimit` | `rate-limit.go` | Throttle password reset requests |
 
-**Example**:
+**Example — session-based auth**:
 ```go
-// app/middlewares/auth.go
 func AuthRequired(store *session.Store) fiber.Handler {
     return func(c *fiber.Ctx) error {
-        session, _ := store.Get(c)
-        
-        // Check if user_id exists in session
-        if userID, ok := session.Get("user_id").(int); ok {
-            // User is authenticated, continue to handler
-            return c.Next()
+        sess, _ := store.Get(c)
+        userID := sess.Get("user_id")
+        if userID == nil {
+            if c.Get("X-Inertia") == "true" {
+                return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+                    "component": "Login",
+                    "props":     fiber.Map{"error": "Please login"},
+                })
+            }
+            return c.Redirect("/login")
         }
-        
-        // User not authenticated, redirect to login
-        return c.Redirect("/login")
+        c.Locals("user_id", userID)
+        return c.Next()
     }
 }
 ```
+
+---
 
 ### 3. Handler Layer (`app/handlers/`)
 
-**Purpose**: Handle HTTP requests and responses.
+**Purpose**: Handle HTTP requests — parse input, call services, return responses.
 
 **Responsibilities**:
-- Parse request data (body, params, query)
-- Validate input
-- Call appropriate services
-- Return responses (JSON, redirect, render)
-- Handle errors
+- Parse request body, params, and query strings
+- Validate input (basic checks — business rules go in services)
+- Call appropriate service methods
+- Return responses via `inertiaService.Render()` or `c.JSON()`/`c.Redirect()`
+- Handle errors with user-friendly messages
 
 **Handler Files**:
 
-| File | Handlers |
-|------|----------|
-| `auth.go` | Login, Register, OAuth, Logout |
-| `app.go` | Dashboard, Profile |
-| `public.go` | Index, About |
-| `upload.go` | File upload |
-| `password-reset.go` | Password reset request and completion |
+| File | Struct | Handlers |
+|------|--------|----------|
+| `auth.go` | `AuthHandler` | Login, Register, Logout, Google OAuth, Me, GetAvatar |
+| `app.go` | `AppHandler` | Dashboard, Profile, UpdateProfile, UpdatePassword |
+| `public.go` | `PublicHandler` | Index (landing page), About |
+| `upload.go` | `UploadHandler` | File upload |
+| `password-reset.go` | `PasswordResetHandler` | Forgot password, Reset password |
+
+**Key rule**: Handlers are **thin**. No business logic — delegate to services.
 
 **Example**:
 ```go
-// app/handlers/auth.go
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
-    // Parse request body
-    var req dto.LoginRequest
+    var req models.LoginRequest
     if err := c.BodyParser(&req); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-            "error": "Invalid request body",
-        })
+        return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
     }
-    
-    // Call service
-    user, err := h.authService.LoginByEmail(req.Email, req.Password)
+
+    user, err := h.authService.Login(req.Email, req.Password)
     if err != nil {
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-            "error": err.Error(),
-        })
+        h.store.Flash(c, "error", "Invalid email or password")
+        return c.Redirect("/login")
     }
-    
-    // Store session
-    session, _ := h.store.Get(c)
-    session.Set("user_id", user.ID)
-    session.Save()
-    
-    // Redirect to dashboard
-    return c.Redirect("/app")
+
+    sess, _ := h.store.Get(c)
+    sess.Set("user_id", user.ID)
+    sess.Set("email", user.Email)
+    sess.Set("role", string(user.Role))
+    sess.Save()
+
+    return c.Redirect("/app")  // Inertia follows this redirect
 }
 ```
 
+**Inertia response pattern** — most handlers return Inertia responses:
+```go
+return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
+    "user": user,
+})
+```
+
+---
+
 ### 4. Service Layer (`app/services/`)
 
-**Purpose**: Implement business logic.
+**Purpose**: Implement business logic. This is where the application's core behavior lives.
 
 **Responsibilities**:
-- Authentication flows
-- User management
-- Email sending
-- Password validation
+- Authentication (email/password, Google OAuth)
+- User management (profile CRUD, password change)
+- Email sending (password reset, notifications)
+- Inertia.js response rendering
+- Vite asset manifest resolution (dev vs production)
 - Business rules enforcement
-- Transaction management
+- Cache coordination
 
 **Service Files**:
 
-| File | Purpose |
-|------|---------|
-| `auth.go` | Authentication logic (email/password, OAuth) |
-| `user.go` | User management (CRUD, profile updates) |
-| `mailer.go` | Email sending (SMTP, templates) |
-| `inertia.go` | Inertia.js rendering and responses |
-| `asset.go` | Vite asset manifest resolution |
+| File | Struct | Purpose |
+|------|--------|---------|
+| `auth.go` | `AuthService` | Authentication logic (register, login, OAuth), password hashing |
+| `user.go` | `UserService` | Profile CRUD, cache coordination, role checks |
+| `inertia.go` | `InertiaService` | Inertia.js page rendering (HTML initial load + JSON XHR) |
+| `asset.go` | `AssetService` | Vite manifest resolution, dev server detection |
+| `mailer.go` | `MailerService` | SMTP email sending |
+
+**All services depend on `*queries.Querier`** for data access:
+
+```go
+type AuthService struct {
+    querier       *queries.Querier
+    sessionSecret string
+    oauthConfig   *oauth2.Config
+}
+
+type UserService struct {
+    querier *queries.Querier
+    cache   *cache.UserCache  // In-memory TTL cache
+}
+```
 
 **Example**:
 ```go
-// app/services/auth.go
-func (s *AuthService) LoginByEmail(email, password string) (*models.User, error) {
-    // Get user from repository
-    user, err := s.userRepo.GetByEmail(email)
+func (s *AuthService) Login(email, password string) (*models.User, error) {
+    user, err := s.querier.GetUserByEmail(context.Background(), email)
     if err != nil {
-        return nil, ErrUserNotFound
+        if errors.Is(err, queries.ErrUserNotFound) {
+            return nil, ErrInvalidCredentials
+        }
+        return nil, err
     }
-    
-    // Validate password
-    err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-    if err != nil {
-        return nil, ErrInvalidPassword
+    if !user.Password.Valid {
+        return nil, ErrInvalidCredentials // OAuth-only user
     }
-    
-    // Check if user is active
-    if !user.IsActive {
-        return nil, ErrUserInactive
+    if !checkPassword(user.Password.String, password) {
+        return nil, ErrInvalidCredentials
     }
-    
     return user, nil
 }
 ```
 
-### 5. Repository Layer (`app/repositories/`)
+---
 
-**Purpose**: Handle database operations.
+### 5. Queries Layer — sqlc (`app/queries/`)
 
-**Responsibilities**:
-- CRUD operations
-- Query building
-- Transaction management
-- Data mapping (database → domain models)
+**Purpose**: Type-safe data access layer, **automatically generated by sqlc**.
 
-**Repository Files**:
+**This is a critical architectural decision**: Instead of hand-writing repository interfaces and implementations, Laju Go uses [sqlc](https://sqlc.dev/) to generate type-safe Go code from SQL.
 
-| File | Purpose |
-|------|---------|
-| `user.repository.go` | User database operations |
-| `session.repository.go` | Session database operations |
+**Workflow**:
+1. Write SQL queries in `queries/*.sql` (source files)
+2. Run `npm run db:generate` → sqlc generates `app/queries/*.go`
+3. Use the generated `Querier` in your services
 
-**Example**:
-```go
-// app/repositories/user.repository.go
-func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
-    query := squirrel.
-        Select("id", "email", "name", "password", "role", "avatar", "created_at", "updated_at").
-        From("users").
-        Where(squirrel.Eq{"email": email}).
-        Limit(1)
-    
-    sql, args, err := query.ToSql()
-    if err != nil {
-        return nil, err
-    }
-    
-    var user models.User
-    err = r.db.QueryRow(sql, args...).Scan(
-        &user.ID, &user.Email, &user.Name, &user.Password,
-        &user.Role, &user.Avatar, &user.CreatedAt, &user.UpdatedAt,
-    )
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return nil, ErrUserNotFound
-        }
-        return nil, err
-    }
-    
-    return &user, nil
-}
-```
+**Generated Files**:
+
+| File | Source |
+|------|--------|
+| `db.go` | Transaction and database helpers |
+| `models.go` | Go structs matching database tables |
+| `querier.go` | Interface + implementation for all queries |
+| `user.sql.go` | User CRUD queries |
+| `session.sql.go` | Session CRUD queries |
+| `session_helpers.go` | Session helper functions |
+
+**Why sqlc over hand-written repositories?**
+
+| Approach | Boilerplate | Type Safety | Performance |
+|----------|-------------|-------------|-------------|
+| **sqlc** (generated) | Zero (generated) | Full (compile-time) | Native SQL |
+| Hand-written repos | High | Manual | ORM overhead |
+| ORM (GORM, etc.) | Low | Partial | Reflection cost |
+
+---
 
 ### 6. Models Layer (`app/models/`)
 
-**Purpose**: Define data structures.
+**Purpose**: Define data structures used across layers.
 
-**Responsibilities**:
-- Domain models (User, Session)
-- DTOs (Data Transfer Objects)
-- Validation rules
-
-**Model Files**:
+**Files**:
 
 | File | Purpose |
 |------|---------|
-| `user.go` | User domain model |
-| `session.go` | Session domain model |
-| `dto.go` | Request/Response DTOs |
+| `user.go` | `User` domain model with `UserRole` type (admin/user) |
+| `dto.go` | Request/Response DTOs (`RegisterRequest`, `LoginRequest`, `UpdateProfileRequest`, `UserResponse`) |
+| `session.go` | Session data model |
 
-**Example**:
+**Pattern — `ToResponse()` method for safe data exposure**:
+
 ```go
-// app/models/user.go
 type User struct {
-    ID        int       `json:"id"`
-    Email     string    `json:"email"`
-    Name      string    `json:"name"`
-    Password  string    `json:"-"` // Hide from JSON
-    Avatar    string    `json:"avatar"`
-    Role      string    `json:"role"`
-    GoogleID  string    `json:"-"`
-    IsActive  bool      `json:"is_active"`
-    CreatedAt time.Time `json:"created_at"`
-    UpdatedAt time.Time `json:"updated_at"`
+    ID            int64          `json:"id"`
+    Email         string         `json:"email"`
+    Name          string         `json:"name"`
+    Avatar        string         `json:"avatar"`
+    Password      sql.NullString `json:"-"` // Never exposed in JSON
+    Role          UserRole       `json:"role"`
+    GoogleID      sql.NullString `json:"-"` // Never exposed
+    EmailVerified bool           `json:"email_verified"`
+    CreatedAt     time.Time      `json:"created_at"`
+    UpdatedAt     time.Time      `json:"updated_at"`
 }
 
-// app/models/dto.go
-type LoginRequest struct {
-    Email    string `json:"email"`
-    Password string `json:"password"`
-}
-
-type LoginResponse struct {
-    User    *User  `json:"user"`
-    Token   string `json:"token"`
-    Message string `json:"message"`
+func (u *User) ToResponse() UserResponse {
+    return UserResponse{
+        ID:    u.ID,
+        Email: u.Email,
+        Name:  u.Name,
+        // Excludes Password, GoogleID — never leaked
+    }
 }
 ```
+
+---
+
+### 7. Session Layer (`app/session/`)
+
+**Purpose**: Infrastructure layer for session management — intentionally separate from services.
+
+**Details**:
+
+| Aspect | Detail |
+|--------|--------|
+| Location | `app/session/session.go` (not in `app/services/`) |
+| Storage | SQLite database-backed (via `queries.Querier`) |
+| Transport | HTTP-only cookie (`session_id`) |
+| Lifetime | 24 hours default |
+| API | `store.Get()` → `Session{Get, Set, Save, Destroy, Regenerate}` |
+| Flash messages | `store.Flash()` / `store.GetFlash()` — one-time cookies |
+
+**Why separate from services?**
+
+1. **Reusability**: Session infrastructure can be used in any Fiber project
+2. **Clear responsibilities**: Session knows nothing about users or auth
+3. **Flexibility**: Easy to swap implementation (cookie → Redis)
+
+**Dependency relationship**:
+```
+services/auth.go  →  session/session.go  →  queries/session.sql.go
+   (Business)         (Infrastructure)        (Data access)
+```
+
+---
+
+### 8. Config Layer (`app/config/`)
+
+**Purpose**: Centralized configuration loaded from environment variables / `.env`.
+
+```go
+type Config struct {
+    AppPort            string
+    AppEnv             string
+    DBPath             string
+    SessionSecret      string
+    GoogleClientID     string
+    GoogleClientSecret string
+    // ... SMTP, CORS, Cache TTL
+}
+```
+
+Loaded once at startup via `config.Load()`.
+
+---
+
+### 9. Cache Layer (`app/cache/`)
+
+**Purpose**: In-memory TTL cache for user profiles to reduce database queries.
+
+```go
+type UserCache struct {
+    mu   sync.RWMutex
+    data map[int64]cacheEntry
+    ttl  time.Duration  // Configurable via USER_CACHE_TTL env var
+}
+```
+
+Used by `UserService` for profile lookups and role checks. Automatically invalidated on updates.
+
+---
 
 ## Request Flow
 
-### Authentication Flow
+### Initial Page Load (HTML)
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant R as Routes
-    participant M as Middleware
-    participant H as Handler (Auth)
-    participant S as Service (Auth)
-    participant Repo as Repository (User)
-    participant DB as Database
-    
-    C->>R: POST /login
-    R->>M: Rate Limit Check
-    M->>H: AuthHandler.Login()
-    H->>H: Parse request body
-    H->>S: LoginByEmail(email, password)
-    S->>Repo: GetByEmail(email)
-    Repo->>DB: SELECT * FROM users
-    DB-->>Repo: User data
-    Repo-->>S: User model
-    S->>S: Validate password (bcrypt)
-    S-->>H: User or error
-    H->>H: Create session
-    H-->>C: Redirect to /app
+```
+Browser ──GET /──▶ routes/web.go ──▶ PublicHandler.Index()
+                                           │
+                                           ▼
+                                    AssetService.GetAssetData()
+                                           │
+                                           ▼
+                                    templates.LandingPage()
+                                           │
+                                           ▼
+                                    Full HTML page response
 ```
 
-### Protected Route Flow
+### Inertia Navigation (JSON XHR)
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant R as Routes
-    participant M as Middleware (Auth)
-    participant H as Handler (App)
-    participant S as Service (Inertia)
-    
-    C->>R: GET /app
-    R->>M: AuthRequired middleware
-    M->>M: Check session for user_id
-    M->>H: AppHandler.Dashboard()
-    H->>S: Inertia.Render("Dashboard", props)
-    S-->>C: JSON with component + props
+```
+Browser ──GET /app (X-Inertia: true)──▶ AuthRequired middleware
+                                              │
+                                              ▼
+                                         session.Store.Get()
+                                              │
+                                              ▼
+                                         AppHandler.Dashboard()
+                                              │
+                                              ▼
+                                         UserService.GetProfile()
+                                              │
+                                         ┌────┴────┐
+                                         │  Cache  │
+                                         └────┬────┘
+                                              │
+                                         queries.Querier
+                                              │
+                                              ▼
+                                         InertiaService.Render()
+                                              │
+                                              ▼
+                                    JSON {component, props, url}
+```
+
+### Authentication Flow
+
+```
+Browser ──POST /login──▶ AuthHandler.Login()
+                               │
+                          AuthService.Login()
+                               │
+                          queries.GetUserByEmail()
+                               │
+                          bcrypt.CompareHashAndPassword()
+                               │
+                          session.Set("user_id", user.ID)
+                          session.Save()
+                               │
+                          Redirect /app (Inertia follows)
 ```
 
 ## Dependency Injection
 
-Laju Go uses **constructor-based dependency injection** to wire layers together.
+Laju Go uses **constructor-based dependency injection** wired in `main.go`:
 
-**Example**:
 ```go
-// main.go
 func main() {
-    // Initialize database
-    db := initDatabase()
-    
-    // Initialize repositories
-    userRepo := repositories.NewUserRepository(db)
-    sessionRepo := repositories.NewSessionRepository(db)
-    
-    // Initialize services
-    authService := services.NewAuthService(userRepo, sessionRepo)
-    userService := services.NewUserService(userRepo)
-    mailerService := services.NewMailerService()
-    
-    // Initialize handlers
-    authHandler := handlers.NewAuthHandler(authService, mailerService)
-    appHandler := handlers.NewAppHandler(userService)
-    
-    // Setup routes
+    cfg := config.Load()
+
+    db, _ := initDatabase(cfg.DBPath)
+    runMigrations(db, "./migrations")
+
+    querier := queries.NewQuerier(db)
+    userCache := cache.NewUserCache(cfg.UserCacheTTL)
+    sessionStore := session.New(querier)
+
+    authService := services.NewAuthService(querier, services.AuthServiceConfig{...})
+    userService := services.NewUserService(querier, userCache)
+    assetService := services.NewAssetService("./dist/.vite/manifest.json", ".vite-port")
+    inertiaService := services.NewInertiaService(assetService, sessionStore)
+
+    routeHandlers := routes.Handlers{
+        Public: handlers.NewPublicHandler(authService, userService, inertiaService, assetService),
+        Auth:   handlers.NewAuthHandler(authService, userService, sessionStore, inertiaService),
+        App:    handlers.NewAppHandler(userService, sessionStore, inertiaService),
+        Upload: handlers.NewUploadHandler(sessionStore, userService),
+    }
+
+    csrfMiddleware := routes.SetupCSRFMiddleware(sessionStore, cfg.SessionSecret)
+    // ... mailer, password reset ...
+
     app := fiber.New()
-    routes.SetupRoutes(app, authHandler, appHandler)
-    
-    // Start server
-    app.Listen(":8080")
+    routes.SetupRoutes(app, routeHandlers, sessionStore, mailerService, csrfMiddleware)
+    app.Listen(":" + cfg.AppPort)
 }
 ```
 
-## Why This Architecture?
+**Dependency graph**:
+```
+config.Load() → database/sql (SQLite via modernc.org)
+                     │
+                     ├──→ queries.Querier (sqlc)
+                     │         ├──→ AuthService
+                     │         ├──→ UserService ←── cache.UserCache
+                     │         └──→ session.Store
+                     │
+                     └──→ migrations (goose, auto-run on startup)
 
-### Benefits
+asset.AssetService → inertia.InertiaService ←── session.Store
+                                    │
+handlers.* ←── services.*, session.Store
+                    │
+              routes.SetupRoutes()
+```
 
-1. **Separation of Concerns**
-   - Each layer has a single responsibility
-   - Easy to understand and maintain
+## Frontend Architecture
 
-2. **Testability**
-   - Layers can be tested independently
-   - Easy to mock dependencies
+### Inertia.js Pattern
 
-3. **Scalability**
-   - Add new features without breaking existing code
-   - Easy to swap implementations (e.g., SQLite → PostgreSQL)
-
-4. **Reusability**
-   - Services can be used by multiple handlers
-   - Repositories can be used by multiple services
-
-5. **Flexibility**
-   - Easy to add new middleware
-   - Easy to change business logic without touching handlers
-
-### Trade-offs
-
-1. **More Files**
-   - More boilerplate than a simple MVC
-   - More files to navigate
-
-2. **Learning Curve**
-   - New developers need to understand the layers
-   - More abstraction than a simple script
-
-3. **Potential Over-Engineering**
-   - May be too much for very small projects
-   - Consider simplifying for prototypes
-
-## Session Infrastructure
-
-The `app/session/` folder is intentionally separate from `app/services/`:
-
-| Layer | Folder | Purpose |
-|-------|--------|---------|
-| **Infrastructure** | `session/` | Generic session management (cookie encoding, storage) |
-| **Business Logic** | `services/` | Domain-specific rules (authentication, user management) |
-
-**Why Separate?**
-
-1. **Reusability**: `session/` can be used in any Fiber project
-2. **Clear Responsibilities**: Session doesn't know about users or auth
-3. **Flexibility**: Easy to swap session implementation (cookie → Redis)
-4. **Testability**: Can mock session when testing services
-
-**Dependency Relationship**:
+Laju Go uses [Inertia.js](https://inertiajs.com/) to create a single-page app experience:
 
 ```
-services/auth.go  →  session/session.go
-   (Business)         (Infrastructure)
+Initial page load:
+  Browser ──GET──▶ Server ──render──▶ templates.InertiaPage (HTML shell)
+                                         └── JSON page data embedded in script tag
+                                              {component, props, url}
+
+Subsequent navigation:
+  Browser ──XHR (X-Inertia: true)──▶ Server ──JSON──▶ Browser
+                                        {component, props, url}
+  Svelte swaps components without full page reload
 ```
+
+### Component Structure
+
+```
+frontend/src/
+├── main.ts                    # Inertia initialization (createInertiaApp)
+├── app.css                    # Global styles (Tailwind)
+├── components/                # Reusable UI components
+│   ├── Button.svelte
+│   ├── Input.svelte
+│   ├── Header.svelte
+│   └── DarkModeToggle.svelte
+├── layouts/                   # Layout components
+├── lib/                       # Utilities (api, i18n, types, utils)
+└── pages/                     # Page components
+    ├── auth/                  # Login, Register, ForgotPassword, ResetPassword
+    ├── app/                   # Dashboard, Profile
+    └── admin/                 # (future)
+```
+
+### Templ Templates
+
+The `templates/` directory contains Go `templ` components:
+
+| Template | Purpose |
+|----------|---------|
+| `InertiaPage.templ` | HTML shell for Inertia initial page load |
+| `LandingPage.templ` | Public landing/home page |
+
+Templ is type-safe HTML generation compiled to Go code at build time.
+
+## Response Patterns
+
+### Inertia Pages (Most Routes)
+
+All protected routes use `inertiaService.Render()`:
+```go
+return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
+    "user": user,
+})
+```
+
+### Direct HTML (Landing Page)
+```go
+return templates.LandingPage("Welcome", viteURL, mainCSS).Render(c.Context(), c.Response().BodyWriter())
+```
+
+### API Endpoints (JSON)
+Some endpoints return raw JSON (`/api/me`, `/api/avatar/:id`):
+```go
+c.JSON(fiber.Map{"user": user.ToResponse()})
+```
+
+### Redirects (POST Handlers)
+State-changing requests always redirect:
+```go
+c.Redirect("/app")  // Inertia follows automatically
+```
+
+## Key Architectural Decisions
+
+### Why sqlc Instead of ORM/Repository Pattern?
+
+1. **Type safety at compile time** — SQL errors caught before runtime
+2. **Zero boilerplate** — queries are generated, not written by hand
+3. **Full SQL power** — no ORM limitations for complex queries
+4. **Single source of truth** — SQL is the canonical query language
+
+### Why modernc.org/sqlite (Pure Go)?
+
+- **Static binary** — single file deployment, no CGO
+- **Cross-compilation** — `GOOS=linux GOARCH=amd64 go build` just works
+- **No system dependencies** — works on scratch Docker images
+
+### Why Inertia.js Instead of API + SPA?
+
+- **No API versioning** — server and client are in same codebase
+- **Direct service calls** — no HTTP overhead for data fetching
+- **Simplified auth** — session-based, no JWT/token management
+- **SEO-friendly** — initial page load is full HTML
+
+### Why `app/session/` Is Separate from `app/services/`?
+
+- Session is infrastructure (cookie management, storage)
+- Services are business logic (auth, user management)
+- Keeps session swappable without touching business logic
 
 ## Database Design
 
@@ -440,18 +621,18 @@ erDiagram
         int id PK
         string email UK
         string name
-        string password
+        string password "nullable (OAuth users)"
         string avatar
-        string role
-        string google_id UK
+        string role "user | admin"
+        string google_id UK "nullable"
         bool email_verified
         datetime created_at
         datetime updated_at
     }
     SESSIONS {
-        string id PK
+        string id PK "random hex token"
         int user_id FK
-        text data
+        text data "JSON encoded session data"
         datetime expires_at
         datetime created_at
         datetime updated_at
@@ -460,174 +641,70 @@ erDiagram
 
 ### Design Principles
 
-1. **Foreign Keys**: Enforce referential integrity
-2. **Indexes**: Optimize common queries (email, user_id)
-3. **Timestamps**: Track creation and updates
-4. **Soft Deletes**: Not used (hard delete for simplicity)
-
-## Frontend Architecture
-
-### Inertia.js Pattern
-
-Laju Go uses Inertia.js to bridge backend and frontend:
-
-```mermaid
-graph LR
-    A[Browser] -->|Initial Load| B[Server]
-    B -->|HTML Template| A
-    A -->|Subsequent Nav| C[Inertia XHR]
-    C -->|X-Inertia: true| B
-    B -->|JSON Response| A
-    A -->|Render Component| D[Svelte]
-```
-
-### Component Structure
-
-```
-frontend/src/
-├── main.ts                  # Inertia initialization
-├── app.css                  # Global styles
-├── components/              # Reusable components
-│   ├── Button.svelte
-│   ├── Input.svelte
-│   ├── Header.svelte
-│   └── DarkModeToggle.svelte
-└── pages/                   # Page components
-    ├── auth/
-    │   ├── Login.svelte
-    │   └── Register.svelte
-    └── app/
-        ├── Dashboard.svelte
-        └── Profile.svelte
-```
+1. **Foreign keys** — enforce referential integrity
+2. **Indexes** — email and google_id for fast lookups
+3. **Nullable fields** — `google_id` and `password` are nullable (OAuth vs email auth)
+4. **Hard deletes** — sessions are hard-deleted on logout
 
 ## Best Practices
 
 ### 1. Keep Layers Thin
 
-Handlers should delegate to services, not implement business logic:
+Handlers delegate to services; services use the Querier:
 
 ```go
-// ❌ Bad: Business logic in handler
-func (h *Handler) Login(c *fiber.Ctx) error {
-    // ... parsing ...
-    
-    // Don't do this in handler!
-    err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+// ✅ Handler is thin
+func (h *AuthHandler) Login(c *fiber.Ctx) error {
+    var req models.LoginRequest
+    c.BodyParser(&req)
+    user, err := h.authService.Login(req.Email, req.Password)
     if err != nil {
-        return c.Status(401).JSON(...)
+        h.store.Flash(c, "error", "Invalid credentials")
+        return c.Redirect("/login")
     }
-    
+    sess, _ := h.store.Get(c)
+    sess.Set("user_id", user.ID)
+    sess.Save()
     return c.Redirect("/app")
 }
 
-// ✅ Good: Business logic in service
-func (h *Handler) Login(c *fiber.Ctx) error {
-    // ... parsing ...
-    
-    user, err := h.authService.Login(email, password)
-    if err != nil {
-        return c.Status(401).JSON(...)
-    }
-    
-    return c.Redirect("/app")
-}
+// ❌ Business logic in handler — wrong
+func (h *Handler) Login(c *fiber.Ctx) error { /* ... */ }
 ```
 
-### 2. Use DTOs for Request/Response
+### 2. Use DTOs for API Responses
 
 ```go
-// ❌ Bad: Using domain model directly
-type User struct {
-    ID       int
-    Password string // Should not be in response!
-}
-
-func (h *Handler) GetUser(c *fiber.Ctx) error {
-    return c.JSON(user)
-}
-
-// ✅ Good: Use DTO
-type UserResponse struct {
-    ID    int    `json:"id"`
-    Email string `json:"email"`
-    Name  string `json:"name"`
-}
-
-func (h *Handler) GetUser(c *fiber.Ctx) error {
-    response := UserResponse{
-        ID:    user.ID,
-        Email: user.Email,
-        Name:  user.Name,
-    }
-    return c.JSON(response)
-}
+// User.ToResponse() excludes Password, GoogleID
+userResponse := user.ToResponse()
 ```
 
-### 3. Handle Errors Gracefully
+### 3. POST Handlers Always Redirect
 
 ```go
-// ❌ Bad: Exposing internal errors
-func (h *Handler) GetUser(c *fiber.Ctx) error {
-    user, err := h.userService.GetByID(id)
-    if err != nil {
-        return c.Status(500).JSON(fiber.Map{
-            "error": err.Error(), // Don't expose internal errors!
-        })
-    }
-    return c.JSON(user)
-}
-
-// ✅ Good: User-friendly error messages
-func (h *Handler) GetUser(c *fiber.Ctx) error {
-    user, err := h.userService.GetByID(id)
-    if err != nil {
-        if err == services.ErrUserNotFound {
-            return c.Status(404).JSON(fiber.Map{
-                "error": "User not found",
-            })
-        }
-        return c.Status(500).JSON(fiber.Map{
-            "error": "An unexpected error occurred",
-        })
-    }
-    return c.JSON(user)
-}
+c.Redirect("/app")  // Inertia auto-follows
 ```
 
-### 4. Validate Input Early
+### 4. Use Flash Messages for Feedback
 
 ```go
-// ✅ Good: Validate in handler before calling service
-func (h *Handler) Register(c *fiber.Ctx) error {
-    var req dto.RegisterRequest
-    if err := c.BodyParser(&req); err != nil {
-        return c.Status(400).JSON(fiber.Map{
-            "error": "Invalid request body",
-        })
-    }
-    
-    // Validate email format
-    if !isValidEmail(req.Email) {
-        return c.Status(400).JSON(fiber.Map{
-            "error": "Invalid email format",
-        })
-    }
-    
-    // Validate password length
-    if len(req.Password) < 8 {
-        return c.Status(400).JSON(fiber.Map{
-            "error": "Password must be at least 8 characters",
-        })
-    }
-    
-    user, err := h.authService.Register(req)
-    // ...
+h.store.Flash(c, "error", "Invalid email or password")
+return c.Redirect("/login")
+// Flash is auto-injected into inertia props
+```
+
+### 5. Handle Errors Gracefully
+
+```go
+if err == services.ErrInvalidCredentials {
+    return c.Status(401).JSON(fiber.Map{
+        "error": "Invalid email or password",
+    })
 }
 ```
 
 ## Next Steps
 
-- [Routing Guide](routing.md) - Route definitions and middleware
-- [Database Guide](database.md) - SQLite setup and migrations
-- [Authentication Guide](authentication.md) - Auth flows and session management
+- [Routing Guide](routing.md) — Route definitions and middleware
+- [Database Guide](database.md) — SQLite setup, sqlc, and migrations
+- [Authentication Guide](authentication.md) — Auth flows and session management
