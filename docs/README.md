@@ -129,6 +129,7 @@ Visit `http://localhost:8080` to see your application.
 | Deploy with Docker | [Docker Deployment](deployment/docker.md) |
 | Setup CI/CD pipeline | [GitHub Actions CI/CD](deployment/github-actions.md) |
 | Optimize performance | [Optimization](deployment/optimization.md) |
+| Set up disaster recovery | [Litestream DR](deployment/litestream.md) |
 | Set up SSL/TLS | [Production Deployment](deployment/production.md) |
 
 ### Troubleshooting
