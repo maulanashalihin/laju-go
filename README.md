@@ -190,7 +190,6 @@ Pause after each step if there are errors. Don't skip steps.
 ```bash
 npx create-laju-go my-app
 cd my-app
-go install github.com/air-verse/air@latest
 npm run dev:all
 ```
 
