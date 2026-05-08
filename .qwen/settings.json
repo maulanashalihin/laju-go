@@ -9,5 +9,12 @@
       "Bash(git stash)"
     ]
   },
+  "mcpServers": {
+    "gortex": {
+      "command": "gortex",
+      "args": ["mcp", "--index", ".", "--watch"],
+      "trust": true
+    }
+  },
   "$version": 3
 }
