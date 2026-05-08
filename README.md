@@ -58,6 +58,7 @@ Visit `http://localhost:8080` to see your application running.
 | [Authentication](docs/guide/authentication.md) | Auth flows, OAuth, sessions, and password reset |
 | [Frontend](docs/guide/frontend.md) | Svelte 5 (default), React & Vue support via Inertia.js |
 | [Deployment](docs/deployment/development.md) | Development workflow, production deployment, Docker, Litestream DR |
+| **[Benchmark](docs/benchmark/)** | **SQLite driver performance across Vultr servers** |
 | [API Reference](docs/reference/api-reference.md) | Complete endpoint documentation |
 | [Troubleshooting](docs/reference/troubleshooting.md) | Common issues and solutions |
 
@@ -114,18 +115,21 @@ We intentionally chose `modernc.org/sqlite` (pure Go) over `mattn/go-sqlite3` (C
 | **Debug production** | Full Go stack traces | CGO stack traces are opaque and painful |
 | **Restart safety** | No stale CGO state — clean restarts every time | Stale C threads can cause crashes after restart |
 
-### Benchmark Reality (Apple M4 + Go Fiber + wrk)
+### Benchmark Reality (Vultr Servers + Go Fiber + wrk)
 
-Under real HTTP load with Fiber routing + SQLite + JSON response:
+Comprehensive benchmark across 3 Vultr server types (shared & dedicated CPU):
 
-| Metric | `modernc.org/sqlite` | `mattn/go-sqlite3` |
-|--------|---------------------|-------------------|
-| **Throughput** | ~108K RPS | ~198K RPS |
-| **Latency (avg)** | 4.01 ms | 5.07 ms |
-| **Latency (stdev)** | **2.99 ms** ✅ | 10.46 ms |
-| **Latency (max)** | **42.69 ms** ✅ | 152.19 ms |
+| Server | Type | mattn RPS | modernc RPS | Gap |
+|--------|------|-----------|-------------|:---:|
+| 1 vCPU Shared | Budget | 16,414 | 12,175 | 1.35x |
+| 4 vCPU Dedicated | Mid-tier | 84,946 | 63,991 | 1.33x |
+| 6 vCPU Shared | High-end | 101,555 | 53,009 | **1.92x** |
 
-**modernc wins on consistency**: lower jitter, predictable tail latency. mattn wins on raw throughput (~2x) but with 3-4x higher latency variance.
+**Key findings**:
+- **Dedicated CPU** gives 25-81% better per-vCPU performance than shared CPU
+- **mattn gap grows on shared CPU** (1.92x) vs dedicated (1.33x) due to Go scheduler contention
+- **Server A (6v Shared $96/mo)** offers best RPS/$ for production (100K RPS)
+- **modernc scales linearly** up to 4 cores, then drops on shared 6+ cores
 
 ### The Real Trade-off
 
@@ -134,11 +138,16 @@ For most SaaS apps, both drivers handle **100K+ RPS** — far beyond what a typi
 - **modernc**: Single static binary, CI just works, `FROM alpine` or even `scratch`
 - **mattn**: Must install `gcc`, configure `CC` env, bloated Docker images, fragile CGO stack traces
 
-> **Bottom line**: Pick modernc for deployment simplicity. If you ever outgrow SQLite (50K+ RPS), migrate to PostgreSQL — but the driver choice won't be why you hit that wall.
+> **Bottom line**: Use modernc for development (simpler), switch to mattn for production if you need >50K RPS (2x throughput).
 
-[Full benchmark →](https://github.com/maulanashalihin/go-sqlite-benchmark-mattn-vs-modernc)
+**📋 [Full Benchmark Report →](docs/benchmark/)**
 
-**Decision is final.** Don't migrate to `mattn/go-sqlite3` unless you have a very specific reason (e.g. need SQLite extensions, or doing batch ETL where DB is 90% of CPU).
+| Document | Description |
+|----------|-------------|
+| [Strategic Insights](docs/benchmark/sqlite-driver-benchmark-insights-2026-05-08.md) | 10 key findings, decision matrix, cost analysis |
+| [All Servers Comparison](docs/benchmark/sqlite-driver-benchmark-all-servers-2026-05-08.md) | Complete data across 3 Vultr servers |
+| [Server A Results](docs/benchmark/sqlite-driver-benchmark-2026-05-08.md) | 6v Shared detailed benchmark |
+| [Server B vs C](docs/benchmark/sqlite-driver-benchmark-comparison-2026-05-08.md) | 1v Shared vs 4v Dedicated comparison |
 
 ## 📦 Installation
 
