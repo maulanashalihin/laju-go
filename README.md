@@ -169,6 +169,116 @@ For most SaaS apps, both drivers handle **100K+ RPS** — far beyond what a typi
 - **SQLite3** (usually pre-installed on macOS/Linux)
 - **Git** for version control
 
+### First-Time Setup (No Go Installed?)
+
+If you've never installed Go before, here's everything you need:
+
+**1. Install Go**
+
+Download the latest version from [go.dev/dl](https://go.dev/dl/). Choose the installer for your OS:
+
+```bash
+# macOS — download the .pkg from go.dev/dl and run it, or use Homebrew:
+brew install go
+
+# Linux — download the tarball and extract to /usr/local:
+wget https://go.dev/dl/go1.26.0.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.26.0.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+source ~/.bashrc
+
+# Windows — download the .msi from go.dev/dl and run it
+```
+
+Verify Go installed correctly:
+
+```bash
+go version
+# → go version go1.26.0 darwin/amd64
+```
+
+**2. Install Node.js**
+
+Download from [nodejs.org](https://nodejs.org/) (LTS version recommended):
+
+```bash
+# macOS (Homebrew):
+brew install node
+
+# Linux (Ubuntu/Debian):
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Windows — download the .msi from nodejs.org
+```
+
+Verify:
+
+```bash
+node --version
+# → v22.x.x
+npm --version
+# → v10.x.x
+```
+
+**3. Install Git**
+
+```bash
+# macOS:
+brew install git
+
+# Linux (Ubuntu/Debian):
+sudo apt-get install git
+
+# Windows — download from git-scm.com
+```
+
+Verify:
+
+```bash
+git --version
+# → git version 2.x.x
+```
+
+**4. Install Go Development Tools**
+
+These are optional but recommended for the best dev experience:
+
+```bash
+# Air — hot reload for Go (auto-restarts server on file changes)
+go install github.com/air-verse/air@latest
+
+# templ — type-safe HTML templates
+go install github.com/a-h/templ/cmd/templ@latest
+
+# sqlc — generate Go code from SQL
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+# goose — database migrations
+go install github.com/pressly/goose/v3/cmd/goose@latest
+```
+
+Make sure `$GOPATH/bin` is in your `PATH` (usually `~/go/bin`):
+
+```bash
+# Add to ~/.bashrc, ~/.zshrc, or equivalent:
+export PATH=$PATH:$HOME/go/bin
+```
+
+**5. Clone and Start**
+
+```bash
+git clone https://github.com/maulanashalihin/laju-go.git
+cd laju-go
+
+go mod download && npm install
+cp .env.example .env
+
+npm run dev:all
+```
+
+Visit `http://localhost:8080` — you're up and running.
+
 ### Method 1: Using create-laju-go CLI (Recommended)
 
 The easiest way to create a new Laju Go project:
