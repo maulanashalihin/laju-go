@@ -53,8 +53,13 @@ export default defineConfig({
   root: "frontend",
   server: {
     host: "0.0.0.0",
-    port: 0, // Let Vite find available port automatically
-    strictPort: false, // Allow Vite to find next available port
+    port: 5173,
+    strictPort: false,
+    hmr: {
+      host: "localhost",
+      port: 5173,
+      path: "/@vite/hmr",
+    },
   },
   build: {
     outDir: "../dist",

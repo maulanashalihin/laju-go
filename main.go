@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/pressly/goose/v3"
 	"github.com/maulanashalihin/laju-go/app/cache"
@@ -121,6 +122,12 @@ func main() {
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Inertia, X-Inertia-Version, X-Requested-With",
 		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
 	}))
+
+	if cfg.IsDevelopment() {
+		if viteURL := assetService.GetViteServerURL(); viteURL != "" {
+			setupViteProxy(app, viteURL)
+		}
+	}
 
 	// Setup routes (includes static file serving)
 	routes.SetupRoutes(app, routeHandlers, sessionStore, mailerService, csrfMiddleware)
@@ -276,4 +283,23 @@ func customErrorHandler(c *fiber.Ctx, err error) error {
 	return c.Status(code).JSON(fiber.Map{
 		"error": err.Error(),
 	})
+}
+
+func setupViteProxy(app *fiber.App, viteURL string) {
+	log.Printf("[vite-proxy] Proxying to Vite dev server at %s", viteURL)
+
+	prefixes := []string{
+		"/@vite",
+		"/@fs",
+		"/@id",
+		"/src",
+		"/node_modules",
+		"/@react-refresh",
+	}
+
+	for _, prefix := range prefixes {
+		app.Use(prefix+"/*", func(c *fiber.Ctx) error {
+			return proxy.Do(c, viteURL+c.OriginalURL())
+		})
+	}
 }
