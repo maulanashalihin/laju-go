@@ -171,113 +171,45 @@ For most SaaS apps, both drivers handle **100K+ RPS** — far beyond what a typi
 
 ### First-Time Setup (No Go Installed?)
 
-If you've never installed Go before, here's everything you need:
+Copy the prompt below and paste it to your AI coding assistant (Claude, ChatGPT, Gemini, etc.).
+It will handle everything — installing dependencies, cloning, and starting the dev server.
 
-**1. Install Go**
+<details>
+<summary>📋 Click to copy the AI setup prompt</summary>
 
-Download the latest version from [go.dev/dl](https://go.dev/dl/). Choose the installer for your OS:
+```text
+Set up and run the Laju Go project (https://github.com/maulanashalihin/laju-go) on this machine.
 
-```bash
-# macOS — download the .pkg from go.dev/dl and run it, or use Homebrew:
-brew install go
+1. Check what OS I'm on (macOS/Linux/Windows) and install prerequisites if missing:
+   - Go 1.26+ — install from https://go.dev/dl/ if not found
+   - Node.js 18+ — install from https://nodejs.org/ if not found
+   - Git — install if not found
+   - SQLite3 — macOS/Linux usually have it pre-installed
 
-# Linux — download the tarball and extract to /usr/local:
-wget https://go.dev/dl/go1.26.0.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.26.0.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-source ~/.bashrc
+2. Clone the repo and install dependencies:
+   git clone https://github.com/maulanashalihin/laju-go.git
+   cd laju-go
+   go mod download
+   npm install
 
-# Windows — download the .msi from go.dev/dl and run it
+3. Set up environment:
+   cp .env.example .env
+   Generate a random 32-character string for SESSION_SECRET in .env
+
+4. Install Go dev tools (Air for hot reload, templ for templates):
+   go install github.com/air-verse/air@latest
+   go install github.com/a-h/templ/cmd/templ@latest
+   Make sure ~/go/bin is in PATH
+
+5. Start the dev server:
+   npm run dev:all
+
+6. Confirm it's running by visiting http://localhost:8080
+
+Pause after each step if there are errors. Don't skip steps.
 ```
 
-Verify Go installed correctly:
-
-```bash
-go version
-# → go version go1.26.0 darwin/amd64
-```
-
-**2. Install Node.js**
-
-Download from [nodejs.org](https://nodejs.org/) (LTS version recommended):
-
-```bash
-# macOS (Homebrew):
-brew install node
-
-# Linux (Ubuntu/Debian):
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Windows — download the .msi from nodejs.org
-```
-
-Verify:
-
-```bash
-node --version
-# → v22.x.x
-npm --version
-# → v10.x.x
-```
-
-**3. Install Git**
-
-```bash
-# macOS:
-brew install git
-
-# Linux (Ubuntu/Debian):
-sudo apt-get install git
-
-# Windows — download from git-scm.com
-```
-
-Verify:
-
-```bash
-git --version
-# → git version 2.x.x
-```
-
-**4. Install Go Development Tools**
-
-These are optional but recommended for the best dev experience:
-
-```bash
-# Air — hot reload for Go (auto-restarts server on file changes)
-go install github.com/air-verse/air@latest
-
-# templ — type-safe HTML templates
-go install github.com/a-h/templ/cmd/templ@latest
-
-# sqlc — generate Go code from SQL
-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-
-# goose — database migrations
-go install github.com/pressly/goose/v3/cmd/goose@latest
-```
-
-Make sure `$GOPATH/bin` is in your `PATH` (usually `~/go/bin`):
-
-```bash
-# Add to ~/.bashrc, ~/.zshrc, or equivalent:
-export PATH=$PATH:$HOME/go/bin
-```
-
-**5. Clone and Start**
-
-```bash
-git clone https://github.com/maulanashalihin/laju-go.git
-cd laju-go
-
-go mod download && npm install
-cp .env.example .env
-
-npm run dev:all
-```
-
-Visit `http://localhost:8080` — you're up and running.
+</details>
 
 ### Method 1: Using create-laju-go CLI (Recommended)
 
