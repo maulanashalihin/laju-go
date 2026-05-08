@@ -78,13 +78,12 @@ func (s *InertiaService) renderHTML(c *fiber.Ctx, component string, props fiber.
 	})
 
 	title, _ := props["Title"].(string)
-	assetData := s.assetService.GetAssetData()
-	viteServerURL, _ := assetData["ViteServerURL"].(string)
-	mainJS, _ := assetData["MainJS"].(string)
-	mainCSS, _ := assetData["MainCSS"].(string)
+	isDev := s.assetService.IsDevelopment()
+	mainJS := s.assetService.GetMainJS()
+	mainCSS := s.assetService.GetMainCSS()
 
 	c.Set("Content-Type", "text/html; charset=utf-8")
-	return templates.InertiaPage(title, string(pageData), viteServerURL, mainJS, mainCSS, nil).Render(c.Context(), c.Response().BodyWriter())
+	return templates.InertiaPage(title, string(pageData), isDev, mainJS, mainCSS, nil).Render(c.Context(), c.Response().BodyWriter())
 }
 
 // RenderWithMeta renders an Inertia response with additional metadata
@@ -118,5 +117,5 @@ func (s *InertiaService) RenderWithMeta(c *fiber.Ctx, component string, props fi
 	title, _ := props["Title"].(string)
 
 	c.Set("Content-Type", "text/html; charset=utf-8")
-	return templates.InertiaPage(title, string(pageData), "", "", "", nil).Render(c.Context(), c.Response().BodyWriter())
+	return templates.InertiaPage(title, string(pageData), false, "", "", nil).Render(c.Context(), c.Response().BodyWriter())
 }

@@ -3,7 +3,7 @@ package templates
 // InertiaPage is the base Inertia.js layout template.
 // It renders the HTML shell that contains the Inertia app mount point
 // and the page data JSON blob that Inertia uses to hydrate the SPA.
-templ InertiaPage(title string, pageJSON string, viteServerURL string, mainJS string, mainCSS string, styles []string) {
+templ InertiaPage(title string, pageJSON string, isDev bool, mainJS string, mainCSS string, styles []string) {
 	<!doctype html>
 	<html lang="en">
 		<head>
@@ -19,10 +19,10 @@ templ InertiaPage(title string, pageJSON string, viteServerURL string, mainJS st
 		<body class="bg-gray-50 text-gray-900">
 			<div id="app"></div>
 			@templ.Raw(`<script data-page="app" type="application/json">` + pageJSON + `</script>`)
-			if viteServerURL != "" {
-				<script type="module" src={ viteServerURL + "/@vite/client" }></script>
-				<link rel="stylesheet" href={ viteServerURL + "/src/app.css" }/>
-				<script type="module" src={ viteServerURL + "/src/main.ts" }></script>
+			if isDev {
+				<script type="module" src="/@vite/client"></script>
+				<link rel="stylesheet" href="/src/app.css"/>
+				<script type="module" src="/src/main.ts"></script>
 			} else {
 				<link rel="stylesheet" href={ mainCSS }/>
 				<script type="module" src={ mainJS }></script>

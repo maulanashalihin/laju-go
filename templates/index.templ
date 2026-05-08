@@ -2,7 +2,7 @@ package templates
 
 // LandingPage is the public landing/home page template.
 // It renders a full standalone HTML page with hero, features, tech stack, CTA, and footer.
-templ LandingPage(title string, viteServerURL string, mainCSS string) {
+templ LandingPage(title string, isDev bool, mainCSS string) {
 	<!doctype html>
 	<html lang="en">
 		<head>
@@ -795,9 +795,9 @@ templ LandingPage(title string, viteServerURL string, mainCSS string) {
 				</div>
 			</footer>
 
-			if viteServerURL != "" {
-				<script type="module" src={ viteServerURL + "/@vite/client" }></script>
-				<link rel="stylesheet" href={ viteServerURL + "/src/app.css" }/>
+			if isDev {
+				<script type="module" src="/@vite/client"></script>
+				<link rel="stylesheet" href="/src/app.css"/>
 			} else {
 				<link rel="stylesheet" href={ mainCSS }/>
 			}
