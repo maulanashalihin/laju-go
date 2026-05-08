@@ -6,37 +6,17 @@ Build production-ready web applications faster with a clean, layered architectur
 
 ## 🚀 Quick Start
 
-### Option 1: Using create-laju-go CLI (Recommended)
-
 ```bash
-# Create new project with CLI
-npx create-laju-go my-app
-
-# Navigate to project
-cd my-app
-
-# Start development
-npm run dev:all
-```
-
-### Option 2: Clone Repository
-
-```bash
-# Clone the repository
 git clone https://github.com/maulanashalihin/laju-go.git
 cd laju-go
-
-# Install dependencies
-go mod download && npm install
-
-# Set up environment
 cp .env.example .env
-
-# Start development servers
+go mod download && npm install
 npm run dev:all
 ```
 
 Visit `http://localhost:8080` to see your application running.
+
+> 👶 **Never set up Go before?** See [Option 1: AI Setup](#-option-1-ai-setup-recommended-for-first-timers) below — copy a prompt, paste to your AI assistant, done.
 
 ## ✨ Features
 
@@ -169,13 +149,9 @@ For most SaaS apps, both drivers handle **100K+ RPS** — far beyond what a typi
 - **SQLite3** (usually pre-installed on macOS/Linux)
 - **Git** for version control
 
-### First-Time Setup (No Go Installed?)
+### ⭐ Option 1: AI Setup (Recommended for first-timers)
 
-Copy the prompt below and paste it to your AI coding assistant (Claude, ChatGPT, Gemini, etc.).
-It will handle everything — installing dependencies, cloning, and starting the dev server.
-
-<details>
-<summary>📋 Click to copy the AI setup prompt</summary>
+No Go installed? No problem. Copy this prompt and paste it to your AI coding assistant (Claude, ChatGPT, Gemini). It will install everything and get the project running.
 
 ```text
 Set up and run the Laju Go project (https://github.com/maulanashalihin/laju-go) on this machine.
@@ -209,34 +185,18 @@ Set up and run the Laju Go project (https://github.com/maulanashalihin/laju-go) 
 Pause after each step if there are errors. Don't skip steps.
 ```
 
-</details>
-
-### Method 1: Using create-laju-go CLI (Recommended)
-
-The easiest way to create a new Laju Go project:
+### Option 2: Using create-laju-go CLI
 
 ```bash
-# Create new project
 npx create-laju-go my-app
-
-# Navigate to project
 cd my-app
-
-# Install Air for hot reload (recommended)
 go install github.com/air-verse/air@latest
-
-# Start development
 npm run dev:all
 ```
 
-The CLI will:
-- Check for Go and Git installation
-- Let you choose package manager (npm, yarn, bun)
-- Clone the template from GitHub
-- Install all dependencies
-- Set up environment configuration
+The CLI will check for Go/Git, choose package manager, clone the template, install dependencies, and set up environment.
 
-### Method 2: Manual Installation
+### Option 3: Manual Installation
 
 1. **Clone the repository**
    ```bash
