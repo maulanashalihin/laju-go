@@ -5,6 +5,7 @@ import inertia from "@inertiajs/vite";
 import "dotenv/config";
 import { resolve } from "path";
 import { writeFileSync, rmSync } from "fs";
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 // Vite entry point - build JS and CSS as separate entries
 const input = {
@@ -14,6 +15,7 @@ const input = {
 
 // https://vite.dev/config/
 export default defineConfig({
+  preprocess: [vitePreprocess({ script: true })],
   resolve: {
     alias: {
       "@": resolve(__dirname, "frontend/src"),
