@@ -60,7 +60,7 @@ func main() {
 	userService := services.NewUserService(querier, userCache)
 
 	// Initialize Asset service (for production builds with hashed filenames)
-	assetService := services.NewAssetService("./dist/.vite/manifest.json", ".vite-port")
+	assetService := services.NewAssetService("./dist/.vite/manifest.json", ".vite-port", cfg.IsDevelopment())
 
 	// Initialize Inertia service (auto-detects Vite from .vite-port)
 	inertiaService := services.NewInertiaService(assetService, sessionStore)

@@ -29,19 +29,21 @@ type ManifestEntry struct {
 
 // AssetService handles frontend asset management
 type AssetService struct {
-	manifest     *ViteManifest
-	manifestPath string
-	vitePortPath string
+	manifest      *ViteManifest
+	manifestPath  string
+	vitePortPath  string
 	viteServerURL string
-	mu           sync.RWMutex
+	isDevEnv      bool
+	mu            sync.RWMutex
 }
 
 // NewAssetService creates a new AssetService
-func NewAssetService(manifestPath string, vitePortPath string) *AssetService {
+func NewAssetService(manifestPath string, vitePortPath string, isDevEnv bool) *AssetService {
 	service := &AssetService{
 		manifestPath:  manifestPath,
 		vitePortPath:  vitePortPath,
 		viteServerURL: getViteServerURL(vitePortPath),
+		isDevEnv:      isDevEnv,
 	}
 	service.loadManifest()
 	return service
@@ -140,9 +142,9 @@ func (s *AssetService) GetViteServerURL() string {
 	return s.viteServerURL
 }
 
-// IsDevelopment returns true if Vite dev server is running
+// IsDevelopment returns true if Vite dev server is running AND env is development
 func (s *AssetService) IsDevelopment() bool {
-	return s.viteServerURL != ""
+	return s.isDevEnv && s.viteServerURL != ""
 }
 
 // GetMainJS returns the main JS asset path
