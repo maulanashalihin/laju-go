@@ -38,3 +38,5 @@ logs/
 
 .deploy
 .vite-port
+# Build artifacts
+tmp/
