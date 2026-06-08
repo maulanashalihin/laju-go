@@ -33,8 +33,8 @@ type CSRFMiddleware struct {
 func DefaultCSRFConfig(secret string) CSRFConfig {
 	return CSRFConfig{
 		Secret:      secret,
-		CookieName:  "csrf_token",
-		HeaderName:  "X-CSRF-Token",
+		CookieName:  "XSRF-TOKEN",
+		HeaderName:  "X-XSRF-TOKEN",
 		TokenLength: 32,
 		Expiry:      24 * time.Hour,
 		Secure:      false, // Set to true in production with HTTPS
@@ -106,9 +106,6 @@ func (csrf *CSRFMiddleware) setToken(c *fiber.Ctx) error {
 		SameSite: csrf.config.SameSite,
 	})
 
-	// Pass token to response header for easy access
-	c.Set("X-CSRF-Token", token.(string))
-
 	return c.Next()
 }
 
@@ -124,9 +121,7 @@ func (csrf *CSRFMiddleware) validateToken(c *fiber.Ctx) error {
 	}
 
 	if token == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "CSRF token missing",
-		})
+		return fiber.NewError(fiber.StatusBadRequest, "CSRF token missing")
 	}
 
 	// Get token from session
@@ -134,23 +129,17 @@ func (csrf *CSRFMiddleware) validateToken(c *fiber.Ctx) error {
 	sessionToken := sess.Get("csrf_token")
 
 	if sessionToken == nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "CSRF token invalid",
-		})
+		return fiber.NewError(fiber.StatusForbidden, "CSRF token invalid")
 	}
 
 	// Compare tokens (constant time comparison)
 	if !csrf.constantTimeCompare(token, sessionToken.(string)) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "CSRF token invalid",
-		})
+		return fiber.NewError(fiber.StatusForbidden, "CSRF token invalid")
 	}
 
 	// Check expiry
 	if csrf.isTokenExpired(sess) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "CSRF token expired",
-		})
+		return fiber.NewError(fiber.StatusForbidden, "CSRF token expired")
 	}
 
 	return nil
@@ -190,5 +179,5 @@ func (csrf *CSRFMiddleware) constantTimeCompare(a, b string) bool {
 
 // GetToken retrieves the current CSRF token from a request context
 func GetToken(c *fiber.Ctx) string {
-	return c.Cookies("csrf_token")
+	return c.Cookies("XSRF-TOKEN")
 }
