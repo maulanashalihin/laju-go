@@ -51,7 +51,7 @@
 
 ```
 laju-go/
-├── main.go                  # Entry point
+├── cmd/laju-go/main.go        # Entry point
 ├── go.mod                   # Go dependencies
 ├── package.json             # Node.js dependencies
 ├── .deploy.example          # Deployment config template
@@ -385,7 +385,7 @@ npm run deploy
 
 ```bash
 # Build for Linux (from macOS/Windows)
-GOOS=linux GOARCH=amd64 go build -o laju-go .
+GOOS=linux GOARCH=amd64 go build -o laju-go ./cmd/laju-go
 npm run build
 ```
 

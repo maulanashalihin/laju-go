@@ -16,7 +16,7 @@ Laju Go uses **SQLite** as the database with **sqlc** for type-safe query genera
 ### Connection Initialization
 
 ```go
-// main.go
+// cmd/laju-go/main.go
 import (
     "database/sql"
     _ "modernc.org/sqlite"  // Pure Go SQLite (no CGO)

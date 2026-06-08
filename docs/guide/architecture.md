@@ -454,7 +454,7 @@ Browser ──POST /login──▶ AuthHandler.Login()
 
 ## Dependency Injection
 
-Laju Go uses **constructor-based dependency injection** wired in `main.go`:
+Laju Go uses **constructor-based dependency injection** wired in `cmd/laju-go/main.go`:
 
 ```go
 func main() {

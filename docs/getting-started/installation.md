@@ -192,7 +192,7 @@ npm run dev
 
 **Terminal 2** - Go (requires manual restart after changes):
 ```bash
-go run main.go
+go run ./cmd/laju-go
 ```
 
 ## Step 7: Verify Installation

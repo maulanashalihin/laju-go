@@ -15,7 +15,7 @@ Laju Go uses SQLite with optimizations that can be customized based on:
 The default configuration in `main.go` is optimized for **Vultr High Frequency 1-2GB RAM**:
 
 ```go
-// main.go - initDatabase()
+// cmd/laju-go/main.go - initDatabase()
 db.SetMaxOpenConns(15)                    // Connection pool size
 db.SetMaxIdleConns(10)                    // Keep idle connections ready
 db.SetConnMaxLifetime(5 * time.Minute)    // Connection lifetime

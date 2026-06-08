@@ -1,9 +1,15 @@
 package main
 
 import (
+	"context"
 	"database/sql"
-	"log"
+	"flag"
+	"fmt"
+	"log/slog"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/a-h/templ"
@@ -24,20 +30,49 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+var (
+	Version = "dev"
+	Commit  = "none"
+)
+
 func main() {
+	showVersion := flag.Bool("version", false, "show version and exit")
+	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("laju-go %s (commit: %s)\n", Version, Commit)
+		os.Exit(0)
+	}
+
 	// Load configuration
 	cfg := config.Load()
+
+	logLevel := slog.LevelInfo
+	if cfg.AppEnv == "development" {
+		logLevel = slog.LevelDebug
+	}
+	opts := &slog.HandlerOptions{Level: logLevel}
+	var handler slog.Handler
+	if cfg.AppEnv == "development" {
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	}
+	slog.SetDefault(slog.New(handler))
+	slog.Info("starting", "version", Version, "commit", Commit, "env", cfg.AppEnv)
 
 	// Initialize database
 	db, err := initDatabase(cfg.DBPath)
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		slog.Error("failed to initialize database", "error", err)
+		os.Exit(1)
 	}
 	defer db.Close()
 
 	// Run migrations
 	if err := runMigrations(db, "./migrations"); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+		slog.Error("failed to run migrations", "error", err)
+		os.Exit(1)
 	}
 
 	// Initialize querier
@@ -122,14 +157,38 @@ func main() {
 		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
 	}))
 
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status": "ok",
+			"version": Version,
+		})
+	})
+
 	// Setup routes (includes static file serving)
 	routes.SetupRoutes(app, routeHandlers, sessionStore, mailerService, csrfMiddleware)
 
-	// Start server
-	log.Printf("Starting server on port %s", cfg.AppPort)
-	if err := app.Listen(":" + cfg.AppPort); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	go func() {
+		slog.Info("server listening", "port", cfg.AppPort)
+		if err := app.Listen(":" + cfg.AppPort); err != nil {
+			slog.Error("server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	slog.Info("shutting down", "signal", sig)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := app.ShutdownWithContext(ctx); err != nil {
+		slog.Error("shutdown failed", "error", err)
+		os.Exit(1)
 	}
+
+	slog.Info("server stopped")
 }
 
 // initDatabase initializes the SQLite database with optimized settings
@@ -204,36 +263,42 @@ func logDatabaseOptimizations(db *sql.DB) {
 	// Query current settings
 	err := db.QueryRow("PRAGMA journal_mode").Scan(&journalMode)
 	if err != nil {
-		log.Printf("Warning: Could not verify journal_mode: %v", err)
+		slog.Warn("could not verify journal_mode", "error", err)
 	}
 
 	err = db.QueryRow("PRAGMA synchronous").Scan(&synchronous)
 	if err != nil {
-		log.Printf("Warning: Could not verify synchronous: %v", err)
+		slog.Warn("could not verify synchronous", "error", err)
 	}
 
 	err = db.QueryRow("PRAGMA cache_size").Scan(&cacheSize)
 	if err != nil {
-		log.Printf("Warning: Could not verify cache_size: %v", err)
+		slog.Warn("could not verify cache_size", "error", err)
 	}
 
 	err = db.QueryRow("PRAGMA busy_timeout").Scan(&busyTimeout)
 	if err != nil {
-		log.Printf("Warning: Could not verify busy_timeout: %v", err)
+		slog.Warn("could not verify busy_timeout", "error", err)
 	}
 
 	err = db.QueryRow("PRAGMA mmap_size").Scan(&mmapSize)
 	if err != nil {
-		log.Printf("Warning: Could not verify mmap_size: %v", err)
+		slog.Warn("could not verify mmap_size", "error", err)
 	}
 
 	err = db.QueryRow("PRAGMA wal_autocheckpoint").Scan(&walAutocheckpoint)
 	if err != nil {
-		log.Printf("Warning: Could not verify wal_autocheckpoint: %v", err)
+		slog.Warn("could not verify wal_autocheckpoint", "error", err)
 	}
 
-	log.Printf("SQLite optimizations: journal_mode=%s, synchronous=%s, cache_size=%dKB, mmap_size=%dKB, wal_autocheckpoint=%d, busy_timeout=%dms",
-		journalMode, synchronous, cacheSize, mmapSize, walAutocheckpoint, busyTimeout)
+	slog.Info("sqlite optimizations",
+		"journal_mode", journalMode,
+		"synchronous", synchronous,
+		"cache_size_kb", cacheSize,
+		"mmap_size_kb", mmapSize,
+		"wal_autocheckpoint", walAutocheckpoint,
+		"busy_timeout_ms", busyTimeout,
+	)
 }
 
 // runMigrations runs database migrations
