@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"log"
+	"log/slog"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/session"
@@ -10,21 +10,21 @@ import (
 // AuthRequired is a middleware that checks if the user is authenticated
 func AuthRequired(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		log.Printf("[AuthRequired] Checking auth for path: %s\n", c.Path())
+		slog.Info("checking auth", "path", c.Path())
 		
 		sess, err := store.Get(c)
 		if err != nil {
-			log.Printf("[AuthRequired] Get session error: %v\n", err)
+			slog.Error("auth session error", "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Failed to get session",
 			})
 		}
 
 		userID := sess.Get("user_id")
-		log.Printf("[AuthRequired] userID=%v\n", userID)
+		slog.Info("auth user id", "user_id", userID)
 		
 		if userID == nil {
-			log.Printf("[AuthRequired] Not authenticated, redirecting to /login\n")
+			slog.Warn("not authenticated, redirecting to login")
 			// For Inertia requests, return redirect in JSON format
 			if c.Get("X-Inertia") == "true" {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -41,7 +41,7 @@ func AuthRequired(store *session.Store) fiber.Handler {
 		c.Locals("user_id", userID)
 		c.Locals("email", sess.Get("email"))
 		c.Locals("role", sess.Get("role"))
-		log.Printf("[AuthRequired] Auth successful, user_id=%v\n", userID)
+		slog.Info("auth successful", "user_id", userID)
 
 		return c.Next()
 	}
@@ -88,10 +88,10 @@ func Guest(store *session.Store) fiber.Handler {
 		}
 
 		userID := sess.Get("user_id")
-		log.Printf("[Guest] userID=%v\n", userID)
+		slog.Info("guest check", "user_id", userID)
 		
 		if userID != nil {
-			log.Printf("[Guest] Already authenticated, redirecting to /app\n")
+			slog.Info("guest already authenticated, redirecting")
 			return c.Redirect("/app")
 		}
 
