@@ -59,7 +59,7 @@ APP_PORT=8081
 rm data/app.db-shm data/app.db-wal
 
 # 3. Restart application
-go run main.go
+go run ./cmd/laju-go
 ```
 
 **If problem persists**:
@@ -401,7 +401,7 @@ npm install -D @types/node @types/express
    rm data/app.db
    
    # Restart server (migrations run automatically)
-   go run main.go
+   go run ./cmd/laju-go
    ```
 
 ---
@@ -420,7 +420,7 @@ mkdir -p data
 chmod 755 data
 
 # Restart server
-go run main.go
+go run ./cmd/laju-go
 ```
 
 **For production**:
@@ -627,7 +627,7 @@ go version  # Should be 1.26+
 go clean -cache
 
 # Rebuild
-go build -o laju-go .
+go build -o laju-go ./cmd/laju-go
 ```
 
 **Check CGO for SQLite**:
@@ -636,7 +636,7 @@ go build -o laju-go .
 sudo apt install build-essential
 
 # Rebuild
-go build -o laju-go .
+go build -o laju-go ./cmd/laju-go
 ```
 
 ---

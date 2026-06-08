@@ -6,7 +6,7 @@ tmp_dir = "tmp"
 
 [build]
 # Command to build the Go application
-cmd = "go build -o ./tmp/main ."
+cmd = "go build -o ./tmp/main ./cmd/laju-go"
 # Binary name (relative to tmp_dir)
 bin = "./tmp/main"
 # Delay before sending the build result after file changes (milliseconds)

@@ -9,7 +9,7 @@ This guide covers SQLite optimization, connection pooling, and performance tunin
 Laju Go applies these optimizations automatically on startup:
 
 ```go
-// main.go
+// cmd/laju-go/main.go
 func initDatabase(dbPath string) (*sql.DB, error) {
     db, err := sql.Open("sqlite", dbPath)
     if err != nil {
@@ -93,7 +93,7 @@ EOF
 ### Configuration
 
 ```go
-// main.go
+// cmd/laju-go/main.go
 db.SetMaxOpenConns(15)                  // Maximum open connections
 db.SetMaxIdleConns(10)                  // Keep idle connections ready
 db.SetConnMaxLifetime(5 * time.Minute)  // Recycle connections

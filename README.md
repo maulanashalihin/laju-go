@@ -66,7 +66,7 @@ Visit `http://localhost:8080` to see your application running.
 
 ```
 laju-go/
-├── main.go                    # Application entry point
+├── cmd/laju-go/main.go        # Application entry point
 ├── app/                       # Backend Go code
 │   ├── handlers/              # HTTP request handlers
 │   ├── services/              # Business logic layer
@@ -272,7 +272,7 @@ npm run dev:go
 
 ```bash
 # Go server (manual restart after changes)
-go run main.go
+go run ./cmd/laju-go
 
 # Vite dev server
 npm run dev

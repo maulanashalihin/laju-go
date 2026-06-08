@@ -53,7 +53,7 @@ npm run dev
 **Terminal 2** - Go (manual restart required):
 
 ```bash
-go run main.go
+go run ./cmd/laju-go
 ```
 
 ## Available Scripts
@@ -66,7 +66,7 @@ go run main.go
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:go\"",
     "build": "npm run build:frontend && npm run build:go",
     "build:frontend": "vite build",
-    "build:go": "go build -o laju-go .",
+    "build:go": "go build -o laju-go ./cmd/laju-go",
     "serve": "./laju-go",
     "test:run": "vitest run",
     "test:ui": "vitest --ui"
@@ -138,7 +138,7 @@ tmp_dir = "tmp"
 
 [build]
   bin = "./tmp/main"
-  cmd = "go build -o ./tmp/main ."
+  cmd = "go build -o ./tmp/main ./cmd/laju-go"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "node_modules"]
   exclude_file = []
@@ -336,7 +336,7 @@ Migrations run automatically on server start. No manual intervention needed.
 rm data/app.db
 
 # Restart server (migrations run automatically)
-go run main.go
+go run ./cmd/laju-go
 ```
 
 ### Seed Data
@@ -364,7 +364,7 @@ func main() {
 Run seeder:
 
 ```bash
-go run cmd/seed/main.go
+go run ./cmd/laju-go
 ```
 
 ## Frontend Development
@@ -547,7 +547,7 @@ git add .env
 air
 
 # ❌ Bad: Manual restart
-go run main.go  # Restart after every change
+go run ./cmd/laju-go  # Restart after every change
 ```
 
 ### 4. Run Tests Frequently

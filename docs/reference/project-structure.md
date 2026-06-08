@@ -6,7 +6,7 @@ Complete reference for the Laju Go directory structure and file organization.
 
 ```
 laju-go/
-├── main.go                    # Application entry point
+├── cmd/laju-go/main.go        # Application entry point
 ├── go.mod                     # Go module dependencies
 ├── go.sum                     # Go dependency checksums
 ├── package.json               # Node.js dependencies & scripts
@@ -450,7 +450,7 @@ tmp/
 
 ## Configuration Files
 
-### `main.go`
+### `cmd/laju-go/main.go`
 
 Application entry point:
 
@@ -517,7 +517,7 @@ Air hot reload configuration:
 ```toml
 [build]
   bin = "./tmp/main"
-  cmd = "go build -o ./tmp/main ."
+  cmd = "go build -o ./tmp/main ./cmd/laju-go"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "node_modules"]
 ```
