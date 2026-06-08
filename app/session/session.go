@@ -29,9 +29,11 @@ type Session struct {
 
 // SessionData represents the data stored in session
 type SessionData struct {
-	UserID int64  `json:"user_id"`
-	Email  string `json:"email"`
-	Role   string `json:"role"`
+	UserID      int64  `json:"user_id"`
+	Email       string `json:"email"`
+	Role        string `json:"role"`
+	CSRFToken   string `json:"csrf_token,omitempty"`
+	CSRFExpiry  int64  `json:"csrf_expiry,omitempty"`
 }
 
 // New creates a new session store with database backend
@@ -79,6 +81,12 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 				session.values["user_id"] = data.UserID
 				session.values["email"] = data.Email
 				session.values["role"] = data.Role
+				if data.CSRFToken != "" {
+					session.values["csrf_token"] = data.CSRFToken
+				}
+				if data.CSRFExpiry != 0 {
+					session.values["csrf_expiry"] = data.CSRFExpiry
+				}
 				log.Printf("[Session] Loaded from DB: id=%s, user_id=%d\n", session.id, data.UserID)
 			} else {
 				log.Printf("[Session] Decode error: %v\n", err)
@@ -121,12 +129,7 @@ func (s *Session) Delete(key string) {
 
 // Save saves the session to database
 func (s *Session) Save() error {
-	// Encode session data
-	sessionData := SessionData{
-		UserID: 0,
-		Email:  "",
-		Role:   "",
-	}
+	sessionData := SessionData{}
 
 	if userID, ok := s.values["user_id"].(int64); ok {
 		sessionData.UserID = userID
@@ -142,6 +145,14 @@ func (s *Session) Save() error {
 
 	if role, ok := s.values["role"].(string); ok {
 		sessionData.Role = role
+	}
+
+	if csrfToken, ok := s.values["csrf_token"].(string); ok {
+		sessionData.CSRFToken = csrfToken
+	}
+
+	if csrfExpiry, ok := s.values["csrf_expiry"].(int64); ok {
+		sessionData.CSRFExpiry = csrfExpiry
 	}
 
 	jsonData, err := json.Marshal(sessionData)
@@ -226,11 +237,7 @@ func (s *Session) Regenerate() error {
 	}
 
 	// Re-encode data
-	sessionData := SessionData{
-		UserID: 0,
-		Email:  "",
-		Role:   "",
-	}
+	sessionData := SessionData{}
 
 	if userID, ok := s.values["user_id"].(int64); ok {
 		sessionData.UserID = userID
@@ -246,6 +253,14 @@ func (s *Session) Regenerate() error {
 
 	if role, ok := s.values["role"].(string); ok {
 		sessionData.Role = role
+	}
+
+	if csrfToken, ok := s.values["csrf_token"].(string); ok {
+		sessionData.CSRFToken = csrfToken
+	}
+
+	if csrfExpiry, ok := s.values["csrf_expiry"].(int64); ok {
+		sessionData.CSRFExpiry = csrfExpiry
 	}
 
 	jsonData, err := json.Marshal(sessionData)
