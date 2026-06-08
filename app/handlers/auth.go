@@ -59,7 +59,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	// Validate input
 	if req.Name == "" || req.Email == "" || req.Password == "" {
 		h.store.Flash(c, "error", "All fields are required")
-		return c.Redirect("/register")
+		return c.Redirect("/register", fiber.StatusSeeOther)
 	}
 
 	// Register user
@@ -67,10 +67,10 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	if err != nil {
 		if err.Error() == "user already exists" {
 			h.store.Flash(c, "error", "Email already registered")
-			return c.Redirect("/register")
+			return c.Redirect("/register", fiber.StatusSeeOther)
 		}
 		h.store.Flash(c, "error", "Failed to register user. Please try again.")
-		return c.Redirect("/register")
+		return c.Redirect("/register", fiber.StatusSeeOther)
 	}
 
 	// Create session
@@ -93,7 +93,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	log.Printf("[Auth.Register] Session created for user %d, redirecting to /app\n", user.ID)
 
 	// Inertia.js will automatically follow this redirect
-	return c.Redirect("/app")
+	return c.Redirect("/app", fiber.StatusSeeOther)
 }
 
 // Login handles user login
@@ -118,11 +118,11 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		if err == services.ErrInvalidCredentials {
 			// Set flash error cookie and redirect back to login
 			h.store.Flash(c, "error", "Invalid email or password")
-			return c.Redirect("/login")
+			return c.Redirect("/login", fiber.StatusSeeOther)
 		}
 		// Set flash error cookie and redirect back to login
 		h.store.Flash(c, "error", "Failed to login. Please try again.")
-		return c.Redirect("/login")
+		return c.Redirect("/login", fiber.StatusSeeOther)
 	}
 
 	// Create session
@@ -145,7 +145,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	log.Printf("[Auth.Login] Session created for user %d, redirecting to /app\n", user.ID)
 
 	// Inertia.js will automatically follow this redirect
-	return c.Redirect("/app")
+	return c.Redirect("/app", fiber.StatusSeeOther)
 }
 
 // Logout handles user logout
@@ -156,7 +156,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	log.Printf("[Auth.Logout] User logged out, redirecting to /login\n")
 
 	// Inertia.js will automatically follow this redirect
-	return c.Redirect("/login")
+	return c.Redirect("/login", fiber.StatusSeeOther)
 }
 
 // GoogleLogin initiates Google OAuth login
