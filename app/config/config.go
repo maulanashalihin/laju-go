@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -37,7 +37,7 @@ var AppConfig *Config
 func Load() *Config {
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
+		slog.Warn("no .env file found, using environment variables")
 	}
 
 	AppConfig = &Config{

@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"path/filepath"
 	"time"
 
@@ -29,18 +29,18 @@ func (h *UploadHandler) Upload(c *fiber.Ctx) error {
 	userID := sess.Get("user_id")
 
 	if userID == nil {
-		log.Printf("[Upload] User not authenticated\n")
+		slog.Warn("upload user not authenticated", "handler", "Upload")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Not authenticated",
 		})
 	}
 
-	log.Printf("[Upload] User ID: %v\n", userID)
+	slog.Info("upload user ID", "handler", "Upload", "user_id", userID)
 
 	// Parse the multipart form
 	form, err := c.MultipartForm()
 	if err != nil {
-		log.Printf("[Upload] Failed to parse form: %v\n", err)
+		slog.Error("upload failed to parse form", "handler", "Upload", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Failed to parse form",
 		})
@@ -49,14 +49,14 @@ func (h *UploadHandler) Upload(c *fiber.Ctx) error {
 	// Get the file from the form
 	files := form.File["file"]
 	if len(files) == 0 {
-		log.Printf("[Upload] No file uploaded\n")
+		slog.Info("upload no file uploaded", "handler", "Upload")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "No file uploaded",
 		})
 	}
 
 	file := files[0]
-	log.Printf("[Upload] File: %s, Size: %d, Type: %s\n", file.Filename, file.Size, file.Header.Get("Content-Type"))
+	slog.Info("upload file info", "handler", "Upload", "filename", file.Filename, "size", file.Size, "content_type", file.Header.Get("Content-Type"))
 
 	// Validate file type
 	allowedTypes := []string{"image/jpeg", "image/png", "image/gif", "image/webp"}
@@ -70,7 +70,7 @@ func (h *UploadHandler) Upload(c *fiber.Ctx) error {
 	}
 
 	if !isAllowed {
-		log.Printf("[Upload] Invalid file type: %s\n", contentType)
+		slog.Warn("upload invalid file type", "handler", "Upload", "content_type", contentType)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid file type. Allowed: JPEG, PNG, GIF, WEBP",
 		})
@@ -78,7 +78,7 @@ func (h *UploadHandler) Upload(c *fiber.Ctx) error {
 
 	// Validate file size (max 5MB)
 	if file.Size > 5*1024*1024 {
-		log.Printf("[Upload] File too large: %d bytes\n", file.Size)
+		slog.Warn("upload file too large", "handler", "Upload", "size", file.Size)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "File too large. Max size: 5MB",
 		})
@@ -90,10 +90,10 @@ func (h *UploadHandler) Upload(c *fiber.Ctx) error {
 
 	// Save the file
 	uploadPath := filepath.Join("storage", "avatars", filename)
-	log.Printf("[Upload] Saving to: %s\n", uploadPath)
+	slog.Info("upload saving file", "handler", "Upload", "path", uploadPath)
 	
 	if err := c.SaveFile(file, uploadPath); err != nil {
-		log.Printf("[Upload] Failed to save file: %v\n", err)
+		slog.Error("upload failed to save file", "handler", "Upload", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to save file",
 		})
@@ -101,16 +101,16 @@ func (h *UploadHandler) Upload(c *fiber.Ctx) error {
 
 	// Update user avatar in database
 	avatarURL := "/storage/avatars/" + filename
-	log.Printf("[Upload] Updating avatar to: %s\n", avatarURL)
+	slog.Info("upload updating avatar", "handler", "Upload", "avatar_url", avatarURL)
 	
 	if err := h.userService.UpdateAvatar(userID.(int64), avatarURL); err != nil {
-		log.Printf("[Upload] Failed to update avatar in DB: %v\n", err)
+		slog.Error("upload failed to update avatar in DB", "handler", "Upload", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update avatar",
 		})
 	}
 
-	log.Printf("[Upload] Success: %s\n", avatarURL)
+	slog.Info("upload success", "handler", "Upload", "avatar_url", avatarURL)
 
 	// Return the file URL
 	return c.JSON(fiber.Map{

@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -90,7 +90,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	log.Printf("[Auth.Register] Session created for user %d, redirecting to /app\n", user.ID)
+	slog.Info("session created", "handler", "Auth.Register", "user_id", user.ID, "redirect", "/app")
 
 	// Inertia.js will automatically follow this redirect
 	return c.Redirect("/app", fiber.StatusSeeOther)
@@ -142,7 +142,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	log.Printf("[Auth.Login] Session created for user %d, redirecting to /app\n", user.ID)
+	slog.Info("session created", "handler", "Auth.Login", "user_id", user.ID, "redirect", "/app")
 
 	// Inertia.js will automatically follow this redirect
 	return c.Redirect("/app", fiber.StatusSeeOther)
@@ -153,7 +153,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	sess, _ := h.store.Get(c)
 	sess.Destroy()
 
-	log.Printf("[Auth.Logout] User logged out, redirecting to /login\n")
+	slog.Info("user logged out", "handler", "Auth.Logout", "redirect", "/login")
 
 	// Inertia.js will automatically follow this redirect
 	return c.Redirect("/login", fiber.StatusSeeOther)
@@ -182,7 +182,7 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	// Validate state
 	storedState := c.Cookies("oauth_state")
 	if state != storedState {
-		log.Printf("State mismatch: got=%s, expected=%s\n", state, storedState)
+		slog.Warn("oauth state mismatch", "got", state, "expected", storedState)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid OAuth state",
 		})
@@ -194,7 +194,7 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	// Process the token
 	user, err := h.authService.ProcessGoogleToken(c.Context(), code)
 	if err != nil {
-		log.Printf("Google token error: %v\n", err)
+		slog.Error("google token error", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to authenticate with Google: " + err.Error(),
 		})
@@ -217,7 +217,7 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 		})
 	}
 
-	log.Printf("[Auth.GoogleCallback] Session created for user %d, redirecting to /app\n", user.ID)
+	slog.Info("session created", "handler", "Auth.GoogleCallback", "user_id", user.ID, "redirect", "/app")
 
 	// Inertia.js will automatically follow this redirect
 	return c.Redirect("/app")
@@ -256,24 +256,24 @@ func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 	// Convert userID to int64
 	userID, err := strconv.ParseInt(userIDParam, 10, 64)
 	if err != nil {
-		log.Printf("Invalid user ID: %s\n", userIDParam)
+		slog.Warn("invalid user ID", "user_id_param", userIDParam)
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	log.Printf("[GetAvatar] Fetching user %d\n", userID)
+	slog.Info("fetching user avatar", "handler", "GetAvatar", "user_id", userID)
 
 	// Get user from database
 	user, err := h.authService.GetUserByID(userID)
 	if err != nil {
-		log.Printf("[GetAvatar] User not found: %v\n", err)
+		slog.Warn("avatar user not found", "handler", "GetAvatar", "error", err)
 		return c.Status(404).JSON(fiber.Map{"error": "User not found"})
 	}
 
-	log.Printf("[GetAvatar] User avatar URL: %s\n", user.Avatar)
+	slog.Info("user avatar URL", "handler", "GetAvatar", "avatar_url", user.Avatar)
 
 	// Check if user has avatar
 	if user.Avatar == "" {
-		log.Printf("[GetAvatar] No avatar for user %d\n", userID)
+		slog.Info("no avatar for user", "handler", "GetAvatar", "user_id", userID)
 		return c.Status(404).JSON(fiber.Map{"error": "No avatar"})
 	}
 
@@ -281,21 +281,21 @@ func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 	if strings.HasPrefix(user.Avatar, "/storage/") {
 		// Local file - serve directly
 		localPath := "." + user.Avatar
-		log.Printf("[GetAvatar] Serving local file: %s\n", localPath)
+		slog.Info("serving local avatar file", "handler", "GetAvatar", "path", localPath)
 		
 		return c.SendFile(localPath)
 	}
 
 	// External URL - fetch and proxy
-	log.Printf("[GetAvatar] Fetching from external URL: %s\n", user.Avatar)
+	slog.Info("fetching avatar from external URL", "handler", "GetAvatar", "url", user.Avatar)
 	resp, err := http.Get(user.Avatar)
 	if err != nil {
-		log.Printf("[GetAvatar] Failed to fetch avatar: %v\n", err)
+		slog.Error("failed to fetch avatar", "handler", "GetAvatar", "error", err)
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch avatar"})
 	}
 	defer resp.Body.Close()
 
-	log.Printf("[GetAvatar] Response status: %s, Content-Type: %s\n", resp.Status, resp.Header.Get("Content-Type"))
+	slog.Info("avatar response", "handler", "GetAvatar", "status", resp.Status, "content_type", resp.Header.Get("Content-Type"))
 
 	// Set headers
 	contentType := resp.Header.Get("Content-Type")
@@ -308,11 +308,11 @@ func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 	// Read and send response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("[GetAvatar] Failed to read body: %v\n", err)
+		slog.Error("failed to read avatar body", "handler", "GetAvatar", "error", err)
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to read avatar"})
 	}
 
-	log.Printf("[GetAvatar] Sending %d bytes\n", len(body))
+	slog.Info("sending avatar", "handler", "GetAvatar", "bytes", len(body))
 	return c.Send(body)
 }
 

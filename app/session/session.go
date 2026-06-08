@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -48,7 +48,7 @@ func New(querier *queries.Querier) *Store {
 func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 	// Get session from locals first (if already loaded)
 	if sess := c.Locals("session"); sess != nil {
-		log.Printf("[Session] Retrieved from locals\n")
+		slog.Info("session retrieved from locals")
 		return sess.(*Session), nil
 	}
 
@@ -64,7 +64,7 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 
 	// Try to get existing session from cookie
 	cookieValue := c.Cookies(s.sessionName)
-	log.Printf("[Session] Cookie value: '%s'\n", cookieValue)
+	slog.Info("session cookie value", "cookie_value", cookieValue)
 	
 	if cookieValue != "" {
 		// Find session in database
@@ -87,12 +87,12 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 				if data.CSRFExpiry != 0 {
 					session.values["csrf_expiry"] = data.CSRFExpiry
 				}
-				log.Printf("[Session] Loaded from DB: id=%s, user_id=%d\n", session.id, data.UserID)
+				slog.Info("session loaded from db", "session_id", session.id, "user_id", data.UserID)
 			} else {
-				log.Printf("[Session] Decode error: %v\n", err)
+				slog.Error("session decode error", "error", err)
 			}
 		} else {
-			log.Printf("[Session] DB lookup error: %v\n", err)
+			slog.Error("session db lookup error", "error", err)
 		}
 		// If session not found or expired, start fresh
 	}
@@ -157,7 +157,7 @@ func (s *Session) Save() error {
 
 	jsonData, err := json.Marshal(sessionData)
 	if err != nil {
-		log.Printf("[Session] Marshal error: %v\n", err)
+		slog.Error("session marshal error", "error", err)
 		return err
 	}
 
@@ -165,7 +165,7 @@ func (s *Session) Save() error {
 		// Create new session
 		sessionID, err := generateSessionID()
 		if err != nil {
-			log.Printf("[Session] Generate ID error: %v\n", err)
+			slog.Error("session generate id error", "error", err)
 			return err
 		}
 		s.id = sessionID
@@ -178,10 +178,10 @@ func (s *Session) Save() error {
 		}
 
 		if err := s.store.querier.CreateSession(context.Background(), dbSession); err != nil {
-			log.Printf("[Session] Create error: %v\n", err)
+			slog.Error("session create error", "error", err)
 			return err
 		}
-		log.Printf("[Session] Created new session: id=%s, user_id=%d\n", s.id, sessionData.UserID)
+		slog.Info("session created", "session_id", s.id, "user_id", sessionData.UserID)
 	} else {
 		// Update existing session
 		dbSession := &queries.Session{
@@ -192,10 +192,10 @@ func (s *Session) Save() error {
 		}
 
 		if err := s.store.querier.UpdateSession(context.Background(), dbSession); err != nil {
-			log.Printf("[Session] Update error: %v\n", err)
+			slog.Error("session update error", "error", err)
 			return err
 		}
-		log.Printf("[Session] Updated session: id=%s, user_id=%d\n", s.id, sessionData.UserID)
+		slog.Info("session updated", "session_id", s.id, "user_id", sessionData.UserID)
 	}
 
 	// Set cookie with session ID
@@ -208,7 +208,7 @@ func (s *Session) Save() error {
 		SameSite: "Lax",
 		MaxAge:   int(s.expiresAt.Sub(time.Now()).Seconds()),
 	})
-	log.Printf("[Session] Cookie set: name=%s, value=%s\n", s.store.sessionName, s.id)
+	slog.Info("session cookie set", "name", s.store.sessionName, "value", s.id)
 
 	return nil
 }
