@@ -4,7 +4,7 @@ High-performance SaaS boilerplate: Go Fiber + Svelte 5 + Inertia.js + SQLite + t
 
 ## Architecture
 
-Single-entry Go app (`main.go`). No `cmd/` directory.
+Single-entry Go app at `cmd/laju-go/main.go`.
 
 ```
 routes/web.go     → app/handlers/     → app/services/     → app/queries/     → SQLite
@@ -19,18 +19,22 @@ routes/web.go     → app/handlers/     → app/services/     → app/queries/  
 
 ## Critical Commands
 
-| Task | Command |
-|------|---------|
-| Dev (both Vite + Go) | `npm run dev:all` |
-| Dev Go only (Air) | `npm run dev:go` or `air` |
-| Build for production | `npm run build:all` |
-| Run tests | `go test ./...` |
-| Generate sqlc queries | `npm run db:generate` |
-| Generate templ | `templ generate` |
-| Run migrations | `npm run db:migrate` |
-| Reset DB | `npm run db:refresh` |
+| Task | npm (cross-platform) | Make (macOS/Linux + WSL) |
+|------|----------------------|---------------------------|
+| Dev (both) | `npm run dev:all` | `make dev-all` |
+| Dev Go only | `npm run dev:go` | `make dev-go` |
+| Build | `npm run build:all` | `make build` |
+| Test | `go test ./...` | `make test` |
+| Lint | — | `make lint` |
+| Generate sqlc | `npm run db:generate` | `make db-generate` |
+| Generate templ | `templ generate` | `make templ` |
+| Migrate DB | `npm run db:migrate` | `make migrate` |
+| Reset DB | `npm run db:refresh` | `make db-refresh` |
+| Docker | `docker build .` | `make docker` |
 
 **Build order matters**: `vite build` must run before `go build` in production because the Go binary reads `dist/.vite/manifest.json`.
+
+**Windows users**: Scripts via `npm run` work natively. For `make`, use **WSL** (`wsl make build`).
 
 ## Templ Workflow
 
@@ -53,10 +57,10 @@ routes/web.go     → app/handlers/     → app/services/     → app/queries/  
 
 ## Conventions
 
-- **POST handlers always redirect** (302/303), never return JSON directly. Inertia follows redirects automatically.
-- **PUT/PATCH**: Return JSON for `fetch()` calls, redirect for `router.put()` calls.
+- **POST/PUT handlers that redirect**: Use `c.Redirect(path, fiber.StatusSeeOther)` (303). Inertia does not follow 302 correctly for form submissions — it needs 303 to change POST/PUT to GET on redirect.
+- **PUT/PATCH**: Return JSON for `fetch()` calls, redirect for `router.put()` calls. If redirecting, always 303.
 - Sessions are database-backed (SQLite table). Auth middleware checks `session.Store`.
-- CSRF: Token in `csrf_token` cookie. Send via `X-CSRF-Token` header. CSRF middleware only on `/app/*` routes.
+- CSRF: Axios (Inertia's HTTP client) auto-sends cookie `XSRF-TOKEN` as header `X-XSRF-TOKEN`. Cookie is set by CSRF middleware on GET responses (`HTTPOnly: false`). CSRF middleware only on `/app/*` routes.
 - `fiber.Map` for untyped response data. Use typed structs for service boundaries.
 
 ## Environment
@@ -70,7 +74,7 @@ Copy `.env.example` → `.env`. Minimum required:
 - `.vite-port` file is written by Vite and read by Go. If stale, `rm .vite-port` and restart Vite.
 - `go.sum` is gitignored. Run `go mod tidy` locally if needed.
 - `dist/` is gitignored except `.gitkeep`. Build artifacts are not committed.
-- Cross-compile for Linux: `GOOS=linux GOARCH=amd64 go build -o laju-go .` (works because pure-Go SQLite).
+- Cross-compile for Linux: `GOOS=linux GOARCH=amd64 go build -o laju-go ./cmd/laju-go` (works because pure-Go SQLite).
 - Air's `include_ext` does not include `.templ` — regenerate templ components manually when editing templates.
 
 ## Deployment
