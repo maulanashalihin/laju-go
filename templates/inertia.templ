@@ -3,7 +3,7 @@ package templates
 // InertiaPage is the base Inertia.js layout template.
 // It renders the HTML shell that contains the Inertia app mount point
 // and the page data JSON blob that Inertia uses to hydrate the SPA.
-templ InertiaPage(title string, pageJSON string, isDev bool, mainJS string, mainCSS string, styles []string) {
+templ InertiaPage(title string, pageJSON string, isDev bool, viteURL string, csrfToken string, mainJS string, mainCSS string, styles []string) {
 	<!doctype html>
 	<html lang="en">
 		<head>
@@ -12,6 +12,7 @@ templ InertiaPage(title string, pageJSON string, isDev bool, mainJS string, main
 			<title>{ title } - Laju</title>
 			<meta name="description" content="Laju Go Fiber - High Performance SaaS Boilerplate"/>
 			<link rel="icon" href="/public/favicon.png"/>
+			<meta name="csrf-token" content={ csrfToken }/>
 			for _, style := range styles {
 				<link rel="stylesheet" href={ style }/>
 			}
@@ -20,9 +21,9 @@ templ InertiaPage(title string, pageJSON string, isDev bool, mainJS string, main
 			<div id="app"></div>
 			@templ.Raw(`<script data-page="app" type="application/json">` + pageJSON + `</script>`)
 			if isDev {
-				<script type="module" src="/@vite/client"></script>
-				<link rel="stylesheet" href="/src/app.css"/>
-				<script type="module" src="/src/main.ts"></script>
+				<script type="module" src={ viteURL + "/@vite/client" }></script>
+				<link rel="stylesheet" href={ viteURL + "/src/app.css" }/>
+				<script type="module" src={ viteURL + "/src/main.ts" }></script>
 			} else {
 				<link rel="stylesheet" href={ mainCSS }/>
 				<script type="module" src={ mainJS }></script>
