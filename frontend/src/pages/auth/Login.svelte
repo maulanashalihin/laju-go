@@ -40,17 +40,17 @@
 </svelte:head>
 
 <section
-    class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex"
+    class="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex"
 >
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-            class="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"
+            class="absolute -top-40 -right-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"
         ></div>
         <div
-            class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"
+            class="absolute -bottom-40 -left-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"
         ></div>
         <div
-            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-400/10 rounded-full blur-3xl"
         ></div>
     </div>
 
@@ -77,11 +77,11 @@
                         >
                             <stop
                                 offset="0%"
-                                style="stop-color:#8b5cf6;stop-opacity:1"
+                                style="stop-color:#14b8a6;stop-opacity:1"
                             />
                             <stop
                                 offset="100%"
-                                style="stop-color:#7c3aed;stop-opacity:1"
+                                style="stop-color:#22d3ee;stop-opacity:1"
                             />
                         </linearGradient>
                     </defs>
@@ -98,23 +98,23 @@
                     />
                 </svg>
             </div>
-            <h1 class="text-4xl font-bold text-white mb-4">Welcome back</h1>
-            <p class="text-slate-400 text-lg leading-relaxed">
+            <h1 class="text-4xl font-bold text-slate-900 dark:text-white mb-4">Welcome back</h1>
+            <p class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
                 Sign in to continue building amazing applications with the
                 high-performance Go + Svelte framework.
             </p>
             <div class="mt-12 grid grid-cols-3 gap-6">
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-purple-400">11x</div>
-                    <div class="text-sm text-slate-500 mt-1">Faster</div>
+                    <div class="text-3xl font-bold text-brand-400">11x</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">Faster</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-purple-400">1.5ms</div>
-                    <div class="text-sm text-slate-500 mt-1">Latency</div>
+                    <div class="text-3xl font-bold text-brand-400">1.5ms</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">Latency</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-purple-400">99.9%</div>
-                    <div class="text-sm text-slate-500 mt-1">Uptime</div>
+                    <div class="text-3xl font-bold text-brand-400">99.9%</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">Uptime</div>
                 </div>
             </div>
         </div>
@@ -142,11 +142,11 @@
                         >
                             <stop
                                 offset="0%"
-                                style="stop-color:#8b5cf6;stop-opacity:1"
+                                style="stop-color:#14b8a6;stop-opacity:1"
                             />
                             <stop
                                 offset="100%"
-                                style="stop-color:#7c3aed;stop-opacity:1"
+                                style="stop-color:#22d3ee;stop-opacity:1"
                             />
                         </linearGradient>
                     </defs>
@@ -165,11 +165,11 @@
             </div>
 
             <div
-                class="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl"
+                class="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-700/50 p-8 shadow-2xl"
             >
                 <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-white">Sign in</h2>
-                    <p class="text-slate-400 mt-2">
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Sign in</h2>
+                    <p class="text-slate-600 dark:text-slate-400 mt-2">
                         Enter your credentials to continue
                     </p>
                 </div>
@@ -197,7 +197,7 @@
 
                 <a
                     href="/auth/google"
-                    class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-slate-600 bg-slate-700/50 text-white font-medium hover:bg-slate-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-slate-800"
+                    class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-700 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800"
                 >
                     <svg class="h-5 w-5" viewBox="0 0 24 24">
                         <path
@@ -222,11 +222,11 @@
 
                 <div class="relative my-8">
                     <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-slate-700"></div>
+                        <div class="w-full border-t border-slate-200 dark:border-slate-700"></div>
                     </div>
                     <div class="relative flex justify-center">
                         <span
-                            class="px-4 text-sm text-slate-500 bg-slate-800/50"
+                            class="px-4 text-sm text-slate-500 bg-white dark:bg-slate-800/50"
                             >or continue with email</span
                         >
                     </div>
@@ -236,7 +236,7 @@
                     <div class="space-y-2">
                         <label
                             for="email"
-                            class="block text-sm font-medium text-slate-300"
+                            class="block text-sm font-medium text-slate-700 dark:text-slate-300"
                             >Email</label
                         >
                         <div class="relative">
@@ -251,7 +251,7 @@
                                 type="email"
                                 name="email"
                                 id="email"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                                 placeholder="you@example.com"
                             />
                         </div>
@@ -260,7 +260,7 @@
                     <div class="space-y-2">
                         <label
                             for="password"
-                            class="block text-sm font-medium text-slate-300"
+                            class="block text-sm font-medium text-slate-700 dark:text-slate-300"
                             >Password</label
                         >
                         <div class="relative">
@@ -276,12 +276,12 @@
                                 name="password"
                                 id="password"
                                 placeholder="••••••••"
-                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                             />
                             <button
                                 type="button"
                                 onclick={() => (showPassword = !showPassword)}
-                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                             >
                                 {#if showPassword}
                                     <EyeOff class="w-5 h-5" />
@@ -295,7 +295,7 @@
                     <div class="flex justify-end">
                         <a
                             href="/forgot-password"
-                            class="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                            class="text-sm text-brand-400 hover:text-brand-300 transition-colors"
                         >
                             Forgot password?
                         </a>
@@ -304,7 +304,7 @@
                     <button
                         type="submit"
                         disabled={isLoading}
-                        class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold hover:from-purple-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-400 to-brand-500 text-neutral-950 font-semibold hover:from-brand-300 hover:to-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {#if isLoading}
                             <svg
@@ -334,11 +334,11 @@
                     </button>
                 </form>
 
-                <p class="mt-8 text-center text-sm text-slate-400">
+                <p class="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
                     Don't have an account?
                     <a
                         href="/register"
-                        class="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                        class="text-brand-400 hover:text-brand-300 font-medium transition-colors"
                     >
                         Create one
                     </a>
