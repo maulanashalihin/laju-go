@@ -37,10 +37,10 @@
     }
 </script>
 
-<section class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+<section class="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"></div>
     </div>
 
     <div class="w-full max-w-md px-6 relative z-10">
@@ -62,11 +62,11 @@
                     >
                         <stop
                             offset="0%"
-                            style="stop-color:#8b5cf6;stop-opacity:1"
+                            style="stop-color:#14b8a6;stop-opacity:1"
                         />
                         <stop
                             offset="100%"
-                            style="stop-color:#7c3aed;stop-opacity:1"
+                            style="stop-color:#22d3ee;stop-opacity:1"
                         />
                     </linearGradient>
                 </defs>
@@ -84,13 +84,13 @@
             </svg>
         </div>
 
-        <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
+        <div class="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-700/50 p-8 shadow-2xl">
             <div class="text-center mb-8">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/20 flex items-center justify-center">
-                    <Key class="w-8 h-8 text-purple-400" />
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-400/20 flex items-center justify-center">
+                    <Key class="w-8 h-8 text-brand-400" />
                 </div>
-                <h2 class="text-2xl font-bold text-white">Reset password</h2>
-                <p class="text-slate-400 mt-2">Enter your new password below</p>
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Reset password</h2>
+                <p class="text-slate-600 dark:text-slate-400 mt-2">Enter your new password below</p>
             </div>
 
             {#if flash?.error}
@@ -113,7 +113,7 @@
 
             <form class="space-y-6" onsubmit={submitForm}>
                 <div class="space-y-2">
-                    <label for="password" class="block text-sm font-medium text-slate-300">New password</label>
+                    <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300">New password</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Lock class="w-5 h-5 text-slate-500" />
@@ -123,7 +123,7 @@
                             type={showPassword ? "text" : "password"}
                             name="password"
                             id="password"
-                            class="w-full pl-12 pr-12 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
+                            class="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                             placeholder="••••••••"
                             required
                             minlength="8"
@@ -131,7 +131,7 @@
                         <button
                             type="button"
                             onclick={() => (showPassword = !showPassword)}
-                            class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+                            class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                         >
                             {#if showPassword}
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,11 +145,11 @@
                             {/if}
                         </button>
                     </div>
-                    <p class="text-xs text-slate-500">Must be at least 8 characters</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Must be at least 8 characters</p>
                 </div>
 
                 <div class="space-y-2">
-                    <label for="password_confirmation" class="block text-sm font-medium text-slate-300">Confirm password</label>
+                    <label for="password_confirmation" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Confirm password</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Lock class="w-5 h-5 text-slate-500" />
@@ -159,7 +159,7 @@
                             type={showPassword ? "text" : "password"}
                             name="password_confirmation"
                             id="password_confirmation"
-                            class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-colors duration-200"
+                            class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                             placeholder="••••••••"
                             required
                         />
@@ -169,7 +169,7 @@
                 <button
                     type="submit"
                     disabled={isLoading}
-                    class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold hover:from-purple-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-400 to-brand-500 text-neutral-950 font-semibold hover:from-brand-300 hover:to-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {#if isLoading}
                         <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
