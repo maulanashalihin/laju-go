@@ -25,10 +25,14 @@ func NewPublicHandler(authService *services.AuthService, userService *services.U
 // Index renders the home page
 func (h *PublicHandler) Index(c *fiber.Ctx) error {
 	isDev := h.assetService.IsDevelopment()
+	viteURL := ""
+	if isDev {
+		viteURL = h.assetService.GetViteServerURL()
+	}
 	mainCSS := h.assetService.GetMainCSS()
 
 	c.Set("Content-Type", "text/html; charset=utf-8")
-	return templates.LandingPage("Welcome to Laju", isDev, mainCSS).Render(c.Context(), c.Response().BodyWriter())
+	return templates.LandingPage("Welcome to Laju", isDev, viteURL, mainCSS).Render(c.Context(), c.Response().BodyWriter())
 }
 
 // About renders the about page
