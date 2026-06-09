@@ -75,46 +75,46 @@
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
             >
-                <defs>
-                    <linearGradient
-                        id="grad1"
-                        x1="0%"
-                        y1="0%"
-                        x2="100%"
-                        y2="0%"
-                    >
-                        <stop
-                            offset="0%"
-                            style="stop-color:#8b5cf6;stop-opacity:1"
-                        />
-                        <stop
-                            offset="100%"
-                            style="stop-color:#7c3aed;stop-opacity:1"
-                        />
-                    </linearGradient>
-                </defs>
-                <path d="M30 10 H65 L55 50 H20 Z" fill="url(#grad1)" />
-                <path d="M20 58 H85 L75 90 H10 Z" fill="url(#grad1)" />
-                <rect
-                    x="70"
-                    y="58"
-                    width="20"
-                    height="32"
-                    transform="skewX(-14)"
-                    fill="white"
-                    fill-opacity="0.1"
-                />
-            </svg>
-            <div>
-                <h1
-                    class="text-xl font-black italic text-slate-900 dark:text-white"
+            <defs>
+                <linearGradient
+                    id="grad1"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="0%"
                 >
-                    Laju<span class="text-purple-500">.dev</span>
-                </h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Dashboard
-                </p>
-            </div>
+                    <stop
+                        offset="0%"
+                        style="stop-color:#14b8a6;stop-opacity:1"
+                    />
+                    <stop
+                        offset="100%"
+                        style="stop-color:#22d3ee;stop-opacity:1"
+                    />
+                </linearGradient>
+            </defs>
+            <path d="M30 10 H65 L55 50 H20 Z" fill="url(#grad1)" />
+            <path d="M20 58 H85 L75 90 H10 Z" fill="url(#grad1)" />
+            <rect
+                x="70"
+                y="58"
+                width="20"
+                height="32"
+                transform="skewX(-14)"
+                fill="white"
+                fill-opacity="0.1"
+            />
+        </svg>
+        <div>
+            <h1
+                class="text-xl font-black italic text-slate-900 dark:text-white"
+            >
+                Laju<span class="text-brand-400">Go</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Dashboard
+            </p>
+        </div>
         </div>
     </div>
 
@@ -126,57 +126,25 @@
                 href={item.href}
                 class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group {item.group ===
                 group
-                    ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                    ? 'bg-brand-400/10 text-brand-400 border border-brand-400/20'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 border border-transparent'}"
             >
                 <Icon
                     size="20"
                     class={item.group === group
-                        ? "text-purple-400"
+                        ? "text-brand-400"
                         : "text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white"}
                     stroke-width="2"
                 />
                 {item.label}
                 {#if item.group === group}
                     <div
-                        class="ml-auto w-1.5 h-1.5 rounded-full bg-purple-500"
+                        class="ml-auto w-1.5 h-1.5 rounded-full bg-brand-400"
                     ></div>
                 {/if}
             </a>
         {/each}
     </nav>
-
-    <!-- Dark Mode Toggle -->
-    <div class="px-4 py-4 border-t border-slate-200 dark:border-slate-800/50">
-        <div
-            class="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50"
-        >
-            <div class="flex items-center gap-3">
-                <div
-                    class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center"
-                >
-                    <svg
-                        class="w-4 h-4 text-purple-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M12 3v2.25m6.364.379l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59M15.75 18.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
-                        />
-                    </svg>
-                </div>
-                <span
-                    class="text-sm font-medium text-slate-700 dark:text-slate-300"
-                    >Dark Mode</span
-                >
-            </div>
-            <DarkModeToggle />
-        </div>
-    </div>
 
     <!-- User Section -->
     {#if user && user.id}
@@ -186,7 +154,7 @@
             >
                 <div class="flex items-center gap-3 mb-3">
                     <div
-                        class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
+                        class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
                     >
                         {user.name.charAt(0).toUpperCase()}
                     </div>
@@ -203,13 +171,16 @@
                         </p>
                     </div>
                 </div>
-                <button
-                    onclick={handleLogout}
-                    class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 text-sm font-medium transition-colors"
-                >
-                    <LogOut size="16" />
-                    Logout
-                </button>
+                <div class="flex items-center gap-2">
+                    <DarkModeToggle />
+                    <button
+                        onclick={handleLogout}
+                        class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 text-sm font-medium transition-colors"
+                    >
+                        <LogOut size="16" />
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
     {:else}
@@ -223,7 +194,7 @@
             >
             <a
                 href="/login/register"
-                class="block w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white text-sm font-medium transition-all text-center shadow-lg shadow-purple-500/25"
+                class="block w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 text-sm font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
                 >Get Started</a
             >
         </div>
@@ -239,7 +210,7 @@
         <a href="/app" class="flex items-center gap-2">
             <span
                 class="text-lg font-black italic text-slate-900 dark:text-white"
-                >Laju<span class="text-purple-500">.dev</span></span
+                >Laju<span class="text-brand-400">Go</span></span
             >
         </a>
 
@@ -253,7 +224,7 @@
                 >
                     <button
                         onclick={() => (isUserMenuOpen = !isUserMenuOpen)}
-                        class="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
+                        class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
                     >
                         {user.name.charAt(0).toUpperCase()}
                     </button>
@@ -362,47 +333,13 @@
                         href={item.href}
                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all {item.group ===
                         group
-                            ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                            ? 'bg-brand-400/10 text-brand-400 border border-brand-400/20'
                             : 'text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 border border-transparent'}"
                     >
                         <Icon size="20" stroke-width="2" />
                         {item.label}
                     </a>
                 {/each}
-            </div>
-
-            <!-- Dark Mode Toggle (Mobile) -->
-            <div
-                class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50"
-            >
-                <div
-                    class="flex items-center justify-between px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50"
-                >
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center"
-                        >
-                            <svg
-                                class="w-4 h-4 text-purple-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 3v2.25m6.364.379l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59M15.75 18.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
-                                />
-                            </svg>
-                        </div>
-                        <span
-                            class="text-sm font-medium text-slate-700 dark:text-slate-300"
-                            >Dark Mode</span
-                        >
-                    </div>
-                    <DarkModeToggle />
-                </div>
             </div>
 
             <!-- Footer -->
@@ -415,7 +352,7 @@
                     >
                         <div class="flex items-center gap-3">
                             <div
-                                class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm"
+                                class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-sm"
                             >
                                 {user.name.charAt(0).toUpperCase()}
                             </div>
@@ -433,13 +370,16 @@
                             </div>
                         </div>
                     </div>
-                    <button
-                        onclick={handleLogout}
-                        class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 font-medium transition-colors"
-                    >
-                        <LogOut size="18" />
-                        Logout
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <DarkModeToggle />
+                        <button
+                            onclick={handleLogout}
+                            class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 font-medium transition-colors"
+                        >
+                            <LogOut size="18" />
+                            Logout
+                        </button>
+                    </div>
                 </div>
             {:else}
                 <div
@@ -452,7 +392,7 @@
                     >
                     <a
                         href="/login/register"
-                        class="block w-full px-4 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-medium transition-all text-center shadow-lg shadow-purple-500/25"
+                        class="block w-full px-4 py-3 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
                         >Get Started</a
                     >
                 </div>
