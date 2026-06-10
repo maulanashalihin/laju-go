@@ -21,11 +21,14 @@ type UserCache struct {
 }
 
 // NewUserCache creates a user profile cache with the given TTL.
+// A background goroutine periodically purges expired entries.
 func NewUserCache(ttl time.Duration) *UserCache {
-	return &UserCache{
+	c := &UserCache{
 		data: make(map[int64]cacheEntry),
 		ttl:  ttl,
 	}
+	go c.cleanup()
+	return c
 }
 
 // Get retrieves a user from cache. Returns nil if not found or expired.
@@ -69,6 +72,22 @@ func (c *UserCache) Clear() {
 	c.mu.Lock()
 	c.data = make(map[int64]cacheEntry)
 	c.mu.Unlock()
+}
+
+// cleanup runs in a goroutine, evicting expired entries every 5 minutes.
+func (c *UserCache) cleanup() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+		c.mu.Lock()
+		now := time.Now()
+		for id, entry := range c.data {
+			if now.After(entry.expiresAt) {
+				delete(c.data, id)
+			}
+		}
+		c.mu.Unlock()
+	}
 }
 
 // Size returns the number of non-expired cached entries (for debugging).

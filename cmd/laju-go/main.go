@@ -81,8 +81,11 @@ func main() {
 	// Initialize user profile cache
 	userCache := cache.NewUserCache(cfg.UserCacheTTL)
 
-	// Initialize session store with database backend
-	sessionStore := session.New(querier)
+	// Initialize session cache (in-memory, avoids DB lookup on every request)
+	sessionCache := cache.NewSessionCache(cfg.SessionCacheTTL)
+
+	// Initialize session store with database + in-memory cache
+	sessionStore := session.New(querier, sessionCache)
 
 	// Initialize services
 	authService := services.NewAuthService(querier, services.AuthServiceConfig{
@@ -90,6 +93,7 @@ func main() {
 		GoogleClientID:     cfg.GoogleClientID,
 		GoogleClientSecret: cfg.GoogleClientSecret,
 		GoogleRedirectURL:  cfg.GoogleRedirectURL,
+		BcryptCost:         cfg.BcryptCost,
 	})
 	userService := services.NewUserService(querier, userCache)
 
