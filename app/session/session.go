@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/maulanashalihin/laju-go/app/cache"
 	"github.com/maulanashalihin/laju-go/app/queries"
 )
 
 type Store struct {
 	querier     *queries.Querier
+	sessionCache *cache.SessionCache
 	sessionName string
 }
 
@@ -37,10 +39,11 @@ type SessionData struct {
 }
 
 // New creates a new session store with database backend
-func New(querier *queries.Querier) *Store {
+func New(querier *queries.Querier, sessionCache *cache.SessionCache) *Store {
 	return &Store{
-		querier:     querier,
-		sessionName: "session_id",
+		querier:      querier,
+		sessionCache: sessionCache,
+		sessionName:  "session_id",
 	}
 }
 
@@ -64,13 +67,27 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 
 	// Try to get existing session from cookie
 	cookieValue := c.Cookies(s.sessionName)
-	slog.Info("session cookie value", "cookie_value", cookieValue)
-	
 	if cookieValue != "" {
-		// Find session in database
+		// Try in-memory cache first (avoids DB lookup on every request)
+		if s.sessionCache != nil {
+			if cached, ok := s.sessionCache.Get(cookieValue); ok {
+				session.id = cookieValue
+				session.userID = cached.UserID
+				session.values["user_id"] = cached.UserID
+				session.values["email"] = cached.Email
+				session.values["role"] = cached.Role
+				if cached.CSRFToken != "" {
+					session.values["csrf_token"] = cached.CSRFToken
+					session.values["csrf_expiry"] = cached.CSRFExpiry
+				}
+				c.Locals("session", session)
+				return session, nil
+			}
+		}
+
+		// Cache miss: find session in database
 		dbSession, err := s.querier.GetSessionByID(context.Background(), cookieValue)
 		if err == nil {
-			// Session found in database
 			session.id = dbSession.ID
 			session.userID = dbSession.UserID
 			session.expiresAt = dbSession.ExpiresAt
@@ -87,12 +104,18 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 				if data.CSRFExpiry != 0 {
 					session.values["csrf_expiry"] = data.CSRFExpiry
 				}
-				slog.Info("session loaded from db", "session_id", session.id, "user_id", data.UserID)
-			} else {
-				slog.Error("session decode error", "error", err)
+
+				// Store in cache for subsequent requests
+				if s.sessionCache != nil {
+					s.sessionCache.Set(cookieValue, cache.CachedSessionData{
+						UserID:     data.UserID,
+						Email:      data.Email,
+						Role:       data.Role,
+						CSRFToken:  data.CSRFToken,
+						CSRFExpiry: data.CSRFExpiry,
+					})
+				}
 			}
-		} else {
-			slog.Error("session db lookup error", "error", err)
 		}
 		// If session not found or expired, start fresh
 	}
@@ -181,7 +204,17 @@ func (s *Session) Save() error {
 			slog.Error("session create error", "error", err)
 			return err
 		}
-		slog.Info("session created", "session_id", s.id, "user_id", sessionData.UserID)
+
+		// Seed cache after creation
+		if s.store.sessionCache != nil {
+			s.store.sessionCache.Set(s.id, cache.CachedSessionData{
+				UserID:     sessionData.UserID,
+				Email:      sessionData.Email,
+				Role:       sessionData.Role,
+				CSRFToken:  sessionData.CSRFToken,
+				CSRFExpiry: sessionData.CSRFExpiry,
+			})
+		}
 	} else {
 		// Update existing session
 		dbSession := &queries.Session{
@@ -195,7 +228,17 @@ func (s *Session) Save() error {
 			slog.Error("session update error", "error", err)
 			return err
 		}
-		slog.Info("session updated", "session_id", s.id, "user_id", sessionData.UserID)
+
+		// Refresh cache after update
+		if s.store.sessionCache != nil {
+			s.store.sessionCache.Set(s.id, cache.CachedSessionData{
+				UserID:     sessionData.UserID,
+				Email:      sessionData.Email,
+				Role:       sessionData.Role,
+				CSRFToken:  sessionData.CSRFToken,
+				CSRFExpiry: sessionData.CSRFExpiry,
+			})
+		}
 	}
 
 	// Set cookie with session ID
@@ -216,8 +259,10 @@ func (s *Session) Save() error {
 // Destroy destroys the session
 func (s *Session) Destroy() error {
 	if s.id != "" {
-		// Delete from database
 		s.store.querier.DeleteSession(context.Background(), s.id)
+		if s.store.sessionCache != nil {
+			s.store.sessionCache.Invalidate(s.id)
+		}
 	}
 
 	s.values = make(map[string]interface{})
@@ -280,10 +325,18 @@ func (s *Session) Regenerate() error {
 		return err
 	}
 
-	// Delete old session
 	s.store.querier.DeleteSession(context.Background(), s.id)
+	if s.store.sessionCache != nil {
+		s.store.sessionCache.Invalidate(s.id)
+		s.store.sessionCache.Set(newID, cache.CachedSessionData{
+			UserID:     sessionData.UserID,
+			Email:      sessionData.Email,
+			Role:       sessionData.Role,
+			CSRFToken:  sessionData.CSRFToken,
+			CSRFExpiry: sessionData.CSRFExpiry,
+		})
+	}
 
-	// Update local ID
 	s.id = newID
 
 	// Update cookie

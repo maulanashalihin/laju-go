@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,7 +30,10 @@ type Config struct {
 	FromEmail string
 	FromName  string
 	// Cache
-	UserCacheTTL time.Duration
+	UserCacheTTL   time.Duration
+	SessionCacheTTL time.Duration
+	// Bcrypt
+	BcryptCost int
 }
 
 var AppConfig *Config
@@ -58,7 +62,10 @@ func Load() *Config {
 		FromEmail: getEnv("FROM_EMAIL", "noreply@example.com"),
 		FromName:  getEnv("FROM_NAME", "Laju"),
 		// Cache
-		UserCacheTTL: getUserCacheTTL(),
+		UserCacheTTL:    getUserCacheTTL(),
+		SessionCacheTTL: getSessionCacheTTL(),
+		// Bcrypt
+		BcryptCost: getBcryptCost(),
 	}
 
 	return AppConfig
@@ -108,6 +115,35 @@ func parseAllowedOrigins() []string {
 	}
 	return origins
 }
+
+// getSessionCacheTTL returns the session cache TTL from env.
+// Default: 5 minutes. Shorter than user cache because sessions update more frequently.
+func getSessionCacheTTL() time.Duration {
+	val := getEnv("SESSION_CACHE_TTL", "5m")
+	d, err := time.ParseDuration(val)
+	if err != nil {
+		return 5 * time.Minute
+	}
+	return d
+}
+
+// getBcryptCost returns the bcrypt cost from env.
+// Default: 10 (bcrypt.DefaultCost). Range: 4-31.
+// Higher = more secure but slower. For tests/CI use 4.
+func getBcryptCost() int {
+	val := getEnv("BCRYPT_COST", "10")
+	cost, err := strconv.Atoi(val)
+	if err != nil || cost < bcryptMinCost || cost > bcryptMaxCost {
+		return bcryptDefaultCost
+	}
+	return cost
+}
+
+const (
+	bcryptMinCost    = 4
+	bcryptMaxCost    = 31
+	bcryptDefaultCost = 10
+)
 
 // getUserCacheTTL returns the user profile cache TTL from env.
 // Default: 15 minutes. Set to 0 to disable caching.

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/handlers"
@@ -33,9 +34,23 @@ func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailer
 }
 
 func setupStaticRoutes(app *fiber.App) {
-	app.Static("/dist", "./dist")      // Serve built frontend assets
-	app.Static("/public", "./public")  // Serve public assets at /public path
-	app.Static("/storage", "./storage") // Serve uploaded files (avatars, etc.)
+	// Static assets with aggressive caching — hashed filenames from Vite are immutable
+	// Compress: true caches compressed (brotli/gzip) versions in memory, minimizing CPU reuse.
+	app.Static("/dist", "./dist", fiber.Static{
+		CacheDuration: 365 * 24 * time.Hour,
+		MaxAge:        31536000, // 1 year in seconds
+		Compress:      true,
+	})
+	// Public assets (non-hashed, short cache)
+	app.Static("/public", "./public", fiber.Static{
+		CacheDuration: 1 * time.Hour,
+		MaxAge:        3600,
+	})
+	// Uploaded files (avatars etc. — moderate cache)
+	app.Static("/storage", "./storage", fiber.Static{
+		CacheDuration: 24 * time.Hour,
+		MaxAge:        86400,
+	})
 }
 
 func setupPublicRoutes(app *fiber.App, handler *handlers.PublicHandler) {
