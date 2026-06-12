@@ -86,10 +86,10 @@ func (s *AssetService) GetJS(entry string) string {
 	}
 
 	if e, ok := s.manifest.Entries[entry]; ok {
-		return "/dist/" + e.File
+		return "/" + e.File
 	}
 
-	return "/dist/main.js" // Fallback
+	return "/assets/main.js" // Fallback
 }
 
 // GetCSS returns the hashed CSS filename for a given entry
@@ -98,22 +98,22 @@ func (s *AssetService) GetCSS(entry string) string {
 	defer s.mu.RUnlock()
 
 	if s.manifest == nil {
-		return "/dist/assets/app.css" // Fallback
+		return "/assets/app.css" // Fallback
 	}
 
 	// Try to get CSS from the entry itself
 	if e, ok := s.manifest.Entries[entry]; ok {
 		if len(e.CSS) > 0 {
-			return "/dist/" + e.CSS[0]
+			return "/" + e.CSS[0]
 		}
 	}
 	
 	// Try to get CSS from app.css entry
 	if e, ok := s.manifest.Entries["src/app.css"]; ok {
-		return "/dist/" + e.File
+		return "/" + e.File
 	}
 
-	return "/dist/assets/app.css" // Fallback
+	return "/assets/app.css" // Fallback
 }
 
 // GetEntry returns the full manifest entry
