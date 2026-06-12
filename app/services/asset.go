@@ -82,7 +82,7 @@ func (s *AssetService) GetJS(entry string) string {
 	defer s.mu.RUnlock()
 
 	if s.manifest == nil {
-		return "/dist/main.js" // Fallback
+		return "/assets/main.js" // Fallback
 	}
 
 	if e, ok := s.manifest.Entries[entry]; ok {
