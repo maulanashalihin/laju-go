@@ -41,6 +41,11 @@ func setupStaticRoutes(app *fiber.App) {
 		MaxAge:        31536000, // 1 year in seconds
 		Compress:      true,
 	})
+	app.Static("/assets", "./dist/assets", fiber.Static{
+		CacheDuration: 365 * 24 * time.Hour,
+		MaxAge:        31536000,
+		Compress:      true,
+	})
 	// Public assets (non-hashed, short cache)
 	app.Static("/public", "./public", fiber.Static{
 		CacheDuration: 1 * time.Hour,
