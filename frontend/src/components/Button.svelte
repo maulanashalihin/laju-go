@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
+
   export type ButtonVariant = 'primary' | 'secondary' | 'danger';
   export type ButtonType = 'button' | 'submit' | 'reset';
   export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -10,7 +12,7 @@
     disabled?: boolean;
     loading?: boolean;
     class?: string;
-    children?: any;
+    children?: Snippet;
   }
 
   let {
@@ -26,8 +28,8 @@
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors';
 
   const variantClasses = {
-    primary: 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500',
-    secondary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-indigo-500',
+    primary: 'bg-brand-500 text-neutral-950 hover:bg-brand-400 focus:ring-brand-400',
+    secondary: 'bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-50 focus:ring-brand-400',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
   };
 
@@ -51,5 +53,5 @@
       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
     </svg>
   {/if}
-  <slot />
+  {#if children}{@render children()}{/if}
 </button>

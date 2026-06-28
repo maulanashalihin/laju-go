@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/maulanashalihin/laju-go/app/models"
@@ -222,12 +223,6 @@ func (q *Querier) GetSessionByID(ctx context.Context, id string) (*Session, erro
 		return nil, err
 	}
 
-	// Check if session is expired
-	if qSession.ExpiresAt.Before(time.Now()) {
-		q.Queries.DeleteSession(ctx, id)
-		return nil, ErrSessionExpired
-	}
-
 	return &qSession, nil
 }
 
@@ -299,6 +294,6 @@ func isDuplicateEmail(err error) bool {
 		return false
 	}
 	msg := err.Error()
-	return msg == "UNIQUE constraint failed: users.email" ||
-		msg == "UNIQUE constraint failed: users.google_id"
+	return strings.Contains(msg, "UNIQUE constraint failed: users.email") ||
+		strings.Contains(msg, "UNIQUE constraint failed: users.google_id")
 }

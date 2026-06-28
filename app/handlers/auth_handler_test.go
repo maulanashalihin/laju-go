@@ -51,7 +51,7 @@ func setupTestApp(t *testing.T) (*fiber.App, *queries.Querier) {
 	require.NoError(t, err)
 
 	querier := queries.NewQuerier(db)
-	store := session.New(querier, nil)
+	store := session.New(querier, nil, 24*time.Hour)
 	authSvc := services.NewAuthService(querier, services.AuthServiceConfig{
 		SessionSecret: "test-secret-32-chars-long-for-testing!!",
 	})

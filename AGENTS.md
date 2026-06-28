@@ -50,10 +50,59 @@ routes/web.go     → app/handlers/     → app/services/     → app/queries/  
 
 ## Database & Migrations
 
-- SQLite via `modernc.org/sqlite` (**pure Go**, NOT `mattn/go-sqlite3`).
+- SQLite via `github.com/mattn/go-sqlite3` (CGO-based, 2x throughput vs pure-Go drivers).
 - Migrations run **automatically on startup** via Goose.
 - Write SQL in `queries/*.sql`, then `npm run db:generate` to create typed Go code.
 - `sqlc.yaml` configures the generation. Schema source is `migrations/`.
+
+## Design Standards
+
+Setiap halaman yang digenerate (SSR `.templ` maupun Inertia Svelte) harus:
+
+1. **Visual Hierarchy** — Focal point jelas, ukuran/weight/kontras mengarahkan mata
+2. **Whitespace lega** — Jangan sesak. Padding 16-24px minimum,间距 antar section 32-48px
+3. **Typography** — Heading bold/berat, body clean/sans-serif. Tracking (letter-spacing) longgar untuk headline
+4. **Color** — 60-30-10 rule. Netral dominan, aksen minimal. Hindari warna jenuh kecuali diminta
+5. **Micro-interactions** — Hover state, transisi smooth, shadow halus. Gak ada elemen mati
+6. **Mobile-first** — Semua halaman harus responsif. Test di viewport 375px, 768px, 1440px
+
+Kalau ragu dengan visual, minta screenshot via agent_browser — saya review dan fix.
+
+## Svelte 5 Rules
+
+- **Never use `$effect` for simple initial state or UI sync.** Initialize values directly in `$state(...)`, or compute with `$derived(...)`. `$effect` is only for side effects that interact with non-reactive APIs (e.g. `document.title`, `setInterval`).
+- Components receive Inertia page data as props via `$props()`. Props are available at component instantiation — initialize derived form state at the top level, not in `$effect`/`onMount`.
+
+#### Anti-patterns — Jangan
+
+```svelte
+<!-- ❌ BAD: $effect for derived state -->
+<script>
+  let { items } = $props();
+  let filtered = $state([]);
+  $effect(() => { filtered = items.filter(...); });
+  // ✅ Ganti: let filtered = $derived(items.filter(...));
+</script>
+
+<!-- ❌ BAD: $effect for initialization -->
+<script>
+  let { initial } = $props();
+  let count = $state(0);
+  $effect(() => { count = initial; });
+  // ✅ Ganti: let count = $state(initial ?? 0);
+</script>
+```
+
+#### $effect hanya untuk
+
+```svelte
+<!-- ✅ OK: Side effect ke luar sistem -->
+<script>
+  let { user } = $props();
+  $effect(() => { document.title = user.name; });
+  $effect(() => { localStorage.setItem('theme', theme); });
+</script>
+```
 
 ## Conventions
 
@@ -66,6 +115,7 @@ routes/web.go     → app/handlers/     → app/services/     → app/queries/  
 ## Environment
 
 Copy `.env.example` → `.env`. Minimum required:
+
 - `APP_PORT`, `APP_ENV`, `DB_PATH`, `SESSION_SECRET`
 - Google OAuth and SMTP are optional.
 
@@ -74,7 +124,7 @@ Copy `.env.example` → `.env`. Minimum required:
 - `.vite-port` file is written by Vite and read by Go. If stale, `rm .vite-port` and restart Vite.
 - `go.sum` is gitignored. Run `go mod tidy` locally if needed.
 - `dist/` is gitignored except `.gitkeep`. Build artifacts are not committed.
-- Cross-compile for Linux: `GOOS=linux GOARCH=amd64 go build -o laju-go ./cmd/laju-go` (works because pure-Go SQLite).
+- Cross-compile for Linux: `make build-linux` (requires `brew install zig` for CGO cross-compile via `zig cc`).
 - Air's `include_ext` does not include `.templ` — regenerate templ components manually when editing templates.
 
 ## Deployment
@@ -89,26 +139,26 @@ Copy `.env.example` → `.env`. Minimum required:
 
 | Area | Description | Skill |
 |------|-------------|-------|
-| Setup | 50 symbols | `/gortex-setup` |
-| Handlers | 29 symbols | `/gortex-handlers` |
-| App Handlers | 28 symbols | `/gortex-app-handlers` |
-| New | 24 symbols | `/gortex-new` |
-| Config | 19 symbols | `/gortex-config` |
-| Services | 18 symbols | `/gortex-services` |
-| Models | 12 symbols | `/gortex-models` |
-| Queries | 11 symbols | `/gortex-queries` |
-| Migrations | 11 symbols | `/gortex-migrations` |
-| Queries | 10 symbols | `/gortex-queries` |
-| Middlewares | 10 symbols | `/gortex-middlewares` |
-| Services | 10 symbols | `/gortex-services` |
-| Queries | 9 symbols | `/gortex-queries` |
-| Models | 8 symbols | `/gortex-models` |
-| Session | 8 symbols | `/gortex-session` |
-| Templates | 8 symbols | `/gortex-templates` |
-| Routes | 8 symbols | `/gortex-routes` |
-| Middlewares | 8 symbols | `/gortex-middlewares` |
-| Middlewares | 7 symbols | `/gortex-middlewares` |
-| Services | 7 symbols | `/gortex-services` |
+| Queries 3 Dirs Int64 | 313 symbols | `/gortex-queries-3-dirs-int64` |
+| Cache 8 Dirs | 230 symbols | `/gortex-cache-8-dirs` |
+| Services 8 Dirs | 229 symbols | `/gortex-services-8-dirs` |
+| Services Mosque 6 Dirs | 218 symbols | `/gortex-services-mosque-6-dirs` |
+| Handlers Mosque 7 Dirs Main | 176 symbols | `/gortex-handlers-mosque-7-dirs-main` |
+| Queries 5 Dirs | 170 symbols | `/gortex-queries-5-dirs` |
+| Handlers Mosque 7 Dirs Flash | 164 symbols | `/gortex-handlers-mosque-7-dirs-flash` |
+| Middlewares 4 Dirs | 125 symbols | `/gortex-middlewares-4-dirs` |
+| Handlers 2 Dirs Render | 113 symbols | `/gortex-handlers-2-dirs-render` |
+| 5 Dirs | 105 symbols | `/gortex-5-dirs` |
+| Queries 4 Dirs | 101 symbols | `/gortex-queries-4-dirs` |
+| Handlers Mosque 3 Dirs Fetchandstoremonth | 91 symbols | `/gortex-handlers-mosque-3-dirs-fetchandstoremonth` |
+| Services 2 Dirs | 83 symbols | `/gortex-services-2-dirs` |
+| Services Mosque 4 Dirs Format | 74 symbols | `/gortex-services-mosque-4-dirs-format` |
+| Queries 1 Dirs Jamaah | 71 symbols | `/gortex-queries-1-dirs-jamaah` |
+| Queries 3 Dirs Changepassword | 71 symbols | `/gortex-queries-3-dirs-changepassword` |
+| Services Mosque 4 Dirs Createmosque | 67 symbols | `/gortex-services-mosque-4-dirs-createmosque` |
+| Handlers 2 Dirs Upload | 66 symbols | `/gortex-handlers-2-dirs-upload` |
+| Queries Mosque | 65 symbols | `/gortex-queries-mosque` |
+| Handlers Mosque 3 Dirs Updatemosque | 65 symbols | `/gortex-handlers-mosque-3-dirs-updatemosque` |
 <!-- gortex:skills:end -->
 
 <!-- gortex:communities:end -->

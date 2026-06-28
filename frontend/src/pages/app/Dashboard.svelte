@@ -32,10 +32,10 @@
     <!-- Background Effects -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         <div
-            class="absolute top-0 -left-4 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"
+            class="absolute top-0 -left-4 w-96 h-96 bg-brand-400/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"
         ></div>
         <div
-            class="absolute top-0 -right-4 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"
+            class="absolute top-0 -right-4 w-96 h-96 bg-brand-400/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"
         ></div>
     </div>
 
@@ -58,7 +58,7 @@
         >
             <div class="flex items-center gap-4">
                 <div
-                    class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-500 flex items-center justify-center shadow-2xl shadow-purple-500/20"
+                    class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-400 flex items-center justify-center shadow-2xl shadow-brand-400/20"
                 >
                     <svg
                         class="w-8 h-8 text-white"
@@ -76,7 +76,7 @@
                 </div>
                 <div>
                     <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-                        Welcome to VeloStack
+                        Welcome to Laju Go
                     </h2>
                     <p class="text-slate-600 dark:text-slate-400">
                         High-performance SaaS boilerplate built with Go Fiber + Svelte 5
@@ -94,10 +94,10 @@
             >
                 <div class="flex items-center gap-3 mb-4">
                     <div
-                        class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center"
+                        class="w-10 h-10 rounded-xl bg-brand-400/10 flex items-center justify-center"
                     >
                         <svg
-                            class="w-5 h-5 text-purple-400"
+                            class="w-5 h-5 text-brand-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -125,10 +125,10 @@
             >
                 <div class="flex items-center gap-3 mb-4">
                     <div
-                        class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center"
+                        class="w-10 h-10 rounded-xl bg-brand-400/10 flex items-center justify-center"
                     >
                         <svg
-                            class="w-5 h-5 text-purple-400"
+                            class="w-5 h-5 text-brand-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -207,7 +207,7 @@
                         Quick Start
                     </h3>
                     <p class="text-sm text-slate-600 dark:text-slate-500">
-                        Get started with VeloStack framework
+                        Get started with the Laju Go framework
                     </p>
                 </div>
             </div>
@@ -216,13 +216,13 @@
                 <a
                     href="https://github.com/maulanashalihin/laju/tree/main/docs"
                     target="_blank"
-                    class="flex items-center gap-3 p-4 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-purple-500/30 transition-all group"
+                    class="flex items-center gap-3 p-4 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-brand-400/30 transition-all group"
                 >
                     <div
-                        class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors"
+                        class="w-10 h-10 rounded-lg bg-brand-400/10 flex items-center justify-center group-hover:bg-brand-400/20 transition-colors"
                     >
                         <svg
-                            class="w-5 h-5 text-purple-400"
+                            class="w-5 h-5 text-brand-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -245,13 +245,13 @@
 
                 <a
                     href="/app/profile"
-                    class="flex items-center gap-3 p-4 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-purple-500/30 transition-all group"
+                    class="flex items-center gap-3 p-4 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-brand-400/30 transition-all group"
                 >
                     <div
-                        class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors"
+                        class="w-10 h-10 rounded-lg bg-brand-400/10 flex items-center justify-center group-hover:bg-brand-400/20 transition-colors"
                     >
                         <svg
-                            class="w-5 h-5 text-purple-400"
+                            class="w-5 h-5 text-brand-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"

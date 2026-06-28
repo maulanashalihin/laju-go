@@ -27,9 +27,9 @@
     class: className = '',
   }: Props = $props();
 
-  const baseClasses = 'w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500';
+  const baseClasses = 'w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-brand-400';
 
-  let classes = $derived(`${baseClasses} ${error ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'} ${className}`);
+  let classes = $derived(`${baseClasses} ${error ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white'} ${className}`);
 </script>
 
 {#if label}

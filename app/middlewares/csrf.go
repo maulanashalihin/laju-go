@@ -83,6 +83,8 @@ func (csrf *CSRFMiddleware) setToken(c *fiber.Ctx) error {
 	sess, _ := csrf.store.Get(c)
 	token := sess.Get("csrf_token")
 
+	needsCookie := false
+
 	if token == nil || csrf.isTokenExpired(sess) {
 		// Generate new token
 		var err error
@@ -93,18 +95,23 @@ func (csrf *CSRFMiddleware) setToken(c *fiber.Ctx) error {
 		sess.Set("csrf_token", token)
 		sess.Set("csrf_expiry", time.Now().Add(csrf.config.Expiry).Unix())
 		sess.Save()
+		needsCookie = true
+	} else if c.Cookies(csrf.config.CookieName) == "" {
+		// Token exists in session but browser lost the cookie (e.g. cleared, expired)
+		needsCookie = true
 	}
 
-	// Set cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     csrf.config.CookieName,
-		Value:    token.(string),
-		Path:     "/",
-		MaxAge:   int(csrf.config.Expiry.Seconds()),
-		Secure:   csrf.config.Secure,
-		HTTPOnly: false, // Must be false to allow JavaScript access
-		SameSite: csrf.config.SameSite,
-	})
+	if needsCookie {
+		c.Cookie(&fiber.Cookie{
+			Name:     csrf.config.CookieName,
+			Value:    token.(string),
+			Path:     "/",
+			MaxAge:   int(csrf.config.Expiry.Seconds()),
+			Secure:   csrf.config.Secure,
+			HTTPOnly: false, // Must be false to allow JavaScript access
+			SameSite: csrf.config.SameSite,
+		})
+	}
 
 	return c.Next()
 }

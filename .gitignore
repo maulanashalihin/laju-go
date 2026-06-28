@@ -40,3 +40,4 @@ logs/
 .vite-port
 # Build artifacts
 tmp/
+dist

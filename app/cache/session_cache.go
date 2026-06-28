@@ -13,6 +13,7 @@ type CachedSessionData struct {
 	Role       string
 	CSRFToken  string
 	CSRFExpiry int64
+	ExpiresAt  time.Time
 }
 
 type sessionCacheEntry struct {
