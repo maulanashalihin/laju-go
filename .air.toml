@@ -14,7 +14,7 @@ delay = 100
 # Include file extensions to watch
 include_ext = ["go", "tpl", "tmpl", "html"]
 # Exclude directories from watching
-exclude_dir = ["frontend", "node_modules", "dist", "tmp", "data", "storage", "public"]
+exclude_dir = ["frontend", "node_modules", "dist", "tmp", "data", "storage", "public","docs","scripts","systemd","cmd"]
 # Include specific directories to watch
 include_dir = [".", "app", "routes", "migrations"]
 # Exclude files from watching

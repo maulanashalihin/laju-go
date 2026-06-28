@@ -29,6 +29,8 @@ type Config struct {
 	SMTPPass string
 	FromEmail string
 	FromName  string
+	// Session
+	SessionTTL time.Duration
 	// Cache
 	UserCacheTTL   time.Duration
 	SessionCacheTTL time.Duration
@@ -61,8 +63,9 @@ func Load() *Config {
 		SMTPPass:  getEnv("SMTP_PASS", ""),
 		FromEmail: getEnv("FROM_EMAIL", "noreply@example.com"),
 		FromName:  getEnv("FROM_NAME", "Laju"),
+		// Session
+		SessionTTL: getSessionTTL(),
 		// Cache
-		UserCacheTTL:    getUserCacheTTL(),
 		SessionCacheTTL: getSessionCacheTTL(),
 		// Bcrypt
 		BcryptCost: getBcryptCost(),
@@ -114,6 +117,15 @@ func parseAllowedOrigins() []string {
 		}
 	}
 	return origins
+}
+
+func getSessionTTL() time.Duration {
+	val := getEnv("SESSION_TTL", "24h")
+	d, err := time.ParseDuration(val)
+	if err != nil {
+		return 24 * time.Hour
+	}
+	return d
 }
 
 // getSessionCacheTTL returns the session cache TTL from env.

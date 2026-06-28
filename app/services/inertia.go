@@ -59,7 +59,8 @@ func (s *InertiaService) Render(c *fiber.Ctx, component string, props fiber.Map)
 func (s *InertiaService) renderJSON(c *fiber.Ctx, component string, props fiber.Map) error {
 	c.Set("X-Inertia", "true")
 	c.Set("X-Inertia-Version", "1.0")
-	c.Set("Vary", "X-Inertia")
+	c.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
+	c.Set("Vary", "Cookie, X-Inertia")
 	c.Set("Content-Type", "application/json")
 
 	return c.JSON(fiber.Map{
@@ -92,6 +93,8 @@ func (s *InertiaService) renderHTML(c *fiber.Ctx, component string, props fiber.
 	mainJS := s.assetService.GetMainJS()
 	mainCSS := s.assetService.GetMainCSS()
 
+	c.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
+	c.Set("Vary", "Cookie, X-Inertia")
 	c.Set("Content-Type", "text/html; charset=utf-8")
 	return templates.InertiaPage(title, string(pageData), isDev, viteURL, csrfToken, mainJS, mainCSS, nil).Render(c.Context(), c.Response().BodyWriter())
 }
@@ -101,7 +104,8 @@ func (s *InertiaService) RenderWithMeta(c *fiber.Ctx, component string, props fi
 	if c.Get("X-Inertia") == "true" {
 		c.Set("X-Inertia", "true")
 		c.Set("X-Inertia-Version", "1.0")
-		c.Set("Vary", "X-Inertia")
+		c.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
+		c.Set("Vary", "Cookie, X-Inertia")
 		c.Set("Content-Type", "application/json")
 
 		response := fiber.Map{
@@ -132,6 +136,8 @@ func (s *InertiaService) RenderWithMeta(c *fiber.Ctx, component string, props fi
 		}
 	}
 
+	c.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
+	c.Set("Vary", "Cookie, X-Inertia")
 	c.Set("Content-Type", "text/html; charset=utf-8")
 	return templates.InertiaPage(title, string(pageData), false, "", csrfToken, "", "", nil).Render(c.Context(), c.Response().BodyWriter())
 }

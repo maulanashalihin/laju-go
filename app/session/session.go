@@ -14,9 +14,10 @@ import (
 )
 
 type Store struct {
-	querier     *queries.Querier
+	querier      *queries.Querier
 	sessionCache *cache.SessionCache
-	sessionName string
+	sessionName  string
+	sessionTTL   time.Duration
 }
 
 type Session struct {
@@ -38,12 +39,17 @@ type SessionData struct {
 	CSRFExpiry  int64  `json:"csrf_expiry,omitempty"`
 }
 
-// New creates a new session store with database backend
-func New(querier *queries.Querier, sessionCache *cache.SessionCache) *Store {
+// New creates a new session store with database backend and optional in-memory cache.
+// Pass nil for sessionCache to disable caching. sessionTTL is the session lifetime.
+func New(querier *queries.Querier, sessionCache *cache.SessionCache, sessionTTL time.Duration) *Store {
+	if sessionTTL <= 0 {
+		sessionTTL = 24 * time.Hour
+	}
 	return &Store{
 		querier:      querier,
 		sessionCache: sessionCache,
 		sessionName:  "session_id",
+		sessionTTL:   sessionTTL,
 	}
 }
 
@@ -62,7 +68,7 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 		c:         c,
 		store:     s,
 		dirty:     false,
-		expiresAt: time.Now().Add(24 * time.Hour), // Default 24 hours
+		expiresAt: time.Now().Add(s.sessionTTL),
 	}
 
 	// Try to get existing session from cookie
@@ -71,53 +77,72 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 		// Try in-memory cache first (avoids DB lookup on every request)
 		if s.sessionCache != nil {
 			if cached, ok := s.sessionCache.Get(cookieValue); ok {
-				session.id = cookieValue
-				session.userID = cached.UserID
-				session.values["user_id"] = cached.UserID
-				session.values["email"] = cached.Email
-				session.values["role"] = cached.Role
-				if cached.CSRFToken != "" {
-					session.values["csrf_token"] = cached.CSRFToken
-					session.values["csrf_expiry"] = cached.CSRFExpiry
+				// Check if the DB session has expired (cache TTL may outlive session TTL)
+				if cached.ExpiresAt.Before(time.Now()) {
+					s.sessionCache.Invalidate(cookieValue)
+				} else {
+					session.id = cookieValue
+					session.userID = cached.UserID
+					session.expiresAt = cached.ExpiresAt
+					session.values["user_id"] = cached.UserID
+					session.values["email"] = cached.Email
+					session.values["role"] = cached.Role
+					if cached.CSRFToken != "" {
+						session.values["csrf_token"] = cached.CSRFToken
+						session.values["csrf_expiry"] = cached.CSRFExpiry
+					}
+					c.Locals("session", session)
+					return session, nil
 				}
-				c.Locals("session", session)
-				return session, nil
 			}
 		}
 
 		// Cache miss: find session in database
 		dbSession, err := s.querier.GetSessionByID(context.Background(), cookieValue)
 		if err == nil {
-			session.id = dbSession.ID
-			session.userID = dbSession.UserID
-			session.expiresAt = dbSession.ExpiresAt
-
-			// Decode session data
-			var data SessionData
-			if err := json.Unmarshal([]byte(dbSession.Data), &data); err == nil {
-				session.values["user_id"] = data.UserID
-				session.values["email"] = data.Email
-				session.values["role"] = data.Role
-				if data.CSRFToken != "" {
-					session.values["csrf_token"] = data.CSRFToken
-				}
-				if data.CSRFExpiry != 0 {
-					session.values["csrf_expiry"] = data.CSRFExpiry
-				}
-
-				// Store in cache for subsequent requests
+			// Check if session is expired
+			if dbSession.ExpiresAt.Before(time.Now()) {
+				s.querier.DeleteSession(context.Background(), cookieValue)
 				if s.sessionCache != nil {
-					s.sessionCache.Set(cookieValue, cache.CachedSessionData{
-						UserID:     data.UserID,
-						Email:      data.Email,
-						Role:       data.Role,
-						CSRFToken:  data.CSRFToken,
-						CSRFExpiry: data.CSRFExpiry,
-					})
+					s.sessionCache.Invalidate(cookieValue)
+				}
+			} else {
+				session.id = dbSession.ID
+				session.userID = dbSession.UserID
+				session.expiresAt = dbSession.ExpiresAt
+
+				// Decode session data
+				var data SessionData
+				if err := json.Unmarshal([]byte(dbSession.Data), &data); err == nil {
+					session.values["user_id"] = data.UserID
+					session.values["email"] = data.Email
+					session.values["role"] = data.Role
+					if data.CSRFToken != "" {
+						session.values["csrf_token"] = data.CSRFToken
+					}
+					if data.CSRFExpiry != 0 {
+						session.values["csrf_expiry"] = data.CSRFExpiry
+					}
+
+					// Store in cache for subsequent requests
+					if s.sessionCache != nil {
+						s.sessionCache.Set(cookieValue, cache.CachedSessionData{
+							UserID:     data.UserID,
+							Email:      data.Email,
+							Role:       data.Role,
+							CSRFToken:  data.CSRFToken,
+							CSRFExpiry: data.CSRFExpiry,
+							ExpiresAt:  dbSession.ExpiresAt,
+						})
+					}
 				}
 			}
+		} else {
+			// Session not found or expired in DB — invalidate stale cache entry
+			if s.sessionCache != nil {
+				s.sessionCache.Invalidate(cookieValue)
+			}
 		}
-		// If session not found or expired, start fresh
 	}
 
 	c.Locals("session", session)
@@ -184,6 +209,9 @@ func (s *Session) Save() error {
 		return err
 	}
 
+	// Refresh expiry on every save (sliding expiration)
+	s.expiresAt = time.Now().Add(s.store.sessionTTL)
+
 	if s.id == "" {
 		// Create new session
 		sessionID, err := generateSessionID()
@@ -213,6 +241,7 @@ func (s *Session) Save() error {
 				Role:       sessionData.Role,
 				CSRFToken:  sessionData.CSRFToken,
 				CSRFExpiry: sessionData.CSRFExpiry,
+				ExpiresAt:  s.expiresAt,
 			})
 		}
 	} else {
@@ -237,6 +266,7 @@ func (s *Session) Save() error {
 				Role:       sessionData.Role,
 				CSRFToken:  sessionData.CSRFToken,
 				CSRFExpiry: sessionData.CSRFExpiry,
+				ExpiresAt:  s.expiresAt,
 			})
 		}
 	}
@@ -334,6 +364,7 @@ func (s *Session) Regenerate() error {
 			Role:       sessionData.Role,
 			CSRFToken:  sessionData.CSRFToken,
 			CSRFExpiry: sessionData.CSRFExpiry,
+			ExpiresAt:  s.expiresAt,
 		})
 	}
 

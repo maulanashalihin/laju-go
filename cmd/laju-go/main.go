@@ -85,7 +85,7 @@ func main() {
 	sessionCache := cache.NewSessionCache(cfg.SessionCacheTTL)
 
 	// Initialize session store with database + in-memory cache
-	sessionStore := session.New(querier, sessionCache)
+	sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)
 
 	// Initialize services
 	authService := services.NewAuthService(querier, services.AuthServiceConfig{
