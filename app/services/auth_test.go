@@ -11,6 +11,7 @@ import (
 	"github.com/maulanashalihin/laju-go/app/queries"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func setupAuthTestDB(t *testing.T) *queries.Querier {
@@ -61,8 +62,8 @@ func TestRegister(t *testing.T) {
 		pass    string
 		wantErr error
 	}{
-		{"success",         "new@example.com", "password123", nil},
-		{"duplicate email", "dup@example.com", "password456", queries.ErrUserAlreadyExists},
+		{"success", "new@example.com", "password123", nil},
+		{"duplicate email", "dup@example.com", "password456", ErrUserAlreadyExists},
 	}
 
 	for _, tt := range tests {
@@ -106,10 +107,10 @@ func TestLogin(t *testing.T) {
 		pass    string
 		wantErr error
 	}{
-		{"success",          "normal@example.com", "correct-password", nil},
-		{"wrong password",   "normal@example.com", "wrong",            ErrInvalidCredentials},
-		{"user not found",   "nobody@example.com", "any",              ErrInvalidCredentials},
-		{"oauth-only user",  "oauth@example.com",  "any",              ErrInvalidCredentials},
+		{"success", "normal@example.com", "correct-password", nil},
+		{"wrong password", "normal@example.com", "wrong", ErrInvalidCredentials},
+		{"user not found", "nobody@example.com", "any", ErrInvalidCredentials},
+		{"oauth-only user", "oauth@example.com", "any", ErrInvalidCredentials},
 	}
 
 	for _, tt := range tests {
@@ -138,8 +139,8 @@ func TestGetUserByID(t *testing.T) {
 		userID  int64
 		wantErr error
 	}{
-		{"found",    created.ID, nil},
-		{"not found", 999,        queries.ErrUserNotFound},
+		{"found", created.ID, nil},
+		{"not found", 999, queries.ErrUserNotFound},
 	}
 
 	for _, tt := range tests {
@@ -158,19 +159,19 @@ func TestGetUserByID(t *testing.T) {
 
 func TestPassword(t *testing.T) {
 	t.Run("hash produces different salts", func(t *testing.T) {
-		h1, _ := hashPassword("same-password")
-		h2, _ := hashPassword("same-password")
+		h1, _ := bcrypt.GenerateFromPassword([]byte("same-password"), bcrypt.DefaultCost)
+		h2, _ := bcrypt.GenerateFromPassword([]byte("same-password"), bcrypt.DefaultCost)
 		assert.NotEqual(t, h1, h2)
 	})
 
 	t.Run("check correct password", func(t *testing.T) {
-		hash, _ := hashPassword("correct")
-		assert.True(t, checkPassword(hash, "correct"))
+		hash, _ := bcrypt.GenerateFromPassword([]byte("correct"), bcrypt.DefaultCost)
+		assert.True(t, checkPassword(string(hash), "correct"))
 	})
 
 	t.Run("check wrong password", func(t *testing.T) {
-		hash, _ := hashPassword("correct")
-		assert.False(t, checkPassword(hash, "wrong"))
+		hash, _ := bcrypt.GenerateFromPassword([]byte("correct"), bcrypt.DefaultCost)
+		assert.False(t, checkPassword(string(hash), "wrong"))
 	})
 }
 
@@ -188,23 +189,6 @@ func TestOAuth(t *testing.T) {
 		url := svc.GetOAuthURL("test-state")
 		assert.Contains(t, url, "state=test-state")
 		assert.Contains(t, url, "client_id=test-client-id")
-	})
-
-	t.Run("validate state", func(t *testing.T) {
-		tests := []struct {
-			name     string
-			got, exp string
-			want     bool
-		}{
-			{"match",    "expected", "expected", true},
-			{"mismatch", "expected", "wrong",    false},
-			{"empty",    "",         "expected", false},
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				assert.Equal(t, tt.want, svc.ValidateState(tt.got, tt.exp))
-			})
-		}
 	})
 
 	t.Run("get OAuth URL format", func(t *testing.T) {

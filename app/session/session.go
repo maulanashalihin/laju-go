@@ -32,11 +32,11 @@ type Session struct {
 
 // SessionData represents the data stored in session
 type SessionData struct {
-	UserID      int64  `json:"user_id"`
-	Email       string `json:"email"`
-	Role        string `json:"role"`
-	CSRFToken   string `json:"csrf_token,omitempty"`
-	CSRFExpiry  int64  `json:"csrf_expiry,omitempty"`
+	UserID     int64  `json:"user_id"`
+	Email      string `json:"email"`
+	Role       string `json:"role"`
+	CSRFToken  string `json:"csrf_token,omitempty"`
+	CSRFExpiry int64  `json:"csrf_expiry,omitempty"`
 }
 
 // New creates a new session store with database backend and optional in-memory cache.
@@ -57,7 +57,7 @@ func New(querier *queries.Querier, sessionCache *cache.SessionCache, sessionTTL 
 func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 	// Get session from locals first (if already loaded)
 	if sess := c.Locals("session"); sess != nil {
-		slog.Info("session retrieved from locals")
+		slog.Debug("session retrieved from locals")
 		return sess.(*Session), nil
 	}
 
@@ -281,7 +281,7 @@ func (s *Session) Save() error {
 		SameSite: "Lax",
 		MaxAge:   int(s.expiresAt.Sub(time.Now()).Seconds()),
 	})
-	slog.Info("session cookie set", "name", s.store.sessionName, "value", s.id)
+	slog.Debug("session cookie set", "name", s.store.sessionName)
 
 	return nil
 }
@@ -403,11 +403,24 @@ func (s *Store) Flash(c *fiber.Ctx, key string, value string) {
 func (s *Store) GetFlash(c *fiber.Ctx, key string) string {
 	cookieName := "flash_" + key
 	value := c.Cookies(cookieName)
-	
+
 	if value != "" {
 		// Clear the flash cookie after reading (one-time use)
 		c.ClearCookie(cookieName)
 	}
-	
+
 	return value
+}
+
+// CreateAuthenticatedSession sets user authentication data on the session and saves it.
+// Helper to avoid duplicating the Set/Save pattern across multiple handlers.
+func (s *Store) CreateAuthenticatedSession(c *fiber.Ctx, userID int64, email, role string) error {
+	sess, err := s.Get(c)
+	if err != nil {
+		return err
+	}
+	sess.Set("user_id", userID)
+	sess.Set("email", email)
+	sess.Set("role", role)
+	return sess.Save()
 }

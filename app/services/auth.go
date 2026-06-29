@@ -16,13 +16,13 @@ import (
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrInvalidToken       = errors.New("invalid token")
+	ErrUserAlreadyExists  = errors.New("user sudah terdaftar")
 )
 
 type AuthService struct {
-	querier       *queries.Querier
-	sessionSecret string
-	bcryptCost    int
-	oauthConfig   *oauth2.Config
+	querier     *queries.Querier
+	bcryptCost  int
+	oauthConfig *oauth2.Config
 }
 
 type AuthServiceConfig struct {
@@ -39,9 +39,8 @@ func NewAuthService(querier *queries.Querier, cfg AuthServiceConfig) *AuthServic
 		bcryptCost = bcrypt.DefaultCost
 	}
 	return &AuthService{
-		querier:       querier,
-		sessionSecret: cfg.SessionSecret,
-		bcryptCost:    bcryptCost,
+		querier:    querier,
+		bcryptCost: bcryptCost,
 		oauthConfig: &oauth2.Config{
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
@@ -130,7 +129,7 @@ func (s *AuthService) Register(name, email, password string) (*models.User, erro
 	// Check if user already exists
 	_, err := s.querier.GetUserByEmail(context.Background(), email)
 	if err == nil {
-		return nil, queries.ErrUserAlreadyExists
+		return nil, ErrUserAlreadyExists
 	}
 	if !errors.Is(err, queries.ErrUserNotFound) {
 		return nil, err
@@ -189,17 +188,8 @@ func (s *AuthService) GetUserByID(id int64) (*models.User, error) {
 }
 
 // hashPassword hashes a password using bcrypt with the configured cost.
-// When called as a method on AuthService, uses the service's bcryptCost.
-// When called as a standalone function (legacy), uses bcrypt.DefaultCost.
 func (s *AuthService) hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), s.bcryptCost)
-	return string(bytes), err
-}
-
-// hashPassword is a package-level function for backward compatibility.
-// Prefer using the AuthService method when possible.
-func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(bytes), err
 }
 
@@ -212,9 +202,4 @@ func checkPassword(hash, password string) bool {
 // GetOAuthURL returns the OAuth URL for Google login
 func (s *AuthService) GetOAuthURL(state string) string {
 	return s.oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
-}
-
-// ValidateState validates the OAuth state parameter
-func (s *AuthService) ValidateState(state, expected string) bool {
-	return state == expected
 }
