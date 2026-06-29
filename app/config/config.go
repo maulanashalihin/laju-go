@@ -22,16 +22,16 @@ type Config struct {
 	// CORS
 	AllowedOrigins []string
 	// Email configuration
-	SMTPHost string
-	SMTPPort int
-	SMTPUser string
-	SMTPPass string
+	SMTPHost  string
+	SMTPPort  int
+	SMTPUser  string
+	SMTPPass  string
 	FromEmail string
 	FromName  string
 	// Session
 	SessionTTL time.Duration
 	// Cache
-	UserCacheTTL   time.Duration
+	UserCacheTTL    time.Duration
 	SessionCacheTTL time.Duration
 }
 
