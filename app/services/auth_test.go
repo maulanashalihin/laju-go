@@ -11,7 +11,6 @@ import (
 	"github.com/maulanashalihin/laju-go/app/queries"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func setupAuthTestDB(t *testing.T) *queries.Querier {
@@ -159,19 +158,19 @@ func TestGetUserByID(t *testing.T) {
 
 func TestPassword(t *testing.T) {
 	t.Run("hash produces different salts", func(t *testing.T) {
-		h1, _ := bcrypt.GenerateFromPassword([]byte("same-password"), bcrypt.DefaultCost)
-		h2, _ := bcrypt.GenerateFromPassword([]byte("same-password"), bcrypt.DefaultCost)
+		h1, _ := HashPassword("same-password")
+		h2, _ := HashPassword("same-password")
 		assert.NotEqual(t, h1, h2)
 	})
 
 	t.Run("check correct password", func(t *testing.T) {
-		hash, _ := bcrypt.GenerateFromPassword([]byte("correct"), bcrypt.DefaultCost)
-		assert.True(t, checkPassword(string(hash), "correct"))
+		hash, _ := HashPassword("correct")
+		assert.True(t, CheckPassword("correct", hash))
 	})
 
 	t.Run("check wrong password", func(t *testing.T) {
-		hash, _ := bcrypt.GenerateFromPassword([]byte("correct"), bcrypt.DefaultCost)
-		assert.False(t, checkPassword(string(hash), "wrong"))
+		hash, _ := HashPassword("correct")
+		assert.False(t, CheckPassword("wrong", hash))
 	})
 }
 

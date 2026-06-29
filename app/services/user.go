@@ -7,7 +7,6 @@ import (
 	"github.com/maulanashalihin/laju-go/app/cache"
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/maulanashalihin/laju-go/app/queries"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
@@ -104,17 +103,17 @@ func (s *UserService) ChangePassword(userID int64, oldPassword, newPassword stri
 		return errors.New("invalid current password")
 	}
 
-	if !checkPassword(user.Password.String, oldPassword) {
+	if !CheckPassword(oldPassword, user.Password.String) {
 		return errors.New("invalid current password")
 	}
 
 	// Hash new password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	hashedPassword, err := HashPassword(newPassword)
 	if err != nil {
 		return err
 	}
 
-	err = s.querier.UpdateUserPassword(context.Background(), userID, string(hashedPassword))
+	err = s.querier.UpdateUserPassword(context.Background(), userID, hashedPassword)
 	if err == nil {
 		s.cache.Invalidate(userID)
 	}

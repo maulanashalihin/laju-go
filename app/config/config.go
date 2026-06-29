@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -34,8 +33,6 @@ type Config struct {
 	// Cache
 	UserCacheTTL   time.Duration
 	SessionCacheTTL time.Duration
-	// Bcrypt
-	BcryptCost int
 }
 
 var AppConfig *Config
@@ -67,8 +64,6 @@ func Load() *Config {
 		SessionTTL: getSessionTTL(),
 		// Cache
 		SessionCacheTTL: getSessionCacheTTL(),
-		// Bcrypt
-		BcryptCost: getBcryptCost(),
 	}
 
 	return AppConfig
@@ -138,24 +133,6 @@ func getSessionCacheTTL() time.Duration {
 	}
 	return d
 }
-
-// getBcryptCost returns the bcrypt cost from env.
-// Default: 10 (bcrypt.DefaultCost). Range: 4-31.
-// Higher = more secure but slower. For tests/CI use 4.
-func getBcryptCost() int {
-	val := getEnv("BCRYPT_COST", "10")
-	cost, err := strconv.Atoi(val)
-	if err != nil || cost < bcryptMinCost || cost > bcryptMaxCost {
-		return bcryptDefaultCost
-	}
-	return cost
-}
-
-const (
-	bcryptMinCost    = 4
-	bcryptMaxCost    = 31
-	bcryptDefaultCost = 10
-)
 
 // getUserCacheTTL returns the user profile cache TTL from env.
 // Default: 15 minutes. Set to 0 to disable caching.

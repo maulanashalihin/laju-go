@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/services"
 	"github.com/maulanashalihin/laju-go/app/session"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type PasswordResetHandler struct {
@@ -149,7 +148,7 @@ func (h *PasswordResetHandler) ResetPassword(c *fiber.Ctx) error {
 	}
 
 	// Hash new password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	hashedPassword, err := services.HashPassword(req.Password)
 	if err != nil {
 		return h.inertiaService.Render(c, "auth/ResetPassword", fiber.Map{
 			"token": token,
@@ -158,7 +157,7 @@ func (h *PasswordResetHandler) ResetPassword(c *fiber.Ctx) error {
 	}
 
 	// Update user password
-	err = h.userService.UpdatePassword(user.ID, string(hashedPassword))
+	err = h.userService.UpdatePassword(user.ID, hashedPassword)
 	if err != nil {
 		return h.inertiaService.Render(c, "auth/ResetPassword", fiber.Map{
 			"token": token,
