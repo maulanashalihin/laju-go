@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/handlers"
 	"github.com/maulanashalihin/laju-go/app/middlewares"
+	"github.com/maulanashalihin/laju-go/app/queries"
 	"github.com/maulanashalihin/laju-go/app/services"
 	"github.com/maulanashalihin/laju-go/app/session"
 )
@@ -19,7 +20,7 @@ type Handlers struct {
 	PasswordReset *handlers.PasswordResetHandler
 }
 
-func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
+func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, userService *services.UserService, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
 	// Setup static file serving
 	setupStaticRoutes(app)
 
@@ -30,7 +31,7 @@ func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailer
 	setupAuthRoutes(app, handlers.Auth, handlers.PasswordReset, store, mailerService)
 
 	// Setup app routes (protected)
-	setupAppRoutes(app, handlers.App, handlers.Upload, store, csrfMiddleware)
+	setupAppRoutes(app, handlers.App, handlers.Upload, store, userService, csrfMiddleware)
 }
 
 func setupStaticRoutes(app *fiber.App) {
@@ -92,7 +93,7 @@ func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, password
 	app.Post("/reset-password/:token", passwordResetHandler.ResetPassword)
 }
 
-func setupAppRoutes(app *fiber.App, appHandler *handlers.AppHandler, uploadHandler *handlers.UploadHandler, store *session.Store, csrfMiddleware *middlewares.CSRFMiddleware) {
+func setupAppRoutes(app *fiber.App, appHandler *handlers.AppHandler, uploadHandler *handlers.UploadHandler, store *session.Store, userService *services.UserService, csrfMiddleware *middlewares.CSRFMiddleware) {
 	// Protected app routes with CSRF protection
 	protected := app.Group("/app", middlewares.AuthRequired(store))
 	protected.Use(csrfMiddleware.Protect())
@@ -109,7 +110,7 @@ func setupAppRoutes(app *fiber.App, appHandler *handlers.AppHandler, uploadHandl
 	protected.Post("/upload", uploadHandler.Upload)
 
 	// Admin-only routes
-	admin := app.Group("/admin", middlewares.AdminRequired(store))
+	admin := app.Group("/admin", middlewares.AdminRequired(store, userService))
 	admin.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"message": "Admin dashboard",
@@ -126,8 +127,8 @@ func SetupCSRFMiddleware(store *session.Store, secret string) *middlewares.CSRFM
 }
 
 // SetupMailerService sets up the mailer service
-func SetupMailerService(smtpHost string, smtpPort int, smtpUser, smtpPass, fromEmail, fromName string) *services.MailerService {
-	return services.NewMailerService(smtpHost, smtpPort, smtpUser, smtpPass, fromEmail, fromName)
+func SetupMailerService(querier *queries.Querier, smtpHost string, smtpPort int, smtpUser, smtpPass, fromEmail, fromName, appURL string) *services.MailerService {
+	return services.NewMailerService(querier, smtpHost, smtpPort, smtpUser, smtpPass, fromEmail, fromName, appURL)
 }
 
 // SetupPasswordResetHandler sets up the password reset handler
@@ -136,14 +137,12 @@ func SetupPasswordResetHandler(
 	userService *services.UserService,
 	store *session.Store,
 	inertiaService *services.InertiaService,
-	appURL string,
 ) *handlers.PasswordResetHandler {
 	return handlers.NewPasswordResetHandler(
 		mailerService,
 		userService,
 		store,
 		inertiaService,
-		appURL,
 	)
 }
 

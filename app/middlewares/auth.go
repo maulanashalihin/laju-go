@@ -4,14 +4,15 @@ import (
 	"log/slog"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/maulanashalihin/laju-go/app/services"
 	"github.com/maulanashalihin/laju-go/app/session"
 )
 
 // AuthRequired is a middleware that checks if the user is authenticated
 func AuthRequired(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		slog.Info("checking auth", "path", c.Path())
-		
+		slog.Debug("checking auth", "path", c.Path())
+
 		sess, err := store.Get(c)
 		if err != nil {
 			slog.Error("auth session error", "error", err)
@@ -21,8 +22,8 @@ func AuthRequired(store *session.Store) fiber.Handler {
 		}
 
 		userID := sess.Get("user_id")
-		slog.Info("auth user id", "user_id", userID)
-		
+		slog.Debug("auth user id", "user_id", userID)
+
 		if userID == nil {
 			slog.Warn("not authenticated, redirecting to login")
 			// For Inertia requests, return redirect in JSON format
@@ -41,14 +42,16 @@ func AuthRequired(store *session.Store) fiber.Handler {
 		c.Locals("user_id", userID)
 		c.Locals("email", sess.Get("email"))
 		c.Locals("role", sess.Get("role"))
-		slog.Info("auth successful", "user_id", userID)
+		slog.Debug("auth successful", "user_id", userID)
 
 		return c.Next()
 	}
 }
 
-// AdminRequired is a middleware that checks if the user is an admin
-func AdminRequired(store *session.Store) fiber.Handler {
+// AdminRequired is a middleware that checks if the user is an admin.
+// It verifies the role from the database (via UserService) instead of relying
+// on the session-stored role, so role changes take effect immediately.
+func AdminRequired(store *session.Store, userService *services.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		sess, err := store.Get(c)
 		if err != nil {
@@ -64,8 +67,16 @@ func AdminRequired(store *session.Store) fiber.Handler {
 			})
 		}
 
-		role := sess.Get("role")
-		if role != "admin" {
+		// Check admin role from DB/cache, not from session
+		isAdmin, err := userService.IsAdmin(userID.(int64))
+		if err != nil {
+			slog.Error("admin check failed", "error", err, "user_id", userID)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to verify admin status",
+			})
+		}
+
+		if !isAdmin {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error": "Admin access required",
 			})
@@ -73,7 +84,7 @@ func AdminRequired(store *session.Store) fiber.Handler {
 
 		c.Locals("user_id", userID)
 		c.Locals("email", sess.Get("email"))
-		c.Locals("role", role)
+		c.Locals("role", "admin")
 
 		return c.Next()
 	}
@@ -88,38 +99,13 @@ func Guest(store *session.Store) fiber.Handler {
 		}
 
 		userID := sess.Get("user_id")
-		slog.Info("guest check", "user_id", userID)
-		
+		slog.Debug("guest check", "user_id", userID)
+
 		if userID != nil {
-			slog.Info("guest already authenticated, redirecting")
+			slog.Debug("guest already authenticated, redirecting")
 			return c.Redirect("/app")
 		}
 
 		return c.Next()
-	}
-}
-
-// CORS creates a CORS middleware handler
-func CORS() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		c.Set("Access-Control-Allow-Origin", "*")
-		c.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Inertia, X-Inertia-Version, X-Requested-With")
-		c.Set("Access-Control-Allow-Credentials", "true")
-
-		if c.Method() == "OPTIONS" {
-			return c.SendStatus(fiber.StatusNoContent)
-		}
-
-		return c.Next()
-	}
-}
-
-// Logger creates a simple logger middleware
-func Logger() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		// Simple logging - in production, use a proper logger
-		c.Next()
-		return nil
 	}
 }

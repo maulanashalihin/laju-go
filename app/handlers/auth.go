@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -19,35 +20,30 @@ import (
 
 type AuthHandler struct {
 	authService    *services.AuthService
-	userService    *services.UserService
 	store          *session.Store
 	inertiaService *services.InertiaService
 }
 
-func NewAuthHandler(authService *services.AuthService, userService *services.UserService, store *session.Store, inertiaService *services.InertiaService) *AuthHandler {
+func NewAuthHandler(authService *services.AuthService, store *session.Store, inertiaService *services.InertiaService) *AuthHandler {
 	return &AuthHandler{
 		authService:    authService,
-		userService:    userService,
 		store:          store,
 		inertiaService: inertiaService,
 	}
 }
 
-// ShowLoginForm displays the login page
 func (h *AuthHandler) ShowLoginForm(c *fiber.Ctx) error {
 	return h.inertiaService.Render(c, "auth/Login", fiber.Map{
 		"Title": "Login",
 	})
 }
 
-// ShowRegisterForm displays the register page
 func (h *AuthHandler) ShowRegisterForm(c *fiber.Ctx) error {
 	return h.inertiaService.Render(c, "auth/Register", fiber.Map{
 		"Title": "Register",
 	})
 }
 
-// Register handles user registration
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	var req models.RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -56,16 +52,14 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	// Validate input
 	if req.Name == "" || req.Email == "" || req.Password == "" {
 		h.store.Flash(c, "error", "All fields are required")
 		return c.Redirect("/register", fiber.StatusSeeOther)
 	}
 
-	// Register user
 	user, err := h.authService.Register(req.Name, req.Email, req.Password)
 	if err != nil {
-		if err.Error() == "user already exists" {
+		if errors.Is(err, services.ErrUserAlreadyExists) {
 			h.store.Flash(c, "error", "Email already registered")
 			return c.Redirect("/register", fiber.StatusSeeOther)
 		}
@@ -73,30 +67,16 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return c.Redirect("/register", fiber.StatusSeeOther)
 	}
 
-	// Create session
-	sess, err := h.store.Get(c)
-	if err != nil {
+	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Email, string(user.Role)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create session",
 		})
 	}
-	sess.Set("user_id", user.ID)
-	sess.Set("email", user.Email)
-	sess.Set("role", string(user.Role))
-
-	if err := sess.Save(); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to save session",
-		})
-	}
 
 	slog.Info("session created", "handler", "Auth.Register", "user_id", user.ID, "redirect", "/app")
-
-	// Inertia.js will automatically follow this redirect
 	return c.Redirect("/app", fiber.StatusSeeOther)
 }
 
-// Login handles user login
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req models.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -112,54 +92,35 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	// Authenticate user
 	user, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
-		if err == services.ErrInvalidCredentials {
-			// Set flash error cookie and redirect back to login
+		if errors.Is(err, services.ErrInvalidCredentials) {
 			h.store.Flash(c, "error", "Invalid email or password")
 			return c.Redirect("/login", fiber.StatusSeeOther)
 		}
-		// Set flash error cookie and redirect back to login
 		h.store.Flash(c, "error", "Failed to login. Please try again.")
 		return c.Redirect("/login", fiber.StatusSeeOther)
 	}
 
-	// Create session
-	sess, err := h.store.Get(c)
-	if err != nil {
+	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Email, string(user.Role)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create session",
 		})
 	}
-	sess.Set("user_id", user.ID)
-	sess.Set("email", user.Email)
-	sess.Set("role", string(user.Role))
-
-	if err := sess.Save(); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to save session",
-		})
-	}
 
 	slog.Info("session created", "handler", "Auth.Login", "user_id", user.ID, "redirect", "/app")
-
-	// Inertia.js will automatically follow this redirect
 	return c.Redirect("/app", fiber.StatusSeeOther)
 }
 
-// Logout handles user logout
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 	sess, _ := h.store.Get(c)
 	sess.Destroy()
 
 	slog.Info("user logged out", "handler", "Auth.Logout", "redirect", "/login")
 
-	// Inertia.js will automatically follow this redirect
 	return c.Redirect("/login", fiber.StatusSeeOther)
 }
 
-// GoogleLogin initiates Google OAuth login
 func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 	state := generateState()
 	c.Cookie(&fiber.Cookie{
@@ -174,12 +135,10 @@ func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 	return c.Redirect(url)
 }
 
-// GoogleCallback handles Google OAuth callback
 func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	state := c.Query("state")
 	code := c.Query("code")
 
-	// Validate state
 	storedState := c.Cookies("oauth_state")
 	if state != storedState {
 		slog.Warn("oauth state mismatch", "got", state, "expected", storedState)
@@ -188,10 +147,8 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 		})
 	}
 
-	// Clear the state cookie
 	c.ClearCookie("oauth_state")
 
-	// Process the token
 	user, err := h.authService.ProcessGoogleToken(c.Context(), code)
 	if err != nil {
 		slog.Error("google token error", "error", err)
@@ -201,29 +158,17 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	}
 
 	// Create session
-	sess, err := h.store.Get(c)
-	if err != nil {
+	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Email, string(user.Role)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create session",
-		})
-	}
-	sess.Set("user_id", user.ID)
-	sess.Set("email", user.Email)
-	sess.Set("role", string(user.Role))
-
-	if err := sess.Save(); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to save session",
 		})
 	}
 
 	slog.Info("session created", "handler", "Auth.GoogleCallback", "user_id", user.ID, "redirect", "/app")
 
-	// Inertia.js will automatically follow this redirect
-	return c.Redirect("/app")
+	return c.Redirect("/app", fiber.StatusSeeOther)
 }
 
-// Me returns the current authenticated user
 func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	sess, _ := h.store.Get(c)
 	userID := sess.Get("user_id")
@@ -246,7 +191,6 @@ func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	})
 }
 
-// GetAvatar proxies user avatar from external URL (e.g., Google) or serves local file
 func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 	userIDParam := c.Params("id")
 	if userIDParam == "" {
@@ -260,7 +204,7 @@ func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	slog.Info("fetching user avatar", "handler", "GetAvatar", "user_id", userID)
+	slog.Debug("fetching user avatar", "handler", "GetAvatar", "user_id", userID)
 
 	// Get user from database
 	user, err := h.authService.GetUserByID(userID)
@@ -269,11 +213,11 @@ func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"error": "User not found"})
 	}
 
-	slog.Info("user avatar URL", "handler", "GetAvatar", "avatar_url", user.Avatar)
+	slog.Debug("user avatar URL", "handler", "GetAvatar", "avatar_url", user.Avatar)
 
 	// Check if user has avatar
 	if user.Avatar == "" {
-		slog.Info("no avatar for user", "handler", "GetAvatar", "user_id", userID)
+		slog.Debug("no avatar for user", "handler", "GetAvatar", "user_id", userID)
 		return c.Status(404).JSON(fiber.Map{"error": "No avatar"})
 	}
 
@@ -281,13 +225,13 @@ func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 	if strings.HasPrefix(user.Avatar, "/storage/") {
 		// Local file - serve directly
 		localPath := "." + user.Avatar
-		slog.Info("serving local avatar file", "handler", "GetAvatar", "path", localPath)
-		
+		slog.Debug("serving local avatar file", "handler", "GetAvatar", "path", localPath)
+
 		return c.SendFile(localPath)
 	}
 
 	// External URL - fetch and proxy
-	slog.Info("fetching avatar from external URL", "handler", "GetAvatar", "url", user.Avatar)
+	slog.Debug("fetching avatar from external URL", "handler", "GetAvatar", "url", user.Avatar)
 	resp, err := http.Get(user.Avatar)
 	if err != nil {
 		slog.Error("failed to fetch avatar", "handler", "GetAvatar", "error", err)
@@ -295,7 +239,7 @@ func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 	}
 	defer resp.Body.Close()
 
-	slog.Info("avatar response", "handler", "GetAvatar", "status", resp.Status, "content_type", resp.Header.Get("Content-Type"))
+	slog.Debug("avatar response", "handler", "GetAvatar", "status", resp.Status, "content_type", resp.Header.Get("Content-Type"))
 
 	// Set headers
 	contentType := resp.Header.Get("Content-Type")
@@ -312,7 +256,7 @@ func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to read avatar"})
 	}
 
-	slog.Info("sending avatar", "handler", "GetAvatar", "bytes", len(body))
+	slog.Debug("sending avatar", "handler", "GetAvatar", "bytes", len(body))
 	return c.Send(body)
 }
 

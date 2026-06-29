@@ -1,23 +1,28 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"net/smtp"
 	"strings"
 	"time"
+
+	"github.com/maulanashalihin/laju-go/app/queries"
 )
 
 // MailerService handles email sending
 type MailerService struct {
-	smtpHost     string
-	smtpPort     int
-	smtpUser     string
-	smtpPass     string
-	fromEmail    string
-	fromName     string
-	resetTokenDB map[string]ResetTokenEntry // In production, use Redis/DB
+	querier   *queries.Querier
+	appURL    string
+	smtpHost  string
+	smtpPort  int
+	smtpUser  string
+	smtpPass  string
+	fromEmail string
+	fromName  string
 }
 
 type ResetTokenEntry struct {
@@ -27,33 +32,34 @@ type ResetTokenEntry struct {
 	ExpiresAt time.Time
 }
 
-func NewMailerService(smtpHost string, smtpPort int, smtpUser, smtpPass, fromEmail, fromName string) *MailerService {
+func NewMailerService(querier *queries.Querier, smtpHost string, smtpPort int, smtpUser, smtpPass, fromEmail, fromName, appURL string) *MailerService {
 	return &MailerService{
-		smtpHost:     smtpHost,
-		smtpPort:     smtpPort,
-		smtpUser:     smtpUser,
-		smtpPass:     smtpPass,
-		fromEmail:    fromEmail,
-		fromName:     fromName,
-		resetTokenDB: make(map[string]ResetTokenEntry),
+		querier:   querier,
+		appURL:    appURL,
+		smtpHost:  smtpHost,
+		smtpPort:  smtpPort,
+		smtpUser:  smtpUser,
+		smtpPass:  smtpPass,
+		fromEmail: fromEmail,
+		fromName:  fromName,
 	}
 }
 
-// SendPasswordResetEmail sends a password reset email
-func (m *MailerService) SendPasswordResetEmail(email string, userID int64, resetURL string) error {
+// SendPasswordResetEmail generates a token, stores it in DB, and sends the reset email
+func (m *MailerService) SendPasswordResetEmail(ctx context.Context, email string, userID int64) error {
 	// Generate reset token
-	token, err := m.generateResetToken()
+	token, err := generateResetToken()
 	if err != nil {
 		return err
 	}
 
-	// Store token (in production, use Redis/DB)
-	m.resetTokenDB[token] = ResetTokenEntry{
-		UserID:    userID,
-		Email:     email,
-		Token:     token,
-		ExpiresAt: time.Now().Add(1 * time.Hour),
+	// Store token in database
+	if err := m.querier.CreatePasswordReset(ctx, token, userID, email, time.Now().Add(1*time.Hour)); err != nil {
+		return fmt.Errorf("failed to store reset token: %w", err)
 	}
+
+	// Build reset URL with real token
+	resetURL := fmt.Sprintf("%s/reset-password/%s", m.appURL, token)
 
 	// Build email
 	subject := "Reset Your Password"
@@ -131,28 +137,30 @@ func (m *MailerService) SendEmail(to, subject, body string) error {
 	return smtp.SendMail(addr, auth, m.fromEmail, []string{to}, []byte(message.String()))
 }
 
-// ValidateResetToken validates a reset token
-func (m *MailerService) ValidateResetToken(token string) (*ResetTokenEntry, error) {
-	entry, exists := m.resetTokenDB[token]
-	if !exists {
-		return nil, fmt.Errorf("invalid token")
+// ValidateResetToken validates a reset token against the database
+func (m *MailerService) ValidateResetToken(ctx context.Context, token string) (*ResetTokenEntry, error) {
+	pr, err := m.querier.GetPasswordReset(ctx, token)
+	if err != nil {
+		return nil, fmt.Errorf("invalid or expired token")
 	}
 
-	if time.Now().After(entry.ExpiresAt) {
-		delete(m.resetTokenDB, token)
-		return nil, fmt.Errorf("token expired")
-	}
-
-	return &entry, nil
+	return &ResetTokenEntry{
+		UserID:    pr.UserID,
+		Email:     pr.Email,
+		Token:     pr.Token,
+		ExpiresAt: pr.ExpiresAt,
+	}, nil
 }
 
-// InvalidateResetToken invalidates a reset token after use
-func (m *MailerService) InvalidateResetToken(token string) {
-	delete(m.resetTokenDB, token)
+// InvalidateResetToken marks a reset token as used
+func (m *MailerService) InvalidateResetToken(ctx context.Context, token string) {
+	if err := m.querier.MarkPasswordResetUsed(ctx, token); err != nil {
+		slog.Error("failed to invalidate reset token", "error", err, "token", token)
+	}
 }
 
 // generateResetToken generates a secure random token
-func (m *MailerService) generateResetToken() (string, error) {
+func generateResetToken() (string, error) {
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
@@ -160,12 +168,11 @@ func (m *MailerService) generateResetToken() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-// CleanupExpiredTokens removes expired tokens (call this periodically)
-func (m *MailerService) CleanupExpiredTokens() {
-	now := time.Now()
-	for token, entry := range m.resetTokenDB {
-		if now.After(entry.ExpiresAt) {
-			delete(m.resetTokenDB, token)
-		}
+// CleanupExpiredTokens removes expired tokens from the database
+// Call this periodically via a cron job or background goroutine
+func (m *MailerService) CleanupExpiredTokens(ctx context.Context) {
+	err := m.querier.DeleteExpiredPasswordResets(ctx)
+	if err != nil {
+		slog.Error("failed to cleanup expired tokens", "error", err)
 	}
 }

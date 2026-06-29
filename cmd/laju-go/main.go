@@ -12,13 +12,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/pressly/goose/v3"
 	"github.com/maulanashalihin/laju-go/app/cache"
 	"github.com/maulanashalihin/laju-go/app/config"
 	"github.com/maulanashalihin/laju-go/app/handlers"
@@ -26,6 +24,7 @@ import (
 	"github.com/maulanashalihin/laju-go/app/services"
 	"github.com/maulanashalihin/laju-go/app/session"
 	"github.com/maulanashalihin/laju-go/routes"
+	"github.com/pressly/goose/v3"
 
 	_ "modernc.org/sqlite"
 )
@@ -106,7 +105,7 @@ func main() {
 	// Initialize handlers
 	routeHandlers := routes.Handlers{
 		Public: handlers.NewPublicHandler(authService, userService, inertiaService, assetService),
-		Auth:   handlers.NewAuthHandler(authService, userService, sessionStore, inertiaService),
+		Auth:   handlers.NewAuthHandler(authService, sessionStore, inertiaService),
 		App:    handlers.NewAppHandler(userService, sessionStore, inertiaService),
 		Upload: handlers.NewUploadHandler(sessionStore, userService),
 	}
@@ -114,24 +113,25 @@ func main() {
 	// Setup CSRF middleware
 	csrfMiddleware := routes.SetupCSRFMiddleware(sessionStore, cfg.SessionSecret)
 
-	// Setup mailer service
+	// Setup mailer service (with DB-backed token storage)
+	appURL := routes.GetAppURL(cfg.AppPort, cfg.AppEnv)
 	mailerService := routes.SetupMailerService(
+		querier,
 		cfg.SMTPHost,
 		cfg.SMTPPort,
 		cfg.SMTPUser,
 		cfg.SMTPPass,
 		cfg.FromEmail,
 		cfg.FromName,
+		appURL,
 	)
 
 	// Setup password reset handler
-	appURL := routes.GetAppURL(cfg.AppPort, cfg.AppEnv)
 	passwordResetHandler := routes.SetupPasswordResetHandler(
 		mailerService,
 		userService,
 		sessionStore,
 		inertiaService,
-		appURL,
 	)
 	routeHandlers.PasswordReset = passwordResetHandler
 
@@ -163,13 +163,13 @@ func main() {
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
-			"status": "ok",
+			"status":  "ok",
 			"version": Version,
 		})
 	})
 
 	// Setup routes (includes static file serving)
-	routes.SetupRoutes(app, routeHandlers, sessionStore, mailerService, csrfMiddleware)
+	routes.SetupRoutes(app, routeHandlers, sessionStore, userService, mailerService, csrfMiddleware)
 
 	go func() {
 		slog.Info("server listening", "port", cfg.AppPort)
@@ -319,11 +319,6 @@ func runMigrations(db *sql.DB, migrationsDir string) error {
 	return nil
 }
 
-func Render(c *fiber.Ctx, component templ.Component) error {
-	c.Set("Content-Type", "text/html; charset=utf-8")
-	return component.Render(c.Context(), c.Response().BodyWriter())
-}
-
 // customErrorHandler handles Fiber errors
 func customErrorHandler(c *fiber.Ctx, err error) error {
 	code := fiber.StatusInternalServerError
@@ -346,4 +341,3 @@ func customErrorHandler(c *fiber.Ctx, err error) error {
 		"error": err.Error(),
 	})
 }
-

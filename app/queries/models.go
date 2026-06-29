@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+type PasswordReset struct {
+	Token     string
+	UserID    int64
+	Email     string
+	ExpiresAt time.Time
+	Used      int64
+	CreatedAt time.Time
+}
+
 type Session struct {
 	ID        string
 	UserID    int64

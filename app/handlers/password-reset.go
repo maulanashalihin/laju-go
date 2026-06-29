@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,7 +14,6 @@ type PasswordResetHandler struct {
 	userService    *services.UserService
 	store          *session.Store
 	inertiaService *services.InertiaService
-	appURL         string
 }
 
 func NewPasswordResetHandler(
@@ -23,14 +21,12 @@ func NewPasswordResetHandler(
 	userService *services.UserService,
 	store *session.Store,
 	inertiaService *services.InertiaService,
-	appURL string,
 ) *PasswordResetHandler {
 	return &PasswordResetHandler{
 		mailerService:  mailerService,
 		userService:    userService,
 		store:          store,
 		inertiaService: inertiaService,
-		appURL:         appURL,
 	}
 }
 
@@ -60,29 +56,25 @@ func (h *PasswordResetHandler) SendResetLink(c *fiber.Ctx) error {
 		})
 	}
 
-	// Find user by email
+	successMsg := "If an account exists with that email, we've sent a password reset link."
+
+	// Don't reveal whether email exists (security best practice)
 	user, err := h.userService.GetProfileByEmail(req.Email)
 	if err != nil {
-		// Don't reveal if email exists or not (security best practice)
 		return h.inertiaService.Render(c, "auth/ForgotPassword", fiber.Map{
-			"success": "If an account exists with that email, we've sent a password reset link.",
+			"success": successMsg,
 		})
 	}
 
-	// Generate reset URL
-	resetURL := fmt.Sprintf("%s/reset-password/TOKEN_PLACEHOLDER", h.appURL)
-
-	// Send reset email
-	err = h.mailerService.SendPasswordResetEmail(user.Email, user.ID, resetURL)
-	if err != nil {
-		// Log error in production
+	// MailerService generates the token, stores it in DB, and sends the email
+	if err := h.mailerService.SendPasswordResetEmail(c.Context(), user.Email, user.ID); err != nil {
 		return h.inertiaService.Render(c, "auth/ForgotPassword", fiber.Map{
-			"success": "If an account exists with that email, we've sent a password reset link.",
+			"success": successMsg,
 		})
 	}
 
 	return h.inertiaService.Render(c, "auth/ForgotPassword", fiber.Map{
-		"success": "If an account exists with that email, we've sent a password reset link.",
+		"success": successMsg,
 	})
 }
 
@@ -97,7 +89,7 @@ func (h *PasswordResetHandler) ShowResetPasswordForm(c *fiber.Ctx) error {
 	}
 
 	// Validate token
-	_, err := h.mailerService.ValidateResetToken(token)
+	_, err := h.mailerService.ValidateResetToken(c.Context(), token)
 	if err != nil {
 		return h.inertiaService.Render(c, "auth/ResetPassword", fiber.Map{
 			"error": "Invalid or expired reset link",
@@ -139,7 +131,7 @@ func (h *PasswordResetHandler) ResetPassword(c *fiber.Ctx) error {
 	}
 
 	// Validate token
-	tokenEntry, err := h.mailerService.ValidateResetToken(token)
+	tokenEntry, err := h.mailerService.ValidateResetToken(c.Context(), token)
 	if err != nil {
 		return h.inertiaService.Render(c, "auth/ResetPassword", fiber.Map{
 			"token": token,
@@ -174,16 +166,11 @@ func (h *PasswordResetHandler) ResetPassword(c *fiber.Ctx) error {
 		})
 	}
 
-	// Invalidate token
-	h.mailerService.InvalidateResetToken(token)
+	// Invalidate token so it can't be reused
+	h.mailerService.InvalidateResetToken(c.Context(), token)
 
 	return h.inertiaService.Render(c, "auth/ResetPassword", fiber.Map{
 		"token":   token,
 		"success": "Password reset successfully. You can now login with your new password.",
 	})
-}
-
-// GetResetTokenEntry is a helper to get token entry (for testing)
-func (h *PasswordResetHandler) GetResetTokenEntry(token string) (*services.ResetTokenEntry, error) {
-	return h.mailerService.ValidateResetToken(token)
 }

@@ -106,6 +106,7 @@ Kalau ragu dengan visual, minta screenshot via agent_browser — saya review dan
 
 ## Conventions
 
+- **Handlers must NOT call queries directly.** All database access goes through services. Handler → Service → Query. No shortcut from handler to query.
 - **POST/PUT handlers that redirect**: Use `c.Redirect(path, fiber.StatusSeeOther)` (303). Inertia does not follow 302 correctly for form submissions — it needs 303 to change POST/PUT to GET on redirect.
 - **PUT/PATCH**: Return JSON for `fetch()` calls, redirect for `router.put()` calls. If redirecting, always 303.
 - Sessions are database-backed (SQLite table). Auth middleware checks `session.Store`.
@@ -132,33 +133,3 @@ Copy `.env.example` → `.env`. Minimum required:
 - One-click: `./scripts/deploy.sh` (reads `.deploy` config file).
 - Docker: multi-stage build in `docs/deployment/docker.md`.
 - Systemd: service setup in `docs/deployment/production.md`.
-
-<!-- gortex:communities:start -->
-<!-- gortex:skills:start -->
-## Community Skills
-
-| Area | Description | Skill |
-|------|-------------|-------|
-| Queries 3 Dirs Int64 | 313 symbols | `/gortex-queries-3-dirs-int64` |
-| Cache 8 Dirs | 230 symbols | `/gortex-cache-8-dirs` |
-| Services 8 Dirs | 229 symbols | `/gortex-services-8-dirs` |
-| Services Mosque 6 Dirs | 218 symbols | `/gortex-services-mosque-6-dirs` |
-| Handlers Mosque 7 Dirs Main | 176 symbols | `/gortex-handlers-mosque-7-dirs-main` |
-| Queries 5 Dirs | 170 symbols | `/gortex-queries-5-dirs` |
-| Handlers Mosque 7 Dirs Flash | 164 symbols | `/gortex-handlers-mosque-7-dirs-flash` |
-| Middlewares 4 Dirs | 125 symbols | `/gortex-middlewares-4-dirs` |
-| Handlers 2 Dirs Render | 113 symbols | `/gortex-handlers-2-dirs-render` |
-| 5 Dirs | 105 symbols | `/gortex-5-dirs` |
-| Queries 4 Dirs | 101 symbols | `/gortex-queries-4-dirs` |
-| Handlers Mosque 3 Dirs Fetchandstoremonth | 91 symbols | `/gortex-handlers-mosque-3-dirs-fetchandstoremonth` |
-| Services 2 Dirs | 83 symbols | `/gortex-services-2-dirs` |
-| Services Mosque 4 Dirs Format | 74 symbols | `/gortex-services-mosque-4-dirs-format` |
-| Queries 1 Dirs Jamaah | 71 symbols | `/gortex-queries-1-dirs-jamaah` |
-| Queries 3 Dirs Changepassword | 71 symbols | `/gortex-queries-3-dirs-changepassword` |
-| Services Mosque 4 Dirs Createmosque | 67 symbols | `/gortex-services-mosque-4-dirs-createmosque` |
-| Handlers 2 Dirs Upload | 66 symbols | `/gortex-handlers-2-dirs-upload` |
-| Queries Mosque | 65 symbols | `/gortex-queries-mosque` |
-| Handlers Mosque 3 Dirs Updatemosque | 65 symbols | `/gortex-handlers-mosque-3-dirs-updatemosque` |
-<!-- gortex:skills:end -->
-
-<!-- gortex:communities:end -->

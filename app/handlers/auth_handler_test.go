@@ -12,7 +12,6 @@ import (
 	_ "modernc.org/sqlite"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/maulanashalihin/laju-go/app/cache"
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/maulanashalihin/laju-go/app/queries"
 	"github.com/maulanashalihin/laju-go/app/services"
@@ -55,11 +54,10 @@ func setupTestApp(t *testing.T) (*fiber.App, *queries.Querier) {
 	authSvc := services.NewAuthService(querier, services.AuthServiceConfig{
 		SessionSecret: "test-secret-32-chars-long-for-testing!!",
 	})
-	userSvc := services.NewUserService(querier, cache.NewUserCache(5*time.Minute))
 	inertiaSvc := services.NewInertiaService(services.NewAssetService("", "", false), store)
 
 	app := fiber.New()
-	h := NewAuthHandler(authSvc, userSvc, store, inertiaSvc)
+	h := NewAuthHandler(authSvc, store, inertiaSvc)
 	app.Get("/login", h.ShowLoginForm)
 	app.Get("/register", h.ShowRegisterForm)
 	app.Post("/register", h.Register)
@@ -116,7 +114,7 @@ func TestRegisterEndpoint(t *testing.T) {
 		wantSession  bool
 	}{
 		{
-			"success",    `{"name":"T","email":"a@b.com","password":"pass123"}`,
+			"success", `{"name":"T","email":"a@b.com","password":"pass123"}`,
 			http.StatusSeeOther, "/app", true,
 		},
 		{
@@ -169,9 +167,9 @@ func TestLoginEndpoint(t *testing.T) {
 		wantStatus   int
 		wantLocation string
 	}{
-		{"success",        `{"email":"user@example.com","password":"pass123"}`, http.StatusSeeOther, "/app"},
-		{"wrong password", `{"email":"user@example.com","password":"wrong"}`,   http.StatusSeeOther, "/login"},
-		{"unknown user",   `{"email":"nobody@example.com","password":"any"}`,    http.StatusSeeOther, "/login"},
+		{"success", `{"email":"user@example.com","password":"pass123"}`, http.StatusSeeOther, "/app"},
+		{"wrong password", `{"email":"user@example.com","password":"wrong"}`, http.StatusSeeOther, "/login"},
+		{"unknown user", `{"email":"nobody@example.com","password":"any"}`, http.StatusSeeOther, "/login"},
 	}
 
 	for _, tt := range tests {

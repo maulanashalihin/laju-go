@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	ErrUserNotFound      = errors.New("user not found")
-	ErrUserAlreadyExists = errors.New("user already exists")
-	ErrSessionNotFound   = errors.New("session not found")
-	ErrSessionExpired    = errors.New("session expired")
+	ErrUserNotFound          = errors.New("user not found")
+	ErrUserAlreadyExists     = errors.New("user already exists")
+	ErrSessionNotFound       = errors.New("session not found")
+	ErrPasswordResetNotFound = errors.New("password reset not found")
 )
 
 // Querier wraps the generated Queries with domain-level error handling
@@ -274,6 +274,36 @@ func (q *Querier) DeleteSessionsByUserID(ctx context.Context, userID int64) erro
 
 func (q *Querier) DeleteExpiredSessions(ctx context.Context) error {
 	return q.Queries.DeleteExpiredSessions(ctx, time.Now())
+}
+
+// --- Password Reset operations ---
+
+func (q *Querier) CreatePasswordReset(ctx context.Context, token string, userID int64, email string, expiresAt time.Time) error {
+	return q.Queries.CreatePasswordReset(ctx, CreatePasswordResetParams{
+		Token:     token,
+		UserID:    userID,
+		Email:     email,
+		ExpiresAt: expiresAt,
+		CreatedAt: time.Now(),
+	})
+}
+
+func (q *Querier) GetPasswordReset(ctx context.Context, token string) (*PasswordReset, error) {
+	pr, err := q.Queries.GetPasswordReset(ctx, GetPasswordResetParams{
+		Token:     token,
+		ExpiresAt: time.Now(),
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrPasswordResetNotFound
+		}
+		return nil, err
+	}
+	return &pr, nil
+}
+
+func (q *Querier) MarkPasswordResetUsed(ctx context.Context, token string) error {
+	return q.Queries.MarkPasswordResetUsed(ctx, token)
 }
 
 func (q *Querier) DecodeSessionData(data string) (*models.SessionData, error) {
