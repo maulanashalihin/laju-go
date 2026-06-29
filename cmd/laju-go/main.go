@@ -92,7 +92,6 @@ func main() {
 		GoogleClientID:     cfg.GoogleClientID,
 		GoogleClientSecret: cfg.GoogleClientSecret,
 		GoogleRedirectURL:  cfg.GoogleRedirectURL,
-		BcryptCost:         cfg.BcryptCost,
 	})
 	userService := services.NewUserService(querier, userCache)
 

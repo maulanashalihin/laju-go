@@ -8,7 +8,6 @@ import (
 
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/maulanashalihin/laju-go/app/queries"
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -21,7 +20,6 @@ var (
 
 type AuthService struct {
 	querier     *queries.Querier
-	bcryptCost  int
 	oauthConfig *oauth2.Config
 }
 
@@ -30,17 +28,11 @@ type AuthServiceConfig struct {
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleRedirectURL  string
-	BcryptCost         int
 }
 
 func NewAuthService(querier *queries.Querier, cfg AuthServiceConfig) *AuthService {
-	bcryptCost := cfg.BcryptCost
-	if bcryptCost < bcrypt.MinCost || bcryptCost > bcrypt.MaxCost {
-		bcryptCost = bcrypt.DefaultCost
-	}
 	return &AuthService{
-		querier:    querier,
-		bcryptCost: bcryptCost,
+		querier: querier,
 		oauthConfig: &oauth2.Config{
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
@@ -135,8 +127,8 @@ func (s *AuthService) Register(name, email, password string) (*models.User, erro
 		return nil, err
 	}
 
-	// Hash password with configured bcrypt cost
-	hashedPassword, err := s.hashPassword(password)
+	// Hash password with Argon2id
+	hashedPassword, err := HashPassword(password)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +167,7 @@ func (s *AuthService) Login(email, password string) (*models.User, error) {
 		return nil, ErrInvalidCredentials
 	}
 
-	if !checkPassword(user.Password.String, password) {
+	if !CheckPassword(password, user.Password.String) {
 		return nil, ErrInvalidCredentials
 	}
 
@@ -185,18 +177,6 @@ func (s *AuthService) Login(email, password string) (*models.User, error) {
 // GetUserByID retrieves a user by ID
 func (s *AuthService) GetUserByID(id int64) (*models.User, error) {
 	return s.querier.GetUserByID(context.Background(), id)
-}
-
-// hashPassword hashes a password using bcrypt with the configured cost.
-func (s *AuthService) hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), s.bcryptCost)
-	return string(bytes), err
-}
-
-// checkPassword checks if a password matches a hash
-func checkPassword(hash, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
 }
 
 // GetOAuthURL returns the OAuth URL for Google login
