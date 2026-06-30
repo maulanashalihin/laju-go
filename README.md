@@ -121,8 +121,19 @@ npm run db:generate            # sqlc — generate Go from SQL
 templ generate                 # regenerate templ Go files
 
 # Test
-go test ./...                  # all tests
+go test ./...                  # backend tests (services, queries, handlers)
+# E2E: use pi agent_browser for manual flow testing
 ```
+
+### Testing Strategy
+
+| Approach | For | Command |
+|----------|-----|---------|
+| Go unit/integration | Services, queries, handlers | `go test ./...` |
+| E2E / user flow | Visual regression, auth flows, form submission | `agent_browser` via pi |
+
+> **E2E testing** dilakukan manual dengan `agent_browser` (buka browser, klik, isi form, verify redirect).
+> Tidak perlu Cypress/Playwright — browser asli lebih realistik untuk project skala ini.
 
 ## 🚀 Deployment (Your Workflow)
 
