@@ -59,7 +59,6 @@ export default defineConfig({
     strictPort: false,
     hmr: {
       host: "localhost",
-      port: 5173,
       path: "/@vite/hmr",
     },
   },
