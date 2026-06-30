@@ -11,6 +11,5 @@
     "moduleDetection": "force",
     "verbatimModuleSyntax": false
   },
-  "include": ["frontend/**/*.ts", "frontend/**/*.svelte"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["frontend/**/*.ts", "frontend/**/*.svelte"]
 }
