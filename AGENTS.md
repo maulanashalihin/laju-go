@@ -143,6 +143,16 @@ Kalau ragu dengan visual, minta screenshot via agent_browser — saya review dan
 
 ## Conventions
 
+### Svelte / Inertia
+
+- **Internal navigation links WAJIB pake `use:inertia`** — tanpanya, `<a href="...">` melakukan full page reload, bukan navigasi SPA. Import: `import { inertia } from "@inertiajs/svelte"` lalu `<a href="/path" use:inertia>`. Jangan lupa.
+- **OAuth links (`/auth/google`, `/auth/github`)** tetap pake `<a>` biasa tanpa `use:inertia` karena harus redirect ke provider eksternal.
+- **Form submission** pake `router.post()` / `router.put()` dari `@inertiajs/svelte`, bukan `<form>` biasa.
+- **File upload** WAJIB pake `fetch()` (kirim `FormData`), lalu simpan URL hasilnya via `router.put()`. Inertia tidak bisa kirim binary file.
+- **`$effect`** hanya untuk side effects ke luar sistem (document.title, localStorage). Jangan untuk inisialisasi state dari props — pake `$state` langsung atau bungkus dalam function closure.
+
+### Handlers
+
 - **Handlers must NOT call queries directly.** All database access goes through services. Handler → Service → Query. No shortcut from handler to query.
 - **POST/PUT handlers that redirect**: Use `c.Redirect(path, fiber.StatusSeeOther)` (303). Inertia does not follow 302 correctly for form submissions — it needs 303 to change POST/PUT to GET on redirect.
 - **PUT/PATCH**: Return JSON for `fetch()` calls, redirect for `router.put()` calls. If redirecting, always 303.

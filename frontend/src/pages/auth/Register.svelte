@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { router } from "@inertiajs/svelte";
+    import { router, inertia } from "@inertiajs/svelte";
     import { Lock, Mail, User, ArrowRight, Eye, EyeOff, Sparkles } from "lucide-svelte";
 
     let form = $state({
@@ -339,7 +339,7 @@
 
                 <p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
                     Already have an account?
-                    <a href="/login" class="text-brand-400 hover:text-brand-300 font-medium transition-colors">
+                    <a href="/login" use:inertia class="text-brand-400 hover:text-brand-300 font-medium transition-colors">
                         Sign in
                     </a>
                 </p>
