@@ -52,7 +52,7 @@ Services depend on `*queries.Querier`. For testing, mock the database:
 ```go
 func TestAuthService_Login(t *testing.T) {
     // Use an in-memory SQLite database
-    db, _ := sql.Open("sqlite", ":memory:")
+    db, _ := sql.Open("sqlite3", ":memory:")
     // Run migrations, create test data, test service methods
 }
 ```
