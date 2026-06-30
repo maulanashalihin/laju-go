@@ -191,7 +191,7 @@
                 in:fly={{ y: 20, duration: 300 }}
             >
                 <div
-                    class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0"
+                    class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0"
                 >
                     <svg
                         class="w-4 h-4"
@@ -217,7 +217,7 @@
                 in:fly={{ y: 20, duration: 300 }}
             >
                 <div
-                    class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0"
+                    class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0"
                 >
                     <svg
                         class="w-4 h-4"
