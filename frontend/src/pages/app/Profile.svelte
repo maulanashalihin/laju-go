@@ -23,11 +23,15 @@
 
     let { user, success, error }: Props = $props();
 
-    let profileForm = $state({
-        name: user?.name ?? "",
-        email: user?.email ?? "",
-        avatar: user?.avatar ?? "",
-    });
+    // Intentionally capture initial prop values for form — not reactive
+    function getInitialForm() {
+        return {
+            name: user?.name ?? "",
+            email: user?.email ?? "",
+            avatar: user?.avatar ?? "",
+        };
+    }
+    let profileForm = $state(getInitialForm());
 
     let passwordForm = $state({
         current_password: "",
