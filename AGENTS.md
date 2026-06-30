@@ -165,8 +165,30 @@ Copy `.env.example` → `.env`. Minimum required:
 - Cross-compile for Linux: `make build-linux` (requires `brew install zig` for CGO cross-compile via `zig cc`).
 - Air's `include_ext` does not include `.templ` — regenerate templ components manually when editing templates.
 
+## Testing Strategy
+
+| Approach | For | How |
+|----------|-----|-----|
+| Go unit/integration | Services, queries, handlers, cache | `go test ./...` — in-memory SQLite, no external dependencies |
+| E2E / browser | Auth flows, form submission, page load, visual regression | `agent_browser` via pi — real browser, no mock |
+
+### Agent Browser Testing
+
+Gunakan `agent_browser` untuk E2E testing selama development:
+
+```
+agent_browser args=["open", "http://localhost:8080/register"]
+→ snapshot, fill form, submit
+→ snapshot verify redirect ke /app
+
+agent_browser args=["open", "http://localhost:8080/app/profile"]
+→ snapshot (harus redirect ke /login karena belum login)
+```
+
+**Tidak perlu** Cypress, Playwright, vitest, atau mock Inertia.
+
 ## Deployment
 
-- One-click: `./scripts/deploy.sh` (reads `.deploy` config file).
-- Docker: multi-stage build in `docs/deployment/docker.md`.
-- Systemd: service setup in `docs/deployment/production.md`.
+- Git-based: `git pull → make build → sudo systemctl restart laju-go`
+- Docker: multi-stage build di `Dockerfile`
+- Systemd: service setup di `systemd/laju-go.service`
