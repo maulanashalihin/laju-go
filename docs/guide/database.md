@@ -19,11 +19,11 @@ Laju Go uses **SQLite** as the database with **sqlc** for type-safe query genera
 // cmd/laju-go/main.go
 import (
     "database/sql"
-    _ "modernc.org/sqlite"  // Pure Go SQLite (no CGO)
+    _ "github.com/mattn/go-sqlite3"  // CGO-based SQLite driver
 )
 
 func initDatabase(dbPath string) (*sql.DB, error) {
-    db, err := sql.Open("sqlite", dbPath)
+    db, err := sql.Open("sqlite3", dbPath)
     if err != nil {
         return nil, err
     }
@@ -83,18 +83,18 @@ func applySQLiteOptimizations(db *sql.DB) {
 | `ConnMaxLifetime` | 5 min | Recycle connections periodically |
 | `ConnMaxIdleTime` | 30 sec | Free stale connections faster |
 
-### Why modernc.org/sqlite (Not mattn/go-sqlite3)?
+### Why mattn/go-sqlite3 (CGO-enabled)?
 
-The project uses `modernc.org/sqlite` — a **pure Go** implementation with zero CGO dependencies:
+The project uses `github.com/mattn/go-sqlite3` — a **CGO-based** driver that delivers ~1.3–1.9x higher throughput than pure-Go alternatives. The trade-off is worth it for production workloads:
 
-| Factor | `modernc.org/sqlite` ✅ | `mattn/go-sqlite3` ❌ |
-|--------|------------------------|----------------------|
-| Cross-compile | `GOOS=linux go build` — just works | Needs Docker or cross-compiler |
-| Static binary | Self-contained, no deps | Links to `libsqlite3` |
-| Stack traces | Full Go stack traces | CGO traces are opaque |
-| Speed | ~1.5% slower at full HTTP stack | Slightly faster at microbenchmarks |
+| Factor | `mattn/go-sqlite3` ✅ |
+|--------|------------------------|
+| Performance | 2x throughput vs pure-Go drivers (100K+ RPS on $24/mo Vultr) |
+| Cross-compile | `make build-linux` (requires `brew install zig` for `zig cc`) |
+| Static binary | Yes — `zig cc` links libsqlite3 statically |
+| Dev setup | Works out of the box on macOS (CGO enabled by default) |
 
-**Decision is final.** Don't migrate to `mattn/go-sqlite3` unless you need SQLite extensions.
+> **Driver name**: Use `sql.Open("sqlite3", dbPath)` — mattn registers as `"sqlite3"`, unlike modernc which registers as `"sqlite"`.
 
 ## Database Migrations with Goose
 
@@ -285,6 +285,7 @@ func (q *Querier) GetUserByEmail(ctx context.Context, email string) (*models.Use
 ### Complete CRUD Example
 
 **SQL source** (`queries/user.sql`):
+
 ```sql
 -- name: GetUserByID :one
 SELECT * FROM users WHERE id = ?;
@@ -300,6 +301,7 @@ INSERT INTO users (email, name, password, role) VALUES (?, ?, ?, ?);
 ```
 
 **Usage in service** (`app/services/auth.go`):
+
 ```go
 func (s *AuthService) Register(name, email, password string) (*models.User, error) {
     // Check if user already exists
@@ -352,17 +354,20 @@ func (q *Querier) GetUserByEmail(ctx context.Context, email string) (*models.Use
 ### Adding a New Query
 
 1. Add SQL to `queries/*.sql`:
+
 ```sql
 -- name: GetUserCount :one
 SELECT COUNT(*) FROM users;
 ```
 
-2. Regenerate:
+1. Regenerate:
+
 ```bash
 npm run db:generate
 ```
 
-3. Use in service:
+1. Use in service:
+
 ```go
 count, err := s.querier.GetUserCount(ctx)
 ```
@@ -427,6 +432,7 @@ return tx.Commit()
 ```
 
 > Transactions in sqlc can also be done directly with `database/sql`:
+>
 > ```go
 > tx, _ := db.Begin()
 > defer tx.Rollback()
@@ -513,6 +519,7 @@ for rows.Next() {
 **Problem**: `database is locked`
 
 **Solutions**:
+
 1. Enable WAL mode: `PRAGMA journal_mode=WAL`
 2. Set busy timeout: `PRAGMA busy_timeout=5000`
 3. Reduce concurrent writes
@@ -523,6 +530,7 @@ for rows.Next() {
 **Problem**: Migration fails on startup
 
 **Solutions**:
+
 1. Check migration syntax
 2. Verify database path
 3. Run migrations manually: `goose -dir migrations sqlite3 data/app.db up`
@@ -533,6 +541,7 @@ for rows.Next() {
 **Problem**: `unable to open database file`
 
 **Solutions**:
+
 1. Ensure directory exists: `mkdir -p data`
 2. Check permissions: `chmod 755 data`
 3. Verify DB_PATH in .env

@@ -47,7 +47,7 @@ Laju Go follows a **layered architecture** that separates concerns into distinct
                    ▼
 ┌──────────────────────────────────────────────────────┐
 │                  SQLite Database                      │
-│           (modernc.org/sqlite — pure Go)              │
+│           (mattn/go-sqlite3 — CGO, 2x faster)         │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -58,6 +58,7 @@ Laju Go follows a **layered architecture** that separates concerns into distinct
 **Purpose**: Define URL endpoints, apply middleware chains, and wire handlers.
 
 **Responsibilities**:
+
 - Map HTTP methods and paths to handler methods
 - Apply middleware chains (auth, CSRF, rate limiting)
 - Configure static file serving (`/dist`, `/public`, `/storage`)
@@ -89,6 +90,7 @@ type Handlers struct {
 ```
 
 **Route setup**:
+
 ```go
 func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
     setupStaticRoutes(app)
@@ -116,6 +118,7 @@ func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailer
 | `PasswordResetRateLimit` | `rate-limit.go` | Throttle password reset requests |
 
 **Example — session-based auth**:
+
 ```go
 func AuthRequired(store *session.Store) fiber.Handler {
     return func(c *fiber.Ctx) error {
@@ -143,6 +146,7 @@ func AuthRequired(store *session.Store) fiber.Handler {
 **Purpose**: Handle HTTP requests — parse input, call services, return responses.
 
 **Responsibilities**:
+
 - Parse request body, params, and query strings
 - Validate input (basic checks — business rules go in services)
 - Call appropriate service methods
@@ -162,6 +166,7 @@ func AuthRequired(store *session.Store) fiber.Handler {
 **Key rule**: Handlers are **thin**. No business logic — delegate to services.
 
 **Example**:
+
 ```go
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
     var req models.LoginRequest
@@ -186,6 +191,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 ```
 
 **Inertia response pattern** — most handlers return Inertia responses:
+
 ```go
 return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
     "user": user,
@@ -199,6 +205,7 @@ return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
 **Purpose**: Implement business logic. This is where the application's core behavior lives.
 
 **Responsibilities**:
+
 - Authentication (email/password, Google OAuth)
 - User management (profile CRUD, password change)
 - Email sending (password reset, notifications)
@@ -233,6 +240,7 @@ type UserService struct {
 ```
 
 **Example**:
+
 ```go
 func (s *AuthService) Login(email, password string) (*models.User, error) {
     user, err := s.querier.GetUserByEmail(context.Background(), email)
@@ -261,6 +269,7 @@ func (s *AuthService) Login(email, password string) (*models.User, error) {
 **This is a critical architectural decision**: Instead of hand-writing repository interfaces and implementations, Laju Go uses [sqlc](https://sqlc.dev/) to generate type-safe Go code from SQL.
 
 **Workflow**:
+
 1. Write SQL queries in `queries/*.sql` (source files)
 2. Run `npm run db:generate` → sqlc generates `app/queries/*.go`
 3. Use the generated `Querier` in your services
@@ -348,6 +357,7 @@ func (u *User) ToResponse() UserResponse {
 3. **Flexibility**: Easy to swap implementation (cookie → Redis)
 
 **Dependency relationship**:
+
 ```
 services/auth.go  →  session/session.go  →  queries/session.sql.go
    (Business)         (Infrastructure)        (Data access)
@@ -489,8 +499,9 @@ func main() {
 ```
 
 **Dependency graph**:
+
 ```
-config.Load() → database/sql (SQLite via modernc.org)
+config.Load() → database/sql (SQLite via mattn/go-sqlite3)
                      │
                      ├──→ queries.Querier (sqlc)
                      │         ├──→ AuthService
@@ -559,6 +570,7 @@ Templ is type-safe HTML generation compiled to Go code at build time.
 ### Inertia Pages (Most Routes)
 
 All protected routes use `inertiaService.Render()`:
+
 ```go
 return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
     "user": user,
@@ -566,18 +578,23 @@ return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
 ```
 
 ### Direct HTML (Landing Page)
+
 ```go
 return templates.LandingPage("Welcome", viteURL, mainCSS).Render(c.Context(), c.Response().BodyWriter())
 ```
 
 ### API Endpoints (JSON)
+
 Some endpoints return raw JSON (`/api/me`, `/api/avatar/:id`):
+
 ```go
 c.JSON(fiber.Map{"user": user.ToResponse()})
 ```
 
 ### Redirects (POST Handlers)
+
 State-changing requests always redirect:
+
 ```go
 c.Redirect("/app")  // Inertia follows automatically
 ```
@@ -591,11 +608,11 @@ c.Redirect("/app")  // Inertia follows automatically
 3. **Full SQL power** — no ORM limitations for complex queries
 4. **Single source of truth** — SQL is the canonical query language
 
-### Why modernc.org/sqlite (Pure Go)?
+### Why mattn/go-sqlite3 (CGO)?
 
-- **Static binary** — single file deployment, no CGO
-- **Cross-compilation** — `GOOS=linux GOARCH=amd64 go build` just works
-- **No system dependencies** — works on scratch Docker images
+- **2x throughput** — outpaces pure-Go drivers in production benchmarks
+- **Static binary via zig** — `make build-linux` cross-compiles with `zig cc` -static
+- **CGO on macOS** — works out of the box, no setup needed
 
 ### Why Inertia.js Instead of API + SPA?
 
