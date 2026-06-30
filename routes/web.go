@@ -119,9 +119,9 @@ func setupAppRoutes(app *fiber.App, appHandler *handlers.AppHandler, uploadHandl
 }
 
 // SetupCSRFMiddleware sets up the CSRF middleware
-func SetupCSRFMiddleware(store *session.Store, secret string) *middlewares.CSRFMiddleware {
+func SetupCSRFMiddleware(store *session.Store, secret string, secure bool) *middlewares.CSRFMiddleware {
 	config := middlewares.DefaultCSRFConfig(secret)
-	config.Secure = false // Set to true in production with HTTPS
+	config.Secure = secure
 	config.SameSite = "Lax"
 	return middlewares.NewCSRFMiddleware(store, config)
 }

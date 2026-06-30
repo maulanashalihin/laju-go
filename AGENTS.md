@@ -50,10 +50,45 @@ routes/web.go     → app/handlers/     → app/services/     → app/queries/  
 
 ## Database & Migrations
 
-- SQLite via `github.com/mattn/go-sqlite3` (CGO-based, 2x throughput vs pure-Go drivers).
+- SQLite via modernc.org/sqlite (pure-Go, CGO-free).
 - Migrations run **automatically on startup** via Goose.
 - Write SQL in `queries/*.sql`, then `npm run db:generate` to create typed Go code.
 - `sqlc.yaml` configures the generation. Schema source is `migrations/`.
+
+### Migration Convention — One Table Per File
+
+Setiap file migrasi harus berisi **satu tabel saja**. Jangan menggabungkan beberapa tabel dalam satu file migrasi.
+
+✅ **Benar:**
+
+```
+migrations/
+├── 0001_create_users_table.sql       -- hanya CREATE TABLE users
+├── 0002_create_sessions_table.sql     -- hanya CREATE TABLE sessions
+└── 0003_create_password_resets_table.sql -- hanya CREATE TABLE password_resets
+```
+
+❌ **Salah (jangan lakukan ini):**
+
+```sql
+-- 0001_initial.sql — ❌ multiple tables in one file
+CREATE TABLE users (...);
+CREATE TABLE sessions (...);
+CREATE TABLE password_resets (...);
+```
+
+Alasan:
+
+1. **Isolasi migrasi** — Jika migrasi `sessions` gagal, tabel `users` tetap ter-migrasi. Dengan satu file besar, semua gagal.
+2. **Rollback granular** — `goose down` bisa rollback tabel spesifik.
+3. **History jelas** — Setiap tabel punya timestamp migrasi sendiri.
+4. **sqlc schema source** — sqlc membaca `migrations/` untuk schema. File terpisah = lebih mudah di-debug.
+
+Setiap file migrasi WAJIB memiliki `-- +goose Up` dan `-- +goose Down` section.
+
+### Database driver
+
+`github.com/mattn/go-sqlite3` (CGO-based). Requires CGO for cross-compilation. Cross-compile ke Linux dari macOS menggunakan `brew install zig` lalu `make build-linux`.
 
 ## Design Standards
 

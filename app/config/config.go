@@ -63,6 +63,7 @@ func Load() *Config {
 		// Session
 		SessionTTL: getSessionTTL(),
 		// Cache
+		UserCacheTTL:    getUserCacheTTL(),
 		SessionCacheTTL: getSessionCacheTTL(),
 	}
 
