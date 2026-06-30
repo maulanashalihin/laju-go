@@ -28,13 +28,9 @@
     }
 </script>
 
-<section class="min-h-screen bg-linear-to-br from-slate-100 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-40 -right-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"></div>
-    </div>
+<section class="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center">
 
-    <div class="w-full max-w-md px-6 relative z-10">
+    <div class="w-full max-w-md px-6">
         <div class="flex justify-center mb-8">
             <svg
                 width="48"
@@ -75,7 +71,7 @@
             </svg>
         </div>
 
-        <div class="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-700/50 p-8 shadow-2xl">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-soft">
             <div class="text-center mb-8">
                 <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-400/20 flex items-center justify-center">
                     <Mail class="w-8 h-8 text-brand-400" />
