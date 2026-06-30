@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { inertia } from "@inertiajs/svelte";
     import Header from "../../components/Header.svelte";
     import { fly } from "svelte/transition";
 
@@ -245,6 +246,7 @@
 
                 <a
                     href="/app/profile"
+                    use:inertia
                     class="flex items-center gap-3 p-4 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-brand-400/30 transition-all group"
                 >
                     <div

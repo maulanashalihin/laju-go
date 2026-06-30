@@ -1,6 +1,6 @@
 <script lang="ts">
     import { fly, fade } from "svelte/transition";
-    import { page, router } from "@inertiajs/svelte";
+    import { page, router, inertia } from "@inertiajs/svelte";
     import DarkModeToggle from "./DarkModeToggle.svelte";
 
     // Lucide icons
@@ -122,6 +122,7 @@ import {
             {@const Icon = item.icon}
             <a
                 href={item.href}
+                use:inertia
                 class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group {item.group ===
                 group
                     ? 'bg-brand-400/10 text-brand-400 border border-brand-400/20'
@@ -187,11 +188,13 @@ import {
         >
             <a
                 href="/login"
+                use:inertia
                 class="block w-full px-4 py-2.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors text-center"
                 >Sign In</a
             >
             <a
                 href="/register"
+                use:inertia
                 class="block w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 text-sm font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
                 >Get Started</a
             >
@@ -205,7 +208,7 @@ import {
 >
     <div class="flex items-center justify-between px-4 h-16">
         <!-- Logo -->
-        <a href="/app" class="flex items-center gap-2">
+        <a href="/app" use:inertia class="flex items-center gap-2">
             <span
                 class="text-lg font-black italic text-slate-900 dark:text-white"
                 >Laju<span class="text-brand-400">Go</span></span
@@ -253,6 +256,7 @@ import {
                             <div class="p-2">
                                 <a
                                     href="/app/profile"
+                                    use:inertia
                                     class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
                                 >
                                     <User size="16" />
@@ -276,6 +280,7 @@ import {
             {:else}
                 <a
                     href="/login"
+                    use:inertia
                     class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
                     >Sign In</a
                 >
@@ -333,6 +338,7 @@ import {
                     {@const Icon = item.icon}
                     <a
                         href={item.href}
+                        use:inertia
                         class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all {item.group ===
                         group
                             ? 'bg-brand-400/10 text-brand-400 border border-brand-400/20'
@@ -389,11 +395,13 @@ import {
                 >
                     <a
                         href="/login"
+                        use:inertia
                         class="block w-full px-4 py-3 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition-colors text-center"
                         >Sign In</a
                     >
                     <a
                         href="/register"
+                        use:inertia
                         class="block w-full px-4 py-3 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
                         >Get Started</a
                     >
