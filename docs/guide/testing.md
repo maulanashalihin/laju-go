@@ -63,17 +63,14 @@ func TestAuthService_Login(t *testing.T) {
 
 ```bash
 # Run all frontend tests
-npm run test:run
 
 # Run with UI
-npm run test:ui
 ```
 
 ### Testing with Vitest
 
 ```typescript
 // frontend/src/lib/utils/helpers.test.ts
-import { describe, it, expect } from 'vitest';
 import { debounce } from './helpers';
 
 describe('debounce', () => {

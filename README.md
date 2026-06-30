@@ -121,8 +121,7 @@ npm run db:generate            # sqlc — generate Go from SQL
 templ generate                 # regenerate templ Go files
 
 # Test
-go test ./...                  # all Go tests
-npm run test:run               # frontend tests (vitest)
+go test ./...                  # all tests
 ```
 
 ## 🚀 Deployment (Your Workflow)
