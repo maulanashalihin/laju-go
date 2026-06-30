@@ -1,57 +1,4 @@
 {
-  "_Header-C3TMef3d.js": {
-    "file": "assets/Header-C3TMef3d.js",
-    "name": "Header",
-    "imports": [
-      "src/main.ts",
-      "_Icon-Cp8uCf0K.js",
-      "_user-kiBMOmPW.js",
-      "_transition-gaar5G7R.js"
-    ]
-  },
-  "_Icon-Cp8uCf0K.js": {
-    "file": "assets/Icon-Cp8uCf0K.js",
-    "name": "Icon",
-    "imports": [
-      "src/main.ts"
-    ]
-  },
-  "_eye-DRn0xBFk.js": {
-    "file": "assets/eye-DRn0xBFk.js",
-    "name": "eye",
-    "imports": [
-      "src/main.ts",
-      "_Icon-Cp8uCf0K.js"
-    ]
-  },
-  "_lock-BrAWxGvd.js": {
-    "file": "assets/lock-BrAWxGvd.js",
-    "name": "lock",
-    "imports": [
-      "src/main.ts",
-      "_Icon-Cp8uCf0K.js"
-    ]
-  },
-  "_mail-tJ7yDCiu.js": {
-    "file": "assets/mail-tJ7yDCiu.js",
-    "name": "mail",
-    "imports": [
-      "src/main.ts",
-      "_Icon-Cp8uCf0K.js"
-    ]
-  },
-  "_transition-gaar5G7R.js": {
-    "file": "assets/transition-gaar5G7R.js",
-    "name": "transition"
-  },
-  "_user-kiBMOmPW.js": {
-    "file": "assets/user-kiBMOmPW.js",
-    "name": "user",
-    "imports": [
-      "src/main.ts",
-      "_Icon-Cp8uCf0K.js"
-    ]
-  },
   "src/app.css": {
     "file": "assets/app-CKEdBBSF.css",
     "name": "app",
@@ -62,7 +9,7 @@
     "isEntry": true
   },
   "src/main.ts": {
-    "file": "assets/main-FlnsLoUB.js",
+    "file": "assets/main-Cucx1e2s.js",
     "name": "main",
     "src": "src/main.ts",
     "isEntry": true,
@@ -76,77 +23,57 @@
     ]
   },
   "src/pages/app/Dashboard.svelte": {
-    "file": "assets/Dashboard-B0bMTC2O.js",
+    "file": "assets/Dashboard-B5qM59dl.js",
     "name": "Dashboard",
     "src": "src/pages/app/Dashboard.svelte",
     "isDynamicEntry": true,
     "imports": [
-      "src/main.ts",
-      "_Header-C3TMef3d.js",
-      "_transition-gaar5G7R.js"
+      "src/main.ts"
     ]
   },
   "src/pages/app/Profile.svelte": {
-    "file": "assets/Profile-6JcAXBUZ.js",
+    "file": "assets/Profile-LYKAKRNm.js",
     "name": "Profile",
     "src": "src/pages/app/Profile.svelte",
     "isDynamicEntry": true,
     "imports": [
-      "src/main.ts",
-      "_Header-C3TMef3d.js",
-      "_Icon-Cp8uCf0K.js",
-      "_lock-BrAWxGvd.js",
-      "_mail-tJ7yDCiu.js",
-      "_user-kiBMOmPW.js",
-      "_transition-gaar5G7R.js"
+      "src/main.ts"
     ]
   },
   "src/pages/auth/ForgotPassword.svelte": {
-    "file": "assets/ForgotPassword-DjZO_fP5.js",
+    "file": "assets/ForgotPassword-4gmid4Ra.js",
     "name": "ForgotPassword",
     "src": "src/pages/auth/ForgotPassword.svelte",
     "isDynamicEntry": true,
     "imports": [
-      "src/main.ts",
-      "_Icon-Cp8uCf0K.js",
-      "_mail-tJ7yDCiu.js"
+      "src/main.ts"
     ]
   },
   "src/pages/auth/Login.svelte": {
-    "file": "assets/Login-7HuweYkE.js",
+    "file": "assets/Login-ByAehukk.js",
     "name": "Login",
     "src": "src/pages/auth/Login.svelte",
     "isDynamicEntry": true,
     "imports": [
-      "src/main.ts",
-      "_eye-DRn0xBFk.js",
-      "_lock-BrAWxGvd.js",
-      "_mail-tJ7yDCiu.js"
+      "src/main.ts"
     ]
   },
   "src/pages/auth/Register.svelte": {
-    "file": "assets/Register-CelMvVMA.js",
+    "file": "assets/Register-CkqDP_bF.js",
     "name": "Register",
     "src": "src/pages/auth/Register.svelte",
     "isDynamicEntry": true,
     "imports": [
-      "src/main.ts",
-      "_Icon-Cp8uCf0K.js",
-      "_eye-DRn0xBFk.js",
-      "_lock-BrAWxGvd.js",
-      "_mail-tJ7yDCiu.js",
-      "_user-kiBMOmPW.js"
+      "src/main.ts"
     ]
   },
   "src/pages/auth/ResetPassword.svelte": {
-    "file": "assets/ResetPassword-CRXkp2yP.js",
+    "file": "assets/ResetPassword-DbgJNLOm.js",
     "name": "ResetPassword",
     "src": "src/pages/auth/ResetPassword.svelte",
     "isDynamicEntry": true,
     "imports": [
-      "src/main.ts",
-      "_Icon-Cp8uCf0K.js",
-      "_lock-BrAWxGvd.js"
+      "src/main.ts"
     ]
   }
 }
