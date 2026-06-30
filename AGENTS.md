@@ -32,6 +32,8 @@ routes/web.go     → app/handlers/     → app/services/     → app/queries/  
 | Reset DB | `npm run db:refresh` | `make db-refresh` |
 | Docker | `docker build .` | `make docker` |
 
+> **goose vs Goose AI**: Semua command migrasi pake `go run github.com/pressly/goose/v3/cmd/goose@latest` (bukan binary `goose`) supaya tidak ambigu dengan [Goose AI agent](https://block.github.io/goose/).
+
 **Build order matters**: `vite build` must run before `go build` in production because the Go binary reads `dist/.vite/manifest.json`.
 
 **Windows users**: Scripts via `npm run` work natively. For `make`, use **WSL** (`wsl make build`).

@@ -5,7 +5,7 @@ import inertia from "@inertiajs/vite";
 import "dotenv/config";
 import { resolve } from "path";
 import { writeFileSync, rmSync } from "fs";
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 // Vite entry point - build JS and CSS as separate entries
 const input = {
@@ -55,7 +55,6 @@ export default defineConfig({
   root: "frontend",
   server: {
     host: "0.0.0.0",
-    port: 5173,
     strictPort: false,
     hmr: {
       host: "localhost",

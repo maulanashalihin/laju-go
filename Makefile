@@ -39,10 +39,10 @@ db-generate:
 	sqlc generate
 
 migrate:
-	goose -dir migrations sqlite ./data/app.db up
+	go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 ./data/app.db up
 
 db-refresh:
-	rm -f ./data/app.db ./data/app.db-shm ./data/app.db-wal
+	rm -f ./data/app.db ./data/app.db-shm ./data/app.db-wal ./data/app.db-wal2
 
 clean:
 	rm -rf $(BINARY) tmp/ dist/ data/*.db*
