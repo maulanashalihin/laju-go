@@ -315,7 +315,7 @@ templ LandingPage(title string, isDev bool, viteURL string, mainCSS string) {
 						<p class="text-lg text-neutral-400 mb-12">Every layer chosen for performance, type safety, and developer experience.</p>
 
 						<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-							@StackItem("🔷", "Go 1.26+", "Fiber v2, modernc.org/sqlite, sqlc, goose migrations")
+							@StackItem("🔷", "Go 1.26+", "Fiber v2, github.com/mattn/go-sqlite3, sqlc, goose migrations")
 							@StackItem("🔥", "Svelte 5", "Runes, Inertia.js 3 adapter, Vite 5 HMR")
 							@StackItem("🎨", "Tailwind v4", "Utility-first CSS, @theme tokens, dark mode native")
 							@StackItem("📜", "templ", "Type-safe HTML components, compile-time validation")
@@ -373,7 +373,7 @@ templ LandingPage(title string, isDev bool, viteURL string, mainCSS string) {
 						</div>
 
 						<div class="space-y-3">
-							@FaqItem("Why SQLite instead of Postgres?", "Pure-Go SQLite (modernc.org/sqlite) cross-compiles to a single static binary with zero dependencies. It hits 100K+ RPS in our benchmarks — more than enough for most SaaS apps. Swap to Postgres later via the same sqlc-generated interface.")
+							@FaqItem("Why SQLite instead of Postgres?", "CGO-enabled SQLite (github.com/mattn/go-sqlite3) delivers 2x throughput vs pure-Go drivers. Cross-compiles to a single static binary via Zig CC. It hits 100K+ RPS in our benchmarks — more than enough for most SaaS apps. Swap to Postgres later via the same sqlc-generated interface.")
 							@FaqItem("Can I swap Svelte for React or Vue?", "Yes. That's the whole point of Inertia.js. Drop in the React or Vue adapter, rewrite the components, and the Go backend stays untouched.")
 							@FaqItem("Is this production-ready?", "Yes. The boilerplate includes session management, CSRF, rate limiting, input validation, error handling, and deployment configs (Docker, systemd, Nginx, Litestream DR). Many apps have shipped on this stack.")
 							@FaqItem("What is the license?", "MIT. Use it commercially, modify it, ship it. Attribution appreciated but not required.")

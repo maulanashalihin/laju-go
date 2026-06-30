@@ -26,7 +26,7 @@ import (
 	"github.com/maulanashalihin/laju-go/routes"
 	"github.com/pressly/goose/v3"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
@@ -200,7 +200,7 @@ func main() {
 
 // initDatabase initializes the SQLite database with optimized settings
 func initDatabase(dbPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", dbPath)
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, err
 	}

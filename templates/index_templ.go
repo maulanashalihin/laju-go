@@ -127,7 +127,7 @@ func LandingPage(title string, isDev bool, viteURL string, mainCSS string) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = StackItem("🔷", "Go 1.26+", "Fiber v2, modernc.org/sqlite, sqlc, goose migrations").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = StackItem("🔷", "Go 1.26+", "Fiber v2, github.com/mattn/go-sqlite3, sqlc, goose migrations").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -147,7 +147,7 @@ func LandingPage(title string, isDev bool, viteURL string, mainCSS string) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FaqItem("Why SQLite instead of Postgres?", "Pure-Go SQLite (modernc.org/sqlite) cross-compiles to a single static binary with zero dependencies. It hits 100K+ RPS in our benchmarks — more than enough for most SaaS apps. Swap to Postgres later via the same sqlc-generated interface.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FaqItem("Why SQLite instead of Postgres?", "CGO-enabled SQLite (github.com/mattn/go-sqlite3) delivers 2x throughput vs pure-Go drivers. Cross-compiles to a single static binary via Zig CC. It hits 100K+ RPS in our benchmarks — more than enough for most SaaS apps. Swap to Postgres later via the same sqlc-generated interface.").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

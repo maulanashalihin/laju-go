@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	_ "modernc.org/sqlite"
+	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +17,7 @@ import (
 func setupTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", ":memory:?_pragma=journal_mode(WAL)")
+	db, err := sql.Open("sqlite3", ":memory:?_pragma=journal_mode(WAL)")
 	require.NoError(t, err)
 
 	t.Cleanup(func() { db.Close() })
