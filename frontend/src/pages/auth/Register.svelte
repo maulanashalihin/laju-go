@@ -56,12 +56,7 @@
     <title>Register - Laju Go</title>
 </svelte:head>
 
-<section class="min-h-screen bg-linear-to-br from-slate-100 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex">
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-40 -right-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-400/10 rounded-full blur-3xl"></div>
-    </div>
+<section class="min-h-screen bg-white dark:bg-slate-950 flex">
 
     <!-- Left Side - Branding (Desktop) -->
     <div class="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12">
@@ -189,7 +184,7 @@
                 </svg>
             </div>
 
-            <div class="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-700/50 p-8 shadow-2xl">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-soft">
                 <div class="text-center mb-8">
                     <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Create account</h2>
                     <p class="text-slate-600 dark:text-slate-400 mt-2">Get started with your free account</p>

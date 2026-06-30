@@ -135,19 +135,9 @@
         class="hidden lg:block w-72 fixed inset-y-0 left-0 pointer-events-none"
     ></div>
 
-    <!-- Background Effects -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-        <div
-            class="absolute top-0 -left-4 w-96 h-96 bg-brand-400/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"
-        ></div>
-        <div
-            class="absolute top-0 -right-4 w-96 h-96 bg-brand-400/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"
-        ></div>
-    </div>
-
     <!-- Page Header -->
     <div
-        class="relative pt-8 pb-12 px-6 border-b border-slate-200 dark:border-slate-800/50 bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl"
+        class="pt-8 pb-12 px-6 border-b border-slate-200 dark:border-slate-800"
     >
         <div class="max-w-5xl mx-auto">
             <div
@@ -239,7 +229,7 @@
 
         <!-- Profile Overview Card -->
         <div
-            class="bg-linear-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 mb-8"
+            class="rounded-2xl border border-slate-200 dark:border-slate-800 p-8 mb-8"
             in:fly={{ y: 20, duration: 600 }}
         >
             <div
@@ -248,7 +238,7 @@
                 <!-- Avatar -->
                 <div class="relative group">
                     <div
-                        class="w-28 h-28 rounded-2xl bg-linear-to-br from-brand-400 to-brand-400 p-1 shadow-2xl shadow-brand-400/20"
+                        class="w-28 h-28 rounded-2xl bg-brand-400 p-1"
                     >
                         <div
                             class="w-full h-full rounded-xl bg-white dark:bg-slate-900 overflow-hidden"

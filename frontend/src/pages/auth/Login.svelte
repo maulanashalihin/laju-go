@@ -40,19 +40,8 @@
 </svelte:head>
 
 <section
-    class="min-h-screen bg-linear-to-br from-slate-100 via-white to-slate-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex"
+    class="min-h-screen bg-white dark:bg-slate-950 flex"
 >
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-            class="absolute -top-40 -right-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"
-        ></div>
-        <div
-            class="absolute -bottom-40 -left-40 w-80 h-80 bg-brand-400/20 rounded-full blur-3xl"
-        ></div>
-        <div
-            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-400/10 rounded-full blur-3xl"
-        ></div>
-    </div>
 
     <!-- Left Side - Branding (Desktop) -->
     <div
