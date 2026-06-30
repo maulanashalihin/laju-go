@@ -9,65 +9,64 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 // Vite entry point - build JS and CSS as separate entries
 const input = {
-  main: resolve(__dirname, "frontend/src/main.ts"),
-  app: resolve(__dirname, "frontend/src/app.css"),
+	main: resolve(__dirname, "frontend/src/main.ts"),
+	app: resolve(__dirname, "frontend/src/app.css"),
 };
 
 // https://vite.dev/config/
 export default defineConfig({
-  preprocess: [vitePreprocess({ script: true })],
-  resolve: {
-    alias: {
-      "@": resolve(__dirname, "frontend/src"),
-      "@components": resolve(__dirname, "frontend/src/components"),
-      "@layouts": resolve(__dirname, "frontend/src/layouts"),
-      "@pages": resolve(__dirname, "frontend/src/pages"),
-    },
-  },
-  plugins: [
-    tailwindcss(),
-    svelte(),
-    inertia(),
-    {
-      name: "write-port",
-      configureServer(server) {
-        server.httpServer?.on("listening", () => {
-          const address = server.httpServer?.address();
-          if (typeof address === "object" && address) {
-            const port = address.port;
-            const url = `http://localhost:${port}`;
-            writeFileSync(".vite-port", url);
-            console.log(`[vite-plugin] Port written to .vite-port: ${url}`);
-          }
-        });
-        // Cleanup on exit
-        const cleanup = () => {
-          try {
-            rmSync(".vite-port");
-          } catch {}
-          process.exit();
-        };
-        process.on("SIGINT", cleanup);
-        process.on("SIGTERM", cleanup);
-      },
-    },
-  ],
-  root: "frontend",
-  server: {
-    host: "0.0.0.0",
-    strictPort: false,
-    hmr: {
-      host: "localhost",
-      path: "/@vite/hmr",
-    },
-  },
-  build: {
-    outDir: "../dist",
-    emptyOutDir: true,
-    manifest: true,
-    target: "es2022",
-    rollupOptions: {
-      input: input,
-    },
-  },
+	resolve: {
+		alias: {
+			"@": resolve(__dirname, "frontend/src"),
+			"@components": resolve(__dirname, "frontend/src/components"),
+			"@layouts": resolve(__dirname, "frontend/src/layouts"),
+			"@pages": resolve(__dirname, "frontend/src/pages"),
+		},
+	},
+	plugins: [
+		tailwindcss(),
+		svelte({ preprocess: vitePreprocess({ script: true }) }),
+		inertia(),
+		{
+			name: "write-port",
+			configureServer(server) {
+				server.httpServer?.on("listening", () => {
+					const address = server.httpServer?.address();
+					if (typeof address === "object" && address) {
+						const port = address.port;
+						const url = `http://localhost:${port}`;
+						writeFileSync(".vite-port", url);
+						console.log(`[vite-plugin] Port written to .vite-port: ${url}`);
+					}
+				});
+				// Cleanup on exit
+				const cleanup = () => {
+					try {
+						rmSync(".vite-port");
+					} catch {}
+					process.exit();
+				};
+				process.on("SIGINT", cleanup);
+				process.on("SIGTERM", cleanup);
+			},
+		},
+	],
+	root: "frontend",
+	server: {
+		host: "0.0.0.0",
+		strictPort: false,
+		hmr: {
+			host: "localhost",
+			path: "/@vite/hmr",
+		},
+	},
+	build: {
+		outDir: "../dist",
+		emptyOutDir: true,
+		manifest: true,
+		target: "es2022",
+		rollupOptions: {
+			input: input,
+		},
+	},
 });
