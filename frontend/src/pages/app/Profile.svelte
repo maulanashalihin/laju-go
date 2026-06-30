@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { router } from "@inertiajs/svelte";
+    import { router, inertia } from "@inertiajs/svelte";
     import { fly } from "svelte/transition";
     import Header from "../../components/Header.svelte";
     import DarkModeToggle from "../../components/DarkModeToggle.svelte";
@@ -155,6 +155,7 @@
             >
                 <a
                     href="/app"
+                    use:inertia
                     class="hover:text-brand-400 transition-colors"
                 >Dashboard</a>
                 <svg
