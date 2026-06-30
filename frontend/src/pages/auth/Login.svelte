@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { router } from "@inertiajs/svelte";
+    import { router, inertia } from "@inertiajs/svelte";
     import { Lock, Mail, ArrowRight, Eye, EyeOff } from "lucide-svelte";
 
     let form = $state({
@@ -295,6 +295,7 @@
                     <div class="flex justify-end">
                         <a
                             href="/forgot-password"
+                            use:inertia
                             class="text-sm text-brand-400 hover:text-brand-300 transition-colors"
                         >
                             Forgot password?
@@ -338,6 +339,7 @@
                     Don't have an account?
                     <a
                         href="/register"
+                        use:inertia
                         class="text-brand-400 hover:text-brand-300 font-medium transition-colors"
                     >
                         Create one

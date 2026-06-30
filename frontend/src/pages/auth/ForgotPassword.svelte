@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { router } from "@inertiajs/svelte";
-    import { fly } from "svelte/transition";
+    import { router, inertia } from "@inertiajs/svelte";
     import { Mail, ArrowLeft } from "lucide-svelte";
 
     interface Props {
@@ -140,7 +139,7 @@
             </form>
 
             <div class="mt-8 text-center">
-                <a href="/login" class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                <a href="/login" use:inertia class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                     <ArrowLeft class="w-4 h-4" />
                     Back to sign in
                 </a>
