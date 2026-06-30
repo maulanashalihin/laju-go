@@ -85,6 +85,10 @@ func main() {
 
 	// Initialize session store with database + in-memory cache
 	sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)
+	sessionStore.SetSecure(cfg.AppEnv == "production")
+
+	// Start background cleanup for expired sessions and password reset tokens
+	startBackgroundCleanup(querier)
 
 	// Initialize services
 	authService := services.NewAuthService(querier, services.AuthServiceConfig{
@@ -109,8 +113,8 @@ func main() {
 		Upload: handlers.NewUploadHandler(sessionStore, userService),
 	}
 
-	// Setup CSRF middleware
-	csrfMiddleware := routes.SetupCSRFMiddleware(sessionStore, cfg.SessionSecret)
+	// Setup CSRF middleware (Secure cookies only in production with HTTPS)
+	csrfMiddleware := routes.SetupCSRFMiddleware(sessionStore, cfg.SessionSecret, cfg.AppEnv == "production")
 
 	// Setup mailer service (with DB-backed token storage)
 	appURL := routes.GetAppURL(cfg.AppPort, cfg.AppEnv)
@@ -304,7 +308,36 @@ func logDatabaseOptimizations(db *sql.DB) {
 	)
 }
 
-// runMigrations runs database migrations
+// startBackgroundCleanup runs periodic cleanup of expired sessions and password reset tokens
+func startBackgroundCleanup(querier *queries.Querier) {
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+
+		// Run cleanup immediately on startup
+		if err := querier.DeleteExpiredSessions(context.Background()); err != nil {
+			slog.Error("cleanup: failed to delete expired sessions", "error", err)
+		} else {
+			slog.Debug("cleanup: expired sessions deleted")
+		}
+		if err := querier.DeleteExpiredPasswordResets(context.Background()); err != nil {
+			slog.Error("cleanup: failed to delete expired password resets", "error", err)
+		} else {
+			slog.Debug("cleanup: expired password resets deleted")
+		}
+
+		for range ticker.C {
+			if err := querier.DeleteExpiredSessions(context.Background()); err != nil {
+				slog.Error("cleanup: failed to delete expired sessions", "error", err)
+			}
+			if err := querier.DeleteExpiredPasswordResets(context.Background()); err != nil {
+				slog.Error("cleanup: failed to delete expired password resets", "error", err)
+			}
+		}
+	}()
+	slog.Info("background cleanup started (interval: 1h)")
+}
+
 func runMigrations(db *sql.DB, migrationsDir string) error {
 	goose.SetBaseFS(nil)
 	if err := goose.SetDialect("sqlite"); err != nil {

@@ -73,6 +73,11 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		})
 	}
 
+	// Regenerate session ID to prevent session fixation
+	if sess, err := h.store.Get(c); err == nil {
+		sess.Regenerate()
+	}
+
 	slog.Info("session created", "handler", "Auth.Register", "user_id", user.ID, "redirect", "/app")
 	return c.Redirect("/app", fiber.StatusSeeOther)
 }
@@ -106,6 +111,11 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create session",
 		})
+	}
+
+	// Regenerate session ID to prevent session fixation
+	if sess, err := h.store.Get(c); err == nil {
+		sess.Regenerate()
 	}
 
 	slog.Info("session created", "handler", "Auth.Login", "user_id", user.ID, "redirect", "/app")
@@ -162,6 +172,11 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create session",
 		})
+	}
+
+	// Regenerate session ID to prevent session fixation
+	if sess, err := h.store.Get(c); err == nil {
+		sess.Regenerate()
 	}
 
 	slog.Info("session created", "handler", "Auth.GoogleCallback", "user_id", user.ID, "redirect", "/app")

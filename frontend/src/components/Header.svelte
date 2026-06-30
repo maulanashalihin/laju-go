@@ -1,19 +1,17 @@
 <script lang="ts">
     import { fly, fade } from "svelte/transition";
     import { page, router } from "@inertiajs/svelte";
-    import { clickOutside } from "../lib/utils/helpers";
     import DarkModeToggle from "./DarkModeToggle.svelte";
 
     // Lucide icons
-    import {
+import {
         LayoutDashboard,
         Settings,
         LogOut,
         Menu,
         X,
         User,
-        Home,
-    } from "lucide-svelte";
+} from "lucide-svelte";
 
     interface User {
         id: number;
@@ -193,7 +191,7 @@
                 >Sign In</a
             >
             <a
-                href="/login/register"
+                href="/register"
                 class="block w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 text-sm font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
                 >Get Started</a
             >
@@ -219,8 +217,7 @@
             {#if user && user.id}
                 <div
                     class="relative"
-                    use:clickOutside
-                    onclick_outside={() => (isUserMenuOpen = false)}
+                    role="menu"
                 >
                     <button
                         onclick={() => (isUserMenuOpen = !isUserMenuOpen)}
@@ -230,6 +227,11 @@
                     </button>
 
                     {#if isUserMenuOpen}
+                        <div
+                            class="fixed inset-0 z-10"
+                            role="presentation"
+                            onclick={() => (isUserMenuOpen = false)}
+                        ></div>
                         <div
                             class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden ring-1 ring-slate-900/10 dark:ring-white/10"
                             transition:fly={{ y: 10, duration: 200 }}
@@ -391,14 +393,14 @@
                         >Sign In</a
                     >
                     <a
-                        href="/login/register"
+                        href="/register"
                         class="block w-full px-4 py-3 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
                         >Get Started</a
                     >
                 </div>
             {/if}
         </div>
-    </div>
+</div>
 {/if}
 
 <!-- Main Content Spacer for Mobile -->

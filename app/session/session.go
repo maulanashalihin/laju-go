@@ -18,6 +18,7 @@ type Store struct {
 	sessionCache *cache.SessionCache
 	sessionName  string
 	sessionTTL   time.Duration
+	secure       bool
 }
 
 type Session struct {
@@ -41,6 +42,7 @@ type SessionData struct {
 
 // New creates a new session store with database backend and optional in-memory cache.
 // Pass nil for sessionCache to disable caching. sessionTTL is the session lifetime.
+// secure sets the Secure flag on session cookies (true for production with HTTPS).
 func New(querier *queries.Querier, sessionCache *cache.SessionCache, sessionTTL time.Duration) *Store {
 	if sessionTTL <= 0 {
 		sessionTTL = 24 * time.Hour
@@ -50,6 +52,7 @@ func New(querier *queries.Querier, sessionCache *cache.SessionCache, sessionTTL 
 		sessionCache: sessionCache,
 		sessionName:  "session_id",
 		sessionTTL:   sessionTTL,
+		secure:       false,
 	}
 }
 
@@ -277,7 +280,7 @@ func (s *Session) Save() error {
 		Value:    s.id,
 		Path:     "/",
 		HTTPOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
+		Secure:   s.store.secure,
 		SameSite: "Lax",
 		MaxAge:   int(s.expiresAt.Sub(time.Now()).Seconds()),
 	})
@@ -376,7 +379,7 @@ func (s *Session) Regenerate() error {
 		Value:    s.id,
 		Path:     "/",
 		HTTPOnly: true,
-		Secure:   false,
+		Secure:   s.store.secure,
 		SameSite: "Lax",
 		MaxAge:   int(s.expiresAt.Sub(time.Now()).Seconds()),
 	})
@@ -410,6 +413,12 @@ func (s *Store) GetFlash(c *fiber.Ctx, key string) string {
 	}
 
 	return value
+}
+
+// SetSecure sets the Secure flag on session cookies.
+// Should be set to true in production with HTTPS.
+func (s *Store) SetSecure(secure bool) {
+	s.secure = secure
 }
 
 // CreateAuthenticatedSession sets user authentication data on the session and saves it.

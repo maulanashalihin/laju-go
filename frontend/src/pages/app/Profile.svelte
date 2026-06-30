@@ -6,7 +6,7 @@
     import { Toast } from "../../lib/utils/helpers";
     import { Upload, Lock, User, Mail } from "lucide-svelte";
 
-    interface User {
+    interface UserData {
         id: number;
         email: string;
         name: string;
@@ -16,7 +16,7 @@
     }
 
     interface Props {
-        user?: User;
+        user?: UserData;
         success?: string;
         error?: string;
     }
@@ -24,9 +24,9 @@
     let { user, success, error }: Props = $props();
 
     let profileForm = $state({
-        name: "",
-        email: "",
-        avatar: "",
+        name: user?.name ?? "",
+        email: user?.email ?? "",
+        avatar: user?.avatar ?? "",
     });
 
     let passwordForm = $state({
@@ -37,17 +37,11 @@
 
     let isProfileLoading = $state(false);
     let isPasswordLoading = $state(false);
-    let previewUrl = $state<string | null>(null);
     let showPassword = $state(false);
 
-    $effect(() => {
-        if (user) {
-            profileForm.name = user.name || "";
-            profileForm.email = user.email || "";
-            profileForm.avatar = user.avatar || "";
-            previewUrl = user.avatar ? `/api/avatar/${user.id}?v=${Date.now()}` : null;
-        }
-    });
+    let previewUrl = $derived(
+        user?.avatar ? `/api/avatar/${user.id}?v=${Date.now()}` : null
+    );
 
     function handleAvatarChange(event: Event) {
         const target = event.target as HTMLInputElement;
@@ -72,11 +66,7 @@
                                 Toast("Failed to save avatar: " + (error as any).message, "error");
                             },
                             onFinish: () => {
-                                setTimeout(() => {
-                                    isProfileLoading = false;
-                                    // Reload page to get fresh data from server
-                                    window.location.reload();
-                                }, 500);
+                                isProfileLoading = false;
                             },
                         });
                     } else {

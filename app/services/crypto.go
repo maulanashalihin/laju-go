@@ -13,7 +13,7 @@ import (
 const (
 	// Argon2id recommended defaults for interactive use (64MB memory, 1 iteration, 4 threads)
 	hashTime    = 1
-	hashMemory  = 64 * 1024
+	hashMemory  = 32 * 1024
 	hashThreads = 4
 	hashKeyLen  = 32
 	hashSaltLen = 16
