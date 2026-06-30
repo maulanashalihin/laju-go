@@ -239,7 +239,7 @@
 
         <!-- Profile Overview Card -->
         <div
-            class="bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 mb-8"
+            class="bg-linear-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 mb-8"
             in:fly={{ y: 20, duration: 600 }}
         >
             <div
@@ -248,7 +248,7 @@
                 <!-- Avatar -->
                 <div class="relative group">
                     <div
-                        class="w-28 h-28 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-400 p-1 shadow-2xl shadow-brand-400/20"
+                        class="w-28 h-28 rounded-2xl bg-linear-to-br from-brand-400 to-brand-400 p-1 shadow-2xl shadow-brand-400/20"
                     >
                         <div
                             class="w-full h-full rounded-xl bg-white dark:bg-slate-900 overflow-hidden"
@@ -450,7 +450,7 @@
                         <button
                             type="submit"
                             disabled={isProfileLoading}
-                            class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 font-semibold transition-all shadow-lg shadow-brand-400/25 hover:shadow-brand-400/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            class="w-full px-6 py-3 rounded-xl bg-linear-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 font-semibold transition-all shadow-lg shadow-brand-400/25 hover:shadow-brand-400/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {#if isProfileLoading}
                                 <svg
@@ -592,7 +592,7 @@
                         <button
                             type="submit"
                             disabled={isPasswordLoading}
-                            class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold transition-all shadow-lg shadow-red-500/25 hover:shadow-red-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            class="w-full px-6 py-3 rounded-xl bg-linear-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold transition-all shadow-lg shadow-red-500/25 hover:shadow-red-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {#if isPasswordLoading}
                                 <svg

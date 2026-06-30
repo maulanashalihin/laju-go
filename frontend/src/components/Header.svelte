@@ -153,7 +153,7 @@ import {
             >
                 <div class="flex items-center gap-3 mb-3">
                     <div
-                        class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
+                        class="w-10 h-10 rounded-full bg-linear-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
                     >
                         {user.name.charAt(0).toUpperCase()}
                     </div>
@@ -195,7 +195,7 @@ import {
             <a
                 href="/register"
                 use:inertia
-                class="block w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 text-sm font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
+                class="block w-full px-4 py-2.5 rounded-lg bg-linear-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 text-sm font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
                 >Get Started</a
             >
         </div>
@@ -224,7 +224,7 @@ import {
                 >
                     <button
                         onclick={() => (isUserMenuOpen = !isUserMenuOpen)}
-                        class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
+                        class="w-9 h-9 rounded-full bg-linear-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-sm ring-2 ring-slate-300 dark:ring-slate-700"
                     >
                         {user.name.charAt(0).toUpperCase()}
                     </button>
@@ -360,7 +360,7 @@ import {
                     >
                         <div class="flex items-center gap-3">
                             <div
-                                class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-sm"
+                                class="w-10 h-10 rounded-full bg-linear-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-sm"
                             >
                                 {user.name.charAt(0).toUpperCase()}
                             </div>
@@ -402,7 +402,7 @@ import {
                     <a
                         href="/register"
                         use:inertia
-                        class="block w-full px-4 py-3 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
+                        class="block w-full px-4 py-3 rounded-lg bg-linear-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 font-semibold transition-all text-center shadow-lg shadow-brand-500/25"
                         >Get Started</a
                     >
                 </div>

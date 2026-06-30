@@ -54,12 +54,12 @@
     <div class="relative max-w-5xl mx-auto px-6 py-12">
         <!-- Welcome Card -->
         <div
-            class="bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 mb-8"
+            class="bg-linear-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 mb-8"
             in:fly={{ y: 20, duration: 600 }}
         >
             <div class="flex items-center gap-4">
                 <div
-                    class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-400 flex items-center justify-center shadow-2xl shadow-brand-400/20"
+                    class="w-16 h-16 rounded-2xl bg-linear-to-br from-brand-400 to-brand-400 flex items-center justify-center shadow-2xl shadow-brand-400/20"
                 >
                     <svg
                         class="w-8 h-8 text-white"

@@ -153,7 +153,9 @@ Kalau ragu dengan visual, minta screenshot via agent_browser — saya review dan
 
 ### Handlers
 
-- **Handlers must NOT call queries directly.** All database access goes through services. Handler → Service → Query. No shortcut from handler to query.
+- **🔴 CRITICAL: Handlers must NEVER call queries directly.** Semua akses database harus melalui services. Handler → Service → Query. Tidak ada shortcut dari handler ke query. Ini adalah aturan paling penting di project ini — jangan pernah dilanggar.
+- **Pengecualian**: File test (`*_test.go`) BOLEH panggil queries langsung untuk setup data test.
+- **Handler hanya**: Parse request → Panggil service → Return response. Tidak ada business logic. All database access goes through services. Handler → Service → Query. No shortcut from handler to query.
 - **POST/PUT handlers that redirect**: Use `c.Redirect(path, fiber.StatusSeeOther)` (303). Inertia does not follow 302 correctly for form submissions — it needs 303 to change POST/PUT to GET on redirect.
 - **PUT/PATCH**: Return JSON for `fetch()` calls, redirect for `router.put()` calls. If redirecting, always 303.
 - Sessions are database-backed (SQLite table). Auth middleware checks `session.Store`.
