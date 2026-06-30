@@ -68,8 +68,6 @@ go run ./cmd/laju-go
     "build:frontend": "vite build",
     "build:go": "go build -o laju-go ./cmd/laju-go",
     "serve": "./laju-go",
-    "test:run": "vitest run",
-    "test:ui": "vitest --ui"
   }
 }
 ```
@@ -85,8 +83,6 @@ go run ./cmd/laju-go
 | `npm run build:frontend` | Build frontend assets only |
 | `npm run build:go` | Build Go binary only |
 | `npm run serve` | Run production binary |
-| `npm run test:run` | Run frontend tests (headless) |
-| `npm run test:ui` | Run tests with UI |
 
 ## Hot Module Replacement (HMR)
 
@@ -250,7 +246,6 @@ npm run dev:all
 # Visit http://localhost:8080
 
 # 5. Run tests (in another terminal)
-npm run test:run
 ```
 
 ### Debugging
@@ -441,13 +436,10 @@ Create pages in `frontend/src/pages/`:
 
 ```bash
 # Run tests (headless)
-npm run test:run
 
 # Run tests with UI
-npm run test:ui
 
 # Run specific test file
-npx vitest run src/lib/utils/helpers.test.js
 ```
 
 ### Backend Tests
@@ -554,7 +546,6 @@ go run ./cmd/laju-go  # Restart after every change
 
 ```bash
 # Run tests after significant changes
-npm run test:run
 go test ./...
 ```
 
