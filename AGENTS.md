@@ -43,6 +43,7 @@ routes/web.go     → app/handlers/     → app/services/     → app/queries/  
 - Edit `.templ` files → run `templ generate` → commit both `.templ` and `*_templ.go`.
 - **Air does NOT watch `.templ` files** by default. Add `"templ"` to `.air.toml` `include_ext` or regenerate manually.
 - Rendering: `templates.ComponentName(args...).Render(ctx, writer)` instead of `c.Render("name", data)`.
+- **SVG icons in templ**: String params di-escape (HTML entities). Jangan pass string SVG langsung ke parameter. Buat Go helper function (`func foo() string`) yang return SVG, lalu pake `@templ.Raw(helper(key))` di markup. Contoh: `@templ.Raw(featureIcon("auth"))`.
 
 ## Inertia.js Pattern
 
