@@ -110,6 +110,9 @@ npm run dev:all                # Vite + Air (hot reload both)
 # Build (production)
 npm run build:all              # vite build → go build
 
+# Verify (before commit)
+npm run verify                 # templ → vite → go build → go vet → go test
+
 # Build for Linux (from macOS)
 make build-linux               # requires zig cc
 
@@ -120,9 +123,11 @@ npm run db:generate            # sqlc — generate Go from SQL
 # Templates
 templ generate                 # regenerate templ Go files
 
+# Verify (before commit/deploy)
+npm run verify                 # templ → vite → go build → go vet
+
 # Test
-go test ./...                  # backend tests (services, queries, handlers)
-# E2E: use pi agent_browser for manual flow testing
+go test ./...                  # backend tests
 ```
 
 ### Testing Strategy
