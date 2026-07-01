@@ -39,14 +39,10 @@
     <title>Login - Laju Go</title>
 </svelte:head>
 
-<section
-    class="min-h-screen bg-white dark:bg-slate-950 flex"
->
+<section class="min-h-screen bg-white dark:bg-neutral-950 flex">
 
     <!-- Left Side - Branding (Desktop) -->
-    <div
-        class="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12"
-    >
+    <div class="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12">
         <div class="relative z-10 max-w-lg">
             <div class="mb-8">
                 <svg
@@ -87,23 +83,23 @@
                     />
                 </svg>
             </div>
-            <h1 class="text-4xl font-bold text-slate-900 dark:text-white mb-4">Welcome back</h1>
-            <p class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
+            <h1 class="text-4xl font-bold text-neutral-900 dark:text-white mb-4">Welcome back</h1>
+            <p class="text-neutral-600 dark:text-neutral-400 text-lg leading-relaxed">
                 Sign in to continue building amazing applications with the
                 high-performance Go + Svelte framework.
             </p>
             <div class="mt-12 grid grid-cols-3 gap-6">
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-brand-400">11x</div>
-                    <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">Faster</div>
+                    <div class="text-3xl font-bold text-brand-600 dark:text-brand-400">11x</div>
+                    <div class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Faster</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-brand-400">1.5ms</div>
-                    <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">Latency</div>
+                    <div class="text-3xl font-bold text-brand-600 dark:text-brand-400">1.5ms</div>
+                    <div class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Latency</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-3xl font-bold text-brand-400">99.9%</div>
-                    <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">Uptime</div>
+                    <div class="text-3xl font-bold text-brand-600 dark:text-brand-400">99.9%</div>
+                    <div class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Uptime</div>
                 </div>
             </div>
         </div>
@@ -153,20 +149,16 @@
                 </svg>
             </div>
 
-            <div
-                class="bg-white/80 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-700/50 p-8 shadow-2xl"
-            >
+            <div class="bg-white dark:bg-neutral-925/80 backdrop-blur-xl rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] p-8 shadow-xl shadow-black/5 dark:shadow-black/20">
                 <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Sign in</h2>
-                    <p class="text-slate-600 dark:text-slate-400 mt-2">
+                    <h2 class="text-2xl font-bold text-neutral-900 dark:text-white">Sign in</h2>
+                    <p class="text-neutral-600 dark:text-neutral-400 mt-2">
                         Enter your credentials to continue
                     </p>
                 </div>
 
                 {#if flash?.error}
-                    <div
-                        class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3"
-                    >
+                    <div class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
                         <svg
                             class="w-5 h-5 text-red-400 shrink-0 mt-0.5"
                             fill="none"
@@ -186,7 +178,7 @@
 
                 <a
                     href="/auth/google"
-                    class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-700 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800"
+                    class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-neutral-300 dark:border-white/[0.08] bg-white dark:bg-neutral-800/50 text-neutral-700 dark:text-white font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-neutral-100 dark:focus:ring-offset-neutral-900"
                 >
                     <svg class="h-5 w-5" viewBox="0 0 24 24">
                         <path
@@ -211,13 +203,10 @@
 
                 <div class="relative my-8">
                     <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-slate-200 dark:border-slate-700"></div>
+                        <div class="w-full border-t border-neutral-200/80 dark:border-white/[0.04]"></div>
                     </div>
                     <div class="relative flex justify-center">
-                        <span
-                            class="px-4 text-sm text-slate-500 bg-white dark:bg-slate-800/50"
-                            >or continue with email</span
-                        >
+                        <span class="px-4 text-sm text-neutral-500 bg-white dark:bg-neutral-925">or continue with email</span>
                     </div>
                 </div>
 
@@ -225,14 +214,11 @@
                     <div class="space-y-2">
                         <label
                             for="email"
-                            class="block text-sm font-medium text-slate-700 dark:text-slate-300"
-                            >Email</label
-                        >
+                            class="block text-sm font-medium text-neutral-700 dark:text-neutral-300"
+                        >Email</label>
                         <div class="relative">
-                            <div
-                                class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
-                            >
-                                <Mail class="w-5 h-5 text-slate-500" />
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Mail class="w-5 h-5 text-neutral-500" />
                             </div>
                             <input
                                 bind:value={form.email}
@@ -240,7 +226,7 @@
                                 type="email"
                                 name="email"
                                 id="email"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700/80 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                                 placeholder="you@example.com"
                             />
                         </div>
@@ -249,14 +235,11 @@
                     <div class="space-y-2">
                         <label
                             for="password"
-                            class="block text-sm font-medium text-slate-700 dark:text-slate-300"
-                            >Password</label
-                        >
+                            class="block text-sm font-medium text-neutral-700 dark:text-neutral-300"
+                        >Password</label>
                         <div class="relative">
-                            <div
-                                class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
-                            >
-                                <Lock class="w-5 h-5 text-slate-500" />
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <Lock class="w-5 h-5 text-neutral-500" />
                             </div>
                             <input
                                 bind:value={form.password}
@@ -265,12 +248,12 @@
                                 name="password"
                                 id="password"
                                 placeholder="••••••••"
-                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700/80 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                             />
                             <button
                                 type="button"
                                 onclick={() => (showPassword = !showPassword)}
-                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
                             >
                                 {#if showPassword}
                                     <EyeOff class="w-5 h-5" />
@@ -285,7 +268,7 @@
                         <a
                             href="/forgot-password"
                             use:inertia
-                            class="text-sm text-brand-400 hover:text-brand-300 transition-colors"
+                            class="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
                         >
                             Forgot password?
                         </a>
@@ -294,27 +277,12 @@
                     <button
                         type="submit"
                         disabled={isLoading}
-                        class="w-full py-3 px-4 rounded-xl bg-linear-to-r from-brand-400 to-brand-500 text-neutral-950 font-semibold hover:from-brand-300 hover:to-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        class="w-full py-3 px-4 rounded-xl bg-linear-to-r from-brand-400 to-brand-500 text-neutral-950 font-semibold hover:from-brand-300 hover:to-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-neutral-100 dark:focus:ring-offset-neutral-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {#if isLoading}
-                            <svg
-                                class="animate-spin h-5 w-5"
-                                viewBox="0 0 24 24"
-                            >
-                                <circle
-                                    class="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    stroke-width="4"
-                                    fill="none"
-                                ></circle>
-                                <path
-                                    class="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
+                            <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                             Signing in...
                         {:else}
@@ -324,12 +292,12 @@
                     </button>
                 </form>
 
-                <p class="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
+                <p class="mt-8 text-center text-sm text-neutral-600 dark:text-neutral-400">
                     Don't have an account?
                     <a
                         href="/register"
                         use:inertia
-                        class="text-brand-400 hover:text-brand-300 font-medium transition-colors"
+                        class="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors"
                     >
                         Create one
                     </a>

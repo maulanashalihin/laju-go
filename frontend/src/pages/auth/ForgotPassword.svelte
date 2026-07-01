@@ -28,7 +28,11 @@
     }
 </script>
 
-<section class="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center">
+<svelte:head>
+    <title>Forgot Password - Laju Go</title>
+</svelte:head>
+
+<section class="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center">
 
     <div class="w-full max-w-md px-6">
         <div class="flex justify-center mb-8">
@@ -71,13 +75,13 @@
             </svg>
         </div>
 
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-soft">
+        <div class="bg-white dark:bg-neutral-925/80 backdrop-blur-xl rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] p-8 shadow-xl shadow-black/5 dark:shadow-black/20">
             <div class="text-center mb-8">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-400/20 flex items-center justify-center">
-                    <Mail class="w-8 h-8 text-brand-400" />
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-400/15 flex items-center justify-center">
+                    <Mail class="w-8 h-8 text-brand-600 dark:text-brand-400" />
                 </div>
-                <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Forgot password?</h2>
-                <p class="text-slate-600 dark:text-slate-400 mt-2">No worries, we'll send you reset instructions</p>
+                <h2 class="text-2xl font-bold text-neutral-900 dark:text-white">Forgot password?</h2>
+                <p class="text-neutral-600 dark:text-neutral-400 mt-2">No worries, we'll send you reset instructions</p>
             </div>
 
             {#if flash?.error}
@@ -100,17 +104,17 @@
 
             <form class="space-y-6" onsubmit={submitForm}>
                 <div class="space-y-2">
-                    <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Email address</label>
+                    <label for="email" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Email address</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Mail class="w-5 h-5 text-slate-500" />
+                            <Mail class="w-5 h-5 text-neutral-500" />
                         </div>
                         <input
                             bind:value={form.email}
                             type="email"
                             name="email"
                             id="email"
-                            class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
+                            class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700/80 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                             placeholder="you@example.com"
                             required
                         />
@@ -120,7 +124,7 @@
                 <button
                     type="submit"
                     disabled={isLoading}
-                    class="w-full py-3 px-4 rounded-xl bg-linear-to-r from-brand-400 to-brand-500 text-neutral-950 font-semibold hover:from-brand-300 hover:to-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    class="w-full py-3 px-4 rounded-xl bg-linear-to-r from-brand-400 to-brand-500 text-neutral-950 font-semibold hover:from-brand-300 hover:to-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-neutral-100 dark:focus:ring-offset-neutral-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {#if isLoading}
                         <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -135,7 +139,7 @@
             </form>
 
             <div class="mt-8 text-center">
-                <a href="/login" use:inertia class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                <a href="/login" use:inertia class="inline-flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
                     <ArrowLeft class="w-4 h-4" />
                     Back to sign in
                 </a>

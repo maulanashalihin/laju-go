@@ -56,7 +56,7 @@
     <title>Register - Laju Go</title>
 </svelte:head>
 
-<section class="min-h-screen bg-white dark:bg-slate-950 flex">
+<section class="min-h-screen bg-white dark:bg-neutral-950 flex">
 
     <!-- Left Side - Branding (Desktop) -->
     <div class="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12">
@@ -100,40 +100,40 @@
                     />
                 </svg>
             </div>
-            <h1 class="text-4xl font-bold text-slate-900 dark:text-white mb-4">
+            <h1 class="text-4xl font-bold text-neutral-900 dark:text-white mb-4">
                 Start building today
             </h1>
-            <p class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
+            <p class="text-neutral-600 dark:text-neutral-400 text-lg leading-relaxed">
                 Join developers who build blazing-fast applications with the high-performance Go + Svelte framework.
             </p>
             <div class="mt-12 space-y-4">
                 <div class="flex items-center gap-4">
                     <div class="w-10 h-10 rounded-lg bg-brand-400/20 flex items-center justify-center">
-                        <Sparkles class="w-5 h-5 text-brand-400" />
+                        <Sparkles class="w-5 h-5 text-brand-600 dark:text-brand-400" />
                     </div>
                     <div>
-                        <div class="text-slate-900 dark:text-white font-medium">Lightning Fast</div>
-                        <div class="text-sm text-slate-500 dark:text-slate-400">Built on Go Fiber for maximum performance</div>
+                        <div class="text-neutral-900 dark:text-white font-medium">Lightning Fast</div>
+                        <div class="text-sm text-neutral-500 dark:text-neutral-400">Built on Go Fiber for maximum performance</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="w-10 h-10 rounded-lg bg-brand-400/20 flex items-center justify-center">
-                        <Lock class="w-5 h-5 text-brand-400" />
+                        <Lock class="w-5 h-5 text-brand-600 dark:text-brand-400" />
                     </div>
                     <div>
-                        <div class="text-slate-900 dark:text-white font-medium">Secure by Default</div>
-                        <div class="text-sm text-slate-500 dark:text-slate-400">CSRF protection, rate limiting, and more</div>
+                        <div class="text-neutral-900 dark:text-white font-medium">Secure by Default</div>
+                        <div class="text-sm text-neutral-500 dark:text-neutral-400">CSRF protection, rate limiting, and more</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="w-10 h-10 rounded-lg bg-brand-400/20 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                         </svg>
                     </div>
                     <div>
-                        <div class="text-slate-900 dark:text-white font-medium">Modern Stack</div>
-                        <div class="text-sm text-slate-500 dark:text-slate-400">Svelte 5 + Inertia.js + TailwindCSS</div>
+                        <div class="text-neutral-900 dark:text-white font-medium">Modern Stack</div>
+                        <div class="text-sm text-neutral-500 dark:text-neutral-400">Svelte 5 + Inertia.js + TailwindCSS</div>
                     </div>
                 </div>
             </div>
@@ -184,10 +184,10 @@
                 </svg>
             </div>
 
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-soft">
+            <div class="bg-white dark:bg-neutral-925/80 backdrop-blur-xl rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] p-8 shadow-xl shadow-black/5 dark:shadow-black/20">
                 <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Create account</h2>
-                    <p class="text-slate-600 dark:text-slate-400 mt-2">Get started with your free account</p>
+                    <h2 class="text-2xl font-bold text-neutral-900 dark:text-white">Create account</h2>
+                    <p class="text-neutral-600 dark:text-neutral-400 mt-2">Get started with your free account</p>
                 </div>
 
                 {#if flash?.error}
@@ -200,7 +200,7 @@
                 {/if}
 
                 <a href="/auth/google"
-                   class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-700 dark:text-white font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800">
+                   class="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border border-neutral-300 dark:border-white/[0.08] bg-white dark:bg-neutral-800/50 text-neutral-700 dark:text-white font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-neutral-100 dark:focus:ring-offset-neutral-900">
                     <svg class="h-5 w-5" viewBox="0 0 24 24">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -212,19 +212,19 @@
 
                 <div class="relative my-6">
                     <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-slate-200 dark:border-slate-700"></div>
+                        <div class="w-full border-t border-neutral-200/80 dark:border-white/[0.04]"></div>
                     </div>
                     <div class="relative flex justify-center">
-                        <span class="px-4 text-sm text-slate-500 bg-white dark:bg-slate-800/50">or sign up with email</span>
+                        <span class="px-4 text-sm text-neutral-500 bg-white dark:bg-neutral-925">or sign up with email</span>
                     </div>
                 </div>
 
                 <form class="space-y-4" onsubmit={submitForm}>
                     <div class="space-y-2">
-                        <label for="name" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Full Name</label>
+                        <label for="name" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Full Name</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <User class="w-5 h-5 text-slate-500" />
+                                <User class="w-5 h-5 text-neutral-500" />
                             </div>
                             <input
                                 bind:value={form.name}
@@ -232,17 +232,17 @@
                                 type="text"
                                 name="name"
                                 id="name"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700/80 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                                 placeholder="John Doe"
                             />
                         </div>
                     </div>
 
                     <div class="space-y-2">
-                        <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+                        <label for="email" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Email</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Mail class="w-5 h-5 text-slate-500" />
+                                <Mail class="w-5 h-5 text-neutral-500" />
                             </div>
                             <input
                                 bind:value={form.email}
@@ -250,17 +250,17 @@
                                 type="email"
                                 name="email"
                                 id="email"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700/80 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                                 placeholder="you@example.com"
                             />
                         </div>
                     </div>
 
                     <div class="space-y-2">
-                        <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+                        <label for="password" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Password</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Lock class="w-5 h-5 text-slate-500" />
+                                <Lock class="w-5 h-5 text-neutral-500" />
                             </div>
                             <input
                                 bind:value={form.password}
@@ -269,12 +269,12 @@
                                 name="password"
                                 id="password"
                                 placeholder="••••••••"
-                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700/80 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                             />
                             <button
                                 type="button"
                                 onclick={() => showPassword = !showPassword}
-                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
                             >
                                 {#if showPassword}
                                     <EyeOff class="w-5 h-5" />
@@ -286,7 +286,7 @@
                         <button
                             type="button"
                             onclick={generatePassword}
-                            class="text-xs text-brand-400 hover:text-brand-300 transition-colors flex items-center gap-1"
+                            class="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors flex items-center gap-1"
                         >
                             <Sparkles class="w-3 h-3" />
                             Generate secure password
@@ -294,10 +294,10 @@
                     </div>
 
                     <div class="space-y-2">
-                        <label for="confirm-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Confirm Password</label>
+                        <label for="confirm-password" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Confirm Password</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Lock class="w-5 h-5 text-slate-500" />
+                                <Lock class="w-5 h-5 text-neutral-500" />
                             </div>
                             <input
                                 bind:value={form.password_confirmation}
@@ -306,7 +306,7 @@
                                 name="confirm-password"
                                 id="confirm-password"
                                 placeholder="••••••••"
-                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
+                                class="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700/80 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 transition-colors duration-200"
                             />
                         </div>
                         {#if passwordError}
@@ -317,7 +317,7 @@
                     <button
                         type="submit"
                         disabled={isLoading}
-                        class="w-full py-3 px-4 rounded-xl bg-linear-to-r from-brand-400 to-brand-500 text-neutral-950 font-semibold hover:from-brand-300 hover:to-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+                        class="w-full py-3 px-4 rounded-xl bg-linear-to-r from-brand-400 to-brand-500 text-neutral-950 font-semibold hover:from-brand-300 hover:to-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-neutral-100 dark:focus:ring-offset-neutral-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
                     >
                         {#if isLoading}
                             <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -332,9 +332,9 @@
                     </button>
                 </form>
 
-                <p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+                <p class="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400">
                     Already have an account?
-                    <a href="/login" use:inertia class="text-brand-400 hover:text-brand-300 font-medium transition-colors">
+                    <a href="/login" use:inertia class="text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium transition-colors">
                         Sign in
                     </a>
                 </p>

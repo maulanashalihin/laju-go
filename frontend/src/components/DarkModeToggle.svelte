@@ -57,14 +57,14 @@
 
 <button
     onclick={toggleDarkMode}
-    class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700"
+    class="p-2 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-300 dark:focus:ring-neutral-700"
     aria-label="Toggle dark mode"
 >
     {#if mounted}
         {#if darkMode}
-            <Sun class="w-5 h-5 text-slate-800 dark:text-slate-200" />
+            <Sun class="w-5 h-5 text-neutral-800 dark:text-neutral-200" />
         {:else}
-            <Moon class="w-5 h-5 text-slate-800 dark:text-slate-200" />
+            <Moon class="w-5 h-5 text-neutral-800 dark:text-neutral-200" />
         {/if}
     {:else}
         <!-- Placeholder to prevent layout shift -->
