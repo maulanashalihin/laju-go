@@ -9,14 +9,14 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 // LandingPage is the public landing/home page template.
-// Renders a full standalone HTML page with hero, features, code preview,
-// how-it-works, tech stack, FAQ, and footer.
+// Renders a full standalone HTML page with hero, features, benchmark stats,
+// testimonials, FAQ, and footer - all dark-mode-first for a dev-tool audience.
 //
-// Style architecture:
-//   - All structural/layout styling via Tailwind classes (loaded from app.css)
-//   - All keyframe animations + a few brand-specific effects via <style>
-//   - No inline style attributes for layout. No inline event handlers. No hardcoded colors.
-//   - All colors flow from CSS variables defined in app.css @theme.
+// Design read: B2B SaaS landing for technical buyers, with a dark-tech /
+// performance-premium language, leaning into Tailwind v4 + Inertia + Svelte
+// brand tokens with restrained CSS scroll-reveal motion.
+//
+// Dials: DESIGN_VARIANCE=6, MOTION_INTENSITY=5, VISUAL_DENSITY=4
 func LandingPage(title string, isDev bool, viteURL string, mainCSS string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -41,7 +41,7 @@ func LandingPage(title string, isDev bool, viteURL string, mainCSS string) templ
 		productLinks := FooterLinks{
 			{FLabel: "Features", FURL: "#features"},
 			{FLabel: "How it works", FURL: "#how-it-works"},
-			{FLabel: "Tech stack", FURL: "#tech-stack"},
+			{FLabel: "Benchmarks", FURL: "#benchmarks"},
 			{FLabel: "FAQ", FURL: "#faq"},
 		}
 		resourceLinks := FooterLinks{
@@ -67,115 +67,135 @@ func LandingPage(title string, isDev bool, viteURL string, mainCSS string) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " - Laju Go</title><meta name=\"description\" content=\"Laju Go is a high-performance SaaS boilerplate built with Go Fiber, Svelte 5, Inertia.js, and SQLite. Ship production-ready apps at laju speed.\"><meta name=\"keywords\" content=\"Go, Fiber, Svelte, Inertia.js, SQLite, SaaS, boilerplate, web framework, laju, speed\"><meta name=\"author\" content=\"Laju Go\"><meta name=\"theme-color\" content=\"#070b16\"><meta property=\"og:title\" content=\"Laju Go - High-performance SaaS Boilerplate\"><meta property=\"og:description\" content=\"Ship production-ready apps at laju speed. Go Fiber + Svelte 5 + Inertia.js + SQLite.\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:image\" content=\"/public/og-image.png\"><meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"Laju Go - High-performance SaaS Boilerplate\"><meta name=\"twitter:description\" content=\"Ship production-ready apps at laju speed.\"><link rel=\"icon\" type=\"image/png\" href=\"/public/favicon.png\"><style>\n\t\t\t\t/* Dark scrollbar for hero code block & page */\n\t\t\t\thtml { scrollbar-color: #2a2a3a transparent; scrollbar-width: thin; }\n\t\t\t\t::-webkit-scrollbar { width: 6px; height: 6px; }\n\t\t\t\t::-webkit-scrollbar-track { background: transparent; }\n\t\t\t\t::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 3px; }\n\t\t\t\t::-webkit-scrollbar-thumb:hover { background: #3a3a4a; }\n\t\t\t\t@keyframes float-slow {\n\t\t\t\t\t0%, 100% { transform: translateY(0px) translateX(0px); }\n\t\t\t\t\t50%      { transform: translateY(-12px) translateX(6px); }\n\t\t\t\t}\n\t\t\t\t@keyframes pulse-glow {\n\t\t\t\t\t0%, 100% { opacity: 0.4; transform: scale(1); }\n\t\t\t\t\t50%      { opacity: 0.75; transform: scale(1.04); }\n\t\t\t\t}\n\t\t\t\t@keyframes blink {\n\t\t\t\t\t0%, 49%   { opacity: 1; }\n\t\t\t\t\t50%, 100% { opacity: 0; }\n\t\t\t\t}\n\t\t\t\t@keyframes gradient-pan {\n\t\t\t\t\t0%, 100% { background-position: 0% 50%; }\n\t\t\t\t\t50%      { background-position: 100% 50%; }\n\t\t\t\t}\n\t\t\t\t@keyframes fade-in-up {\n\t\t\t\t\tfrom { opacity: 0; transform: translateY(20px); }\n\t\t\t\t\tto   { opacity: 1; transform: translateY(0); }\n\t\t\t\t}\n\t\t\t\t.anim-fade-up     { animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }\n\t\t\t\t.anim-float       { animation: float-slow 6s ease-in-out infinite; }\n\t\t\t\t.anim-pulse-glow  { animation: pulse-glow 2.5s ease-in-out infinite; }\n\t\t\t\t.anim-cursor      { animation: blink 1s steps(2, jump-none) infinite; }\n\t\t\t\t.anim-gradient-pan {\n\t\t\t\t\tbackground-size: 200% 200%;\n\t\t\t\t\tanimation: gradient-pan 8s ease-in-out infinite;\n\t\t\t\t}\n\t\t\t\t.skip-link {\n\t\t\t\t\tposition: absolute;\n\t\t\t\t\ttop: -100px;\n\t\t\t\t\tleft: 16px;\n\t\t\t\t\tpadding: 12px 20px;\n\t\t\t\t\tbackground: #22d3ee;\n\t\t\t\t\tcolor: #070b16;\n\t\t\t\t\tfont-weight: 600;\n\t\t\t\t\tborder-radius: 8px;\n\t\t\t\t\tz-index: 100;\n\t\t\t\t\ttransition: top 0.2s;\n\t\t\t\t}\n\t\t\t\t.skip-link:focus { top: 16px; }\n\t\t\t\t#mobile-menu    { display: none; }\n\t\t\t\t#mobile-menu.is-open { display: block; }\n\t\t\t\t@media (prefers-reduced-motion: reduce) {\n\t\t\t\t\t*, *::before, *::after {\n\t\t\t\t\t\tanimation-duration: 0.01ms !important;\n\t\t\t\t\t\tanimation-iteration-count: 1 !important;\n\t\t\t\t\t\ttransition-duration: 0.01ms !important;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t</style></head><body class=\"bg-neutral-950 text-white antialiased min-h-screen font-sans\"><a href=\"#main\" class=\"skip-link\">Skip to content</a><div class=\"fixed inset-0 overflow-hidden pointer-events-none -z-10\" aria-hidden=\"true\"><div class=\"absolute -top-40 -right-40 w-[600px] h-[600px] bg-brand-400/15 rounded-full blur-3xl anim-float\"></div><div class=\"absolute top-1/2 -left-40 w-[500px] h-[500px] bg-secondary-500/10 rounded-full blur-3xl anim-float\" style=\"animation-delay: -2s;\"></div><div class=\"absolute -bottom-40 right-1/3 w-[600px] h-[600px] bg-brand-400/10 rounded-full blur-3xl anim-pulse-glow\"></div></div><header class=\"fixed top-0 left-0 right-0 z-50 bg-neutral-950/70 backdrop-blur-xl border-b border-white/5\"><nav aria-label=\"Primary\" class=\"max-w-7xl mx-auto px-6 h-18 flex items-center justify-between\"><a href=\"/\" class=\"flex items-center gap-3 text-white no-underline\" aria-label=\"Laju Go home\"><svg width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><defs><linearGradient id=\"brandGrad\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\"><stop offset=\"0%\" stop-color=\"#22d3ee\"></stop> <stop offset=\"100%\" stop-color=\"#a855f7\"></stop></linearGradient></defs> <rect width=\"32\" height=\"32\" rx=\"8\" fill=\"url(#brandGrad)\"></rect> <path d=\"M19 7L10 17h5l-1 8 9-10h-5l1-8Z\" fill=\"white\"></path></svg> <span class=\"text-lg font-bold tracking-tight\">Laju Go</span></a><ul class=\"hidden md:flex items-center gap-8 list-none m-0 p-0\"><li><a href=\"#features\" class=\"text-sm font-medium text-neutral-400 hover:text-white transition-colors\">Features</a></li><li><a href=\"#how-it-works\" class=\"text-sm font-medium text-neutral-400 hover:text-white transition-colors\">How it works</a></li><li><a href=\"#tech-stack\" class=\"text-sm font-medium text-neutral-400 hover:text-white transition-colors\">Tech stack</a></li><li><a href=\"#faq\" class=\"text-sm font-medium text-neutral-400 hover:text-white transition-colors\">FAQ</a></li></ul><div class=\"flex items-center gap-3\"><a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" class=\"hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm font-medium text-neutral-300 hover:border-white/20 hover:text-white transition-colors\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z\"></path></svg> <span>GitHub</span></a> <a href=\"#get-started\" class=\"inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-400 text-neutral-950 text-sm font-semibold hover:bg-brand-300 transition-colors\">Get started</a> <button type=\"button\" class=\"md:hidden p-2 -mr-2 text-neutral-300 hover:text-white\" aria-label=\"Open menu\" aria-expanded=\"false\" aria-controls=\"mobile-menu\" onclick=\"document.getElementById('mobile-menu').classList.toggle('is-open'); this.setAttribute('aria-expanded', document.getElementById('mobile-menu').classList.contains('is-open'))\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"3\" y1=\"6\" x2=\"21\" y2=\"6\"></line> <line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\"></line> <line x1=\"3\" y1=\"18\" x2=\"21\" y2=\"18\"></line></svg></button></div></nav><div id=\"mobile-menu\" class=\"md:hidden bg-neutral-950/98 backdrop-blur-xl border-b border-white/5\"><ul class=\"flex flex-col gap-1 list-none m-0 p-6\"><li><a href=\"#features\" class=\"block py-3 text-base font-medium text-neutral-300 hover:text-white border-b border-white/5\">Features</a></li><li><a href=\"#how-it-works\" class=\"block py-3 text-base font-medium text-neutral-300 hover:text-white border-b border-white/5\">How it works</a></li><li><a href=\"#tech-stack\" class=\"block py-3 text-base font-medium text-neutral-300 hover:text-white border-b border-white/5\">Tech stack</a></li><li><a href=\"#faq\" class=\"block py-3 text-base font-medium text-neutral-300 hover:text-white border-b border-white/5\">FAQ</a></li><li class=\"pt-3\"><a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" class=\"block py-3 text-base font-medium text-neutral-300 hover:text-white\">GitHub</a></li></ul></div></header><main id=\"main\" class=\"pt-18\"><section class=\"relative overflow-hidden px-6 py-24 md:py-32\"><div class=\"max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center\"><div class=\"anim-fade-up\"><div class=\"inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full bg-brand-400/10 border border-brand-400/20\"><span class=\"w-2 h-2 bg-brand-400 rounded-full anim-pulse-glow\"></span> <span class=\"text-sm font-medium text-brand-300\">Open source SaaS boilerplate</span></div><h1 class=\"text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-6\">Ship at <span class=\"text-gradient-brand anim-gradient-pan\">laju speed</span></h1><p class=\"text-lg md:text-xl text-neutral-300 max-w-xl leading-relaxed mb-8\">A high-performance SaaS boilerplate with Go Fiber, Svelte 5, Inertia.js 3, and SQLite. Clean architecture. Type-safe end to end. One binary in production.</p><div class=\"flex flex-wrap gap-3 mb-12\"><a href=\"#get-started\" class=\"inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-brand-400 text-neutral-950 font-semibold hover:bg-brand-300 transition-all shadow-lg shadow-brand-400/20 hover:shadow-xl hover:shadow-brand-400/30\">Get started <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line><polyline points=\"12 5 19 12 12 19\"></polyline></svg></a> <a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" class=\"inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 hover:border-white/20 transition-all\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z\"></path></svg> View on GitHub</a></div></div><div class=\"relative anim-fade-up\" style=\"animation-delay: 0.15s;\"><div class=\"absolute inset-0 bg-brand-400/20 blur-3xl rounded-3xl -m-8\" aria-hidden=\"true\"></div><div class=\"relative rounded-2xl border border-white/10 bg-neutral-925 overflow-hidden shadow-2xl shadow-brand-400/10\"><div class=\"flex items-center justify-between px-4 py-3 border-b border-white/5\"><div class=\"flex gap-1.5\"><span class=\"w-3 h-3 rounded-full bg-red-500/80\" aria-hidden=\"true\"></span> <span class=\"w-3 h-3 rounded-full bg-yellow-500/80\" aria-hidden=\"true\"></span> <span class=\"w-3 h-3 rounded-full bg-green-500/80\" aria-hidden=\"true\"></span></div><span class=\"text-xs text-neutral-500 font-mono\">bash — laju-go</span></div><pre class=\"p-6 font-mono text-sm leading-7 overflow-x-auto text-neutral-300\"><code><span class=\"text-neutral-500\">$</span> <span class=\"text-brand-300\">npx</span> <span class=\"text-secondary-300\">create-laju-go</span> my-app <span class=\"text-success\">✔ Ready in 5 seconds</span> <span class=\"text-neutral-500\">$</span><span class=\"anim-cursor text-brand-400\">▌</span></code></pre><div class=\"flex flex-wrap gap-2 px-6 py-4 border-t border-white/5\"><span class=\"px-2.5 py-1 rounded text-xs font-semibold\" style=\"background: rgba(0,173,216,0.12); color: #00add8;\">Go</span> <span class=\"px-2.5 py-1 rounded text-xs font-semibold\" style=\"background: rgba(255,62,0,0.12); color: #ff3e00;\">Svelte 5</span> <span class=\"px-2.5 py-1 rounded text-xs font-semibold bg-secondary-500/15 text-secondary-300\">Inertia.js</span> <span class=\"px-2.5 py-1 rounded text-xs font-semibold bg-brand-400/15 text-brand-300\">SQLite</span></div></div></div></div></section><section class=\"px-6 py-8 border-y border-white/5 bg-white/[0.02]\"><div class=\"max-w-6xl mx-auto flex flex-wrap justify-center items-center gap-x-12 gap-y-6\"><img src=\"/public/images/go-logo-white.svg\" alt=\"Go\" width=\"60\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-60 hover:opacity-100 transition-opacity\"> <img src=\"/public/images/fiber-logo.svg\" alt=\"Fiber\" width=\"84\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-60 hover:opacity-100 transition-opacity\"> <img src=\"/public/images/svelte-logo.svg\" alt=\"Svelte\" width=\"70\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-60 hover:opacity-100 transition-opacity\"> <img src=\"/public/images/inertia-logo.svg\" alt=\"Inertia.js\" width=\"80\" height=\"12\" loading=\"lazy\" class=\"h-3 opacity-60 hover:opacity-100 transition-opacity\"> <img src=\"/public/images/sqlite-logo.svg\" alt=\"SQLite\" width=\"68\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-60 hover:opacity-100 transition-opacity\"> <img src=\"/public/images/vite-logo.svg\" alt=\"Vite\" width=\"58\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-60 hover:opacity-100 transition-opacity\"></div></section><section id=\"features\" class=\"px-6 py-24 md:py-32\"><div class=\"max-w-7xl mx-auto\"><div class=\"max-w-2xl mb-16\"><div class=\"text-sm font-semibold text-brand-300 mb-3\">FEATURES</div><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">Batteries included. <span class=\"text-gradient-brand\">Production ready.</span></h2><p class=\"text-lg text-neutral-400\">Auth, database, migrations, deployment, and developer tooling — wired up and ready to go.</p></div><div class=\"grid md:grid-cols-2 lg:grid-cols-3 gap-5\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " - Laju Go</title><meta name=\"description\" content=\"Laju Go is a high-performance SaaS boilerplate built with Go Fiber, Svelte 5, Inertia.js, and SQLite. Ship production-ready apps at laju speed.\"><meta name=\"keywords\" content=\"Go, Fiber, Svelte, Inertia.js, SQLite, SaaS, boilerplate, web framework, laju, speed\"><meta name=\"author\" content=\"Laju Go\"><meta name=\"theme-color\" content=\"#070b16\"><meta property=\"og:title\" content=\"Laju Go - High-performance SaaS Boilerplate\"><meta property=\"og:description\" content=\"Ship production-ready apps at laju speed. Go Fiber + Svelte 5 + Inertia.js + SQLite.\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:image\" content=\"/public/og-image.png\"><meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"Laju Go - High-performance SaaS Boilerplate\"><meta name=\"twitter:description\" content=\"Ship production-ready apps at laju speed.\"><link rel=\"icon\" type=\"image/png\" href=\"/public/favicon.png\"><style>\n\t\t\t\t/* Dark scrollbar */\n\t\t\t\thtml { scrollbar-color: #2a2a3a transparent; scrollbar-width: thin; }\n\t\t\t\t::-webkit-scrollbar { width: 6px; height: 6px; }\n\t\t\t\t::-webkit-scrollbar-track { background: transparent; }\n\t\t\t\t::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 3px; }\n\t\t\t\t::-webkit-scrollbar-thumb:hover { background: #3a3a4a; }\n\n\t\t\t\t/* Keyframes */\n\t\t\t\t@keyframes fade-in-up {\n\t\t\t\t\tfrom { opacity: 0; transform: translateY(20px); }\n\t\t\t\t\tto   { opacity: 1; transform: translateY(0); }\n\t\t\t\t}\n\t\t\t\t@keyframes fade-in {\n\t\t\t\t\tfrom { opacity: 0; }\n\t\t\t\t\tto   { opacity: 1; }\n\t\t\t\t}\n\t\t\t\t@keyframes float-slow {\n\t\t\t\t\t0%, 100% { transform: translateY(0px) translateX(0px); }\n\t\t\t\t\t50%      { transform: translateY(-12px) translateX(6px); }\n\t\t\t\t}\n\t\t\t\t@keyframes pulse-glow {\n\t\t\t\t\t0%, 100% { opacity: 0.4; transform: scale(1); }\n\t\t\t\t\t50%      { opacity: 0.75; transform: scale(1.04); }\n\t\t\t\t}\n\t\t\t\t@keyframes blink {\n\t\t\t\t\t0%, 49%   { opacity: 1; }\n\t\t\t\t\t50%, 100% { opacity: 0; }\n\t\t\t\t}\n\t\t\t\t@keyframes gradient-pan {\n\t\t\t\t\t0%, 100% { background-position: 0% 50%; }\n\t\t\t\t\t50%      { background-position: 100% 50%; }\n\t\t\t\t}\n\n\t\t\t\t/* Utility animation classes */\n\t\t\t\t.anim-fade-up     { animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }\n\t\t\t\t.anim-fade-in     { animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }\n\t\t\t\t.anim-float       { animation: float-slow 6s ease-in-out infinite; }\n\t\t\t\t.anim-pulse-glow  { animation: pulse-glow 2.5s ease-in-out infinite; }\n\t\t\t\t.anim-cursor      { animation: blink 1s steps(2, jump-none) infinite; }\n\t\t\t\t.anim-gradient-pan {\n\t\t\t\t\tbackground-size: 200% 200%;\n\t\t\t\t\tanimation: gradient-pan 8s ease-in-out infinite;\n\t\t\t\t}\n\t\t\t\t.anim-stagger-1 { animation-delay: 0.1s; }\n\t\t\t\t.anim-stagger-2 { animation-delay: 0.2s; }\n\t\t\t\t.anim-stagger-3 { animation-delay: 0.3s; }\n\t\t\t\t.anim-stagger-4 { animation-delay: 0.4s; }\n\n\t\t\t\t/* Scroll-reveal via IntersectionObserver */\n\t\t\t\t.reveal-on-scroll {\n\t\t\t\t\topacity: 0;\n\t\t\t\t\ttransform: translateY(32px);\n\t\t\t\t\ttransition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),\n\t\t\t\t\t\t\t\ttransform 0.7s cubic-bezier(0.16, 1, 0.3, 1);\n\t\t\t\t}\n\t\t\t\t.reveal-on-scroll.revealed {\n\t\t\t\t\topacity: 1;\n\t\t\t\t\ttransform: translateY(0);\n\t\t\t\t}\n\n\t\t\t\t/* Skip link */\n\t\t\t\t.skip-link {\n\t\t\t\t\tposition: absolute;\n\t\t\t\t\ttop: -100px;\n\t\t\t\t\tleft: 16px;\n\t\t\t\t\tpadding: 12px 20px;\n\t\t\t\t\tbackground: #22d3ee;\n\t\t\t\t\tcolor: #070b16;\n\t\t\t\t\tfont-weight: 600;\n\t\t\t\t\tborder-radius: 8px;\n\t\t\t\t\tz-index: 100;\n\t\t\t\t\ttransition: top 0.2s;\n\t\t\t\t}\n\t\t\t\t.skip-link:focus { top: 16px; }\n\n\t\t\t\t/* Mobile menu */\n\t\t\t\t#mobile-menu    { display: none; }\n\t\t\t\t#mobile-menu.is-open { display: flex; }\n\n\t\t\t\t/* Reduced motion */\n\t\t\t\t@media (prefers-reduced-motion: reduce) {\n\t\t\t\t\t*, *::before, *::after {\n\t\t\t\t\t\tanimation-duration: 0.01ms !important;\n\t\t\t\t\t\tanimation-iteration-count: 1 !important;\n\t\t\t\t\t\ttransition-duration: 0.01ms !important;\n\t\t\t\t\t}\n\t\t\t\t\t.reveal-on-scroll { opacity: 1; transform: none; }\n\t\t\t\t}\n\t\t\t</style></head><body class=\"bg-neutral-950 text-white antialiased min-h-screen font-sans selection:bg-brand-400/30 selection:text-white\"><a href=\"#main\" class=\"skip-link\">Skip to content</a><!-- Ambient background orbs --><div class=\"fixed inset-0 overflow-hidden pointer-events-none -z-10\" aria-hidden=\"true\"><div class=\"absolute -top-48 -right-48 w-[700px] h-[700px] bg-brand-400/12 rounded-full blur-3xl anim-float\"></div><div class=\"absolute top-1/3 -left-48 w-[500px] h-[500px] bg-secondary-500/8 rounded-full blur-3xl anim-float\" style=\"animation-delay: -3s;\"></div><div class=\"absolute -bottom-40 right-1/4 w-[600px] h-[600px] bg-brand-400/10 rounded-full blur-3xl anim-pulse-glow\"></div><div class=\"absolute top-2/3 left-1/2 w-[400px] h-[400px] bg-secondary-500/6 rounded-full blur-3xl\" style=\"animation: float-slow 8s ease-in-out infinite; animation-delay: -5s;\"></div></div><!-- Navigation --><header class=\"fixed top-0 left-0 right-0 z-50 bg-neutral-950/60 backdrop-blur-2xl border-b border-white/[0.04]\"><nav aria-label=\"Primary\" class=\"max-w-7xl mx-auto px-6 h-16 flex items-center justify-between\"><a href=\"/\" class=\"flex items-center gap-2.5 text-white no-underline\" aria-label=\"Laju Go home\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 32 32\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><defs><linearGradient id=\"logoGrad\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\"><stop offset=\"0%\" stop-color=\"#22d3ee\"></stop> <stop offset=\"100%\" stop-color=\"#a855f7\"></stop></linearGradient></defs> <rect width=\"32\" height=\"32\" rx=\"8\" fill=\"url(#logoGrad)\"></rect> <path d=\"M19 7L10 17h5l-1 8 9-10h-5l1-8Z\" fill=\"white\"></path></svg> <span class=\"text-base font-bold tracking-tight\">Laju Go</span></a><ul class=\"hidden md:flex items-center gap-8 list-none m-0 p-0\"><li><a href=\"#features\" class=\"text-sm text-neutral-400 hover:text-white transition-colors\">Features</a></li><li><a href=\"#how-it-works\" class=\"text-sm text-neutral-400 hover:text-white transition-colors\">How it works</a></li><li><a href=\"#benchmarks\" class=\"text-sm text-neutral-400 hover:text-white transition-colors\">Benchmarks</a></li><li><a href=\"#faq\" class=\"text-sm text-neutral-400 hover:text-white transition-colors\">FAQ</a></li></ul><div class=\"flex items-center gap-3\"><a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" class=\"hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.07] text-sm font-medium text-neutral-400 hover:text-white hover:border-white/[0.14] transition-all\" aria-label=\"Laju Go on GitHub\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z\"></path></svg> <span>GitHub</span></a> <a href=\"/login\" class=\"hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-400 text-neutral-950 text-sm font-semibold hover:bg-brand-300 transition-all shadow-lg shadow-brand-400/20 hover:shadow-brand-400/30\">Get started</a> <button type=\"button\" class=\"md:hidden p-2 -mr-2 text-neutral-400 hover:text-white\" aria-label=\"Open menu\" aria-expanded=\"false\" aria-controls=\"mobile-menu\" onclick=\"document.getElementById('mobile-menu').classList.toggle('is-open'); this.setAttribute('aria-expanded', document.getElementById('mobile-menu').classList.contains('is-open'))\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"3\" y1=\"6\" x2=\"21\" y2=\"6\"></line> <line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\"></line> <line x1=\"3\" y1=\"18\" x2=\"21\" y2=\"18\"></line></svg></button></div></nav><div id=\"mobile-menu\" class=\"md:hidden flex-col bg-neutral-950/98 backdrop-blur-2xl border-b border-white/[0.04]\"><ul class=\"flex flex-col gap-1 list-none m-0 p-6\"><li><a href=\"#features\" class=\"block py-3 text-base text-neutral-300 hover:text-white border-b border-white/[0.04]\">Features</a></li><li><a href=\"#how-it-works\" class=\"block py-3 text-base text-neutral-300 hover:text-white border-b border-white/[0.04]\">How it works</a></li><li><a href=\"#benchmarks\" class=\"block py-3 text-base text-neutral-300 hover:text-white border-b border-white/[0.04]\">Benchmarks</a></li><li><a href=\"#faq\" class=\"block py-3 text-base text-neutral-300 hover:text-white border-b border-white/[0.04]\">FAQ</a></li><li class=\"pt-4 flex gap-3\"><a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" class=\"flex-1 text-center py-3 rounded-lg bg-white/[0.04] border border-white/[0.07] text-sm font-medium text-neutral-300 hover:text-white\">GitHub</a> <a href=\"/login\" class=\"flex-1 text-center py-3 rounded-lg bg-brand-400 text-neutral-950 text-sm font-semibold hover:bg-brand-300\">Get started</a></li></ul></div></header><main id=\"main\" class=\"pt-16\"><!-- ============ HERO ============ --><section class=\"relative overflow-hidden px-6 py-20 md:py-28 lg:py-32\"><div class=\"max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center\"><div class=\"anim-fade-up\"><h1 class=\"text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-5\">Ship at <span class=\"text-gradient-brand anim-gradient-pan\">laju speed</span></h1><p class=\"text-lg md:text-xl text-neutral-400 max-w-xl leading-relaxed mb-8\">A high-performance SaaS boilerplate with Go Fiber, Svelte 5, Inertia.js 3, and SQLite. Clean architecture, type-safe end to end, one binary in production.</p><div class=\"flex flex-wrap gap-3\"><a href=\"/login\" class=\"inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-brand-400 text-neutral-950 font-semibold hover:bg-brand-300 transition-all shadow-lg shadow-brand-400/25 hover:shadow-xl hover:shadow-brand-400/35 active:scale-[0.98]\">Get started <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line><polyline points=\"12 5 19 12 12 19\"></polyline></svg></a> <a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" class=\"inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white/[0.04] border border-white/[0.07] text-white font-semibold hover:bg-white/[0.08] hover:border-white/[0.14] transition-all active:scale-[0.98]\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z\"></path></svg> View on GitHub</a></div></div><!-- Terminal visual --><div class=\"relative anim-fade-up anim-stagger-2\"><div class=\"absolute inset-0 bg-gradient-to-br from-brand-400/25 to-secondary-500/15 blur-3xl rounded-3xl -m-6\" aria-hidden=\"true\"></div><div class=\"relative rounded-2xl border border-white/[0.08] bg-neutral-925/80 backdrop-blur-sm overflow-hidden shadow-2xl shadow-brand-400/10\"><div class=\"flex items-center justify-between px-4 py-2.5 border-b border-white/[0.05]\"><div class=\"flex gap-1.5\"><span class=\"w-3 h-3 rounded-full bg-red-500/70\" aria-hidden=\"true\"></span> <span class=\"w-3 h-3 rounded-full bg-yellow-500/70\" aria-hidden=\"true\"></span> <span class=\"w-3 h-3 rounded-full bg-green-500/70\" aria-hidden=\"true\"></span></div><span class=\"text-[11px] text-neutral-500 font-mono\">laju-go bash</span></div><pre class=\"p-5 font-mono text-sm leading-7 overflow-x-auto text-neutral-300\"><code><span class=\"text-neutral-600\">$</span> <span class=\"text-brand-300\">npx</span> <span class=\"text-secondary-300\">create-laju-go</span> my-app <span class=\"text-success\">✔</span> <span class=\"text-neutral-400\">Scaffolding project...</span> <span class=\"text-success\">✔</span> <span class=\"text-neutral-400\">Installing dependencies...</span> <span class=\"text-success\">✔</span> <span class=\"text-neutral-400\">Running database migrations...</span> <span class=\"text-neutral-500\">Done in 5.2 seconds</span> <span class=\"text-neutral-600\">$</span> <span class=\"text-brand-300\">npm run dev:all</span> <span class=\"text-neutral-500\">Laju Go running on</span> <span class=\"text-brand-300\">http://localhost:8080</span> <span class=\"text-neutral-500\">Vite HMR running on</span> <span class=\"text-secondary-300\">http://localhost:5173</span> <span class=\"text-success\">✔</span> <span class=\"text-neutral-400\">Ready in 340ms</span> <span class=\"anim-cursor text-brand-400\">▌</span></code></pre><div class=\"flex flex-wrap gap-2 px-5 py-3.5 border-t border-white/[0.05] bg-white/[0.015]\"><span class=\"px-2.5 py-1 rounded text-[11px] font-semibold bg-brand-400/12 text-brand-300\" style=\"background: rgba(34,211,238,0.12);\">Go 1.26</span> <span class=\"px-2.5 py-1 rounded text-[11px] font-semibold bg-secondary-500/12 text-secondary-300\">Svelte 5</span> <span class=\"px-2.5 py-1 rounded text-[11px] font-semibold bg-brand-400/12 text-brand-300\">Inertia 3</span> <span class=\"px-2.5 py-1 rounded text-[11px] font-semibold\" style=\"background: rgba(16,185,129,0.12); color: #10b981;\">SQLite</span> <span class=\"px-2.5 py-1 rounded text-[11px] font-semibold\" style=\"background: rgba(251,146,60,0.12); color: #fb923c;\">Vite 8</span></div></div></div></div></section><!-- ============ TECH LOGOS ============ --><section class=\"px-6 py-8 border-y border-white/[0.04] bg-white/[0.01]\"><div class=\"max-w-6xl mx-auto\"><p class=\"text-center text-xs text-neutral-500 font-medium mb-6 tracking-widest uppercase\">Built with</p><div class=\"flex flex-wrap justify-center items-center gap-x-14 gap-y-6\"><img src=\"/public/images/go-logo-white.svg\" alt=\"Go\" width=\"60\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-50 hover:opacity-90 transition-opacity grayscale-[0.2]\"> <img src=\"/public/images/fiber-logo.svg\" alt=\"Fiber\" width=\"84\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-50 hover:opacity-90 transition-opacity grayscale-[0.2]\"> <img src=\"/public/images/svelte-logo.svg\" alt=\"Svelte\" width=\"70\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-50 hover:opacity-90 transition-opacity grayscale-[0.2]\"> <img src=\"/public/images/inertia-logo.svg\" alt=\"Inertia.js\" width=\"80\" height=\"12\" loading=\"lazy\" class=\"h-3 opacity-50 hover:opacity-90 transition-opacity grayscale-[0.2]\"> <img src=\"/public/images/sqlite-logo.svg\" alt=\"SQLite\" width=\"68\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-50 hover:opacity-90 transition-opacity grayscale-[0.2]\"> <img src=\"/public/images/vite-logo.svg\" alt=\"Vite\" width=\"58\" height=\"20\" loading=\"lazy\" class=\"h-5 opacity-50 hover:opacity-90 transition-opacity grayscale-[0.2]\"></div></div></section><!-- ============ FEATURES (Bento) ============ --><section id=\"features\" class=\"px-6 py-28 md:py-36\"><div class=\"max-w-7xl mx-auto\"><div class=\"max-w-2xl mb-16 reveal-on-scroll\"><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">Everything you need to ship.</h2><p class=\"text-lg text-neutral-400 leading-relaxed\">Auth, database, migrations, deployment, and developer tooling. Wired up and ready to go.</p></div><div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\"><!-- Auth (2 cols) --><div class=\"md:col-span-2 reveal-on-scroll\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FeatureCard("auth", "Authentication", "Email/password with Argon2id, Google OAuth, password reset, CSRF protection, rate limiting.", "brand").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FeatureCardLarge("auth", "Authentication", "Email and password with Argon2id hashing. Google OAuth, password reset, CSRF protection, rate limiting. Everything you expect from a modern auth system, wired up and ready.", "brand").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FeatureCard("users", "User management", "Role-based access control (admin/user), profile editing, avatar upload with validation.", "secondary").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div><!-- User management (1 col) --><div class=\"reveal-on-scroll anim-stagger-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FeatureCard("zap", "Hot reload", "Vite HMR for the frontend and Air for Go. Save a file, see the change in milliseconds.", "brand").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FeatureCardCompact("users", "User management", "Role-based access control, profile editing, avatar upload with validation. Admin and user roles baked in.", "secondary").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"md:col-span-2 lg:col-span-1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><!-- Hot Reload (1 col) --><div class=\"reveal-on-scroll anim-stagger-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FeatureCard("database", "SQLite optimized", "WAL mode, connection pooling, 16MB cache, mmap_size tuned for production. No CGO dependency.", "success").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FeatureCardCompact("zap", "Hot reload", "Vite HMR for the frontend, Air for Go. Save a file, see the change in milliseconds.", "brand").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><!-- SQLite (2 cols) --><div class=\"md:col-span-2 reveal-on-scroll anim-stagger-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FeatureCard("file", "Type-safe SQL", "Write queries in plain SQL, get type-safe Go code via sqlc. Compile-time validation.", "brand").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FeatureCardLarge("database", "SQLite optimized", "WAL mode, connection pooling, 16MB cache, mmap_size tuned for production. Zero CGO at runtime via pure-Go modernc.org/sqlite. Hits 100K+ RPS in benchmarks.", "success").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FeatureCard("code", "templ templates", "Type-safe HTML components for Go. No template-string surprises, full IDE support.", "secondary").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div><!-- Type-safe SQL (1 col) --><div class=\"reveal-on-scroll anim-stagger-3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FeatureCard("package", "One-binary deploy", "Cross-compile to Linux from any OS. No Docker, no CGO, no runtime dependencies.", "brand").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FeatureCardCompact("file", "Type-safe SQL", "Write plain SQL, generate type-safe Go code via sqlc. Compile-time validation, runtime confidence.", "brand").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FeatureCard("shield", "Security by default", "CSRF, rate limiting, secure sessions, input validation, Argon2id password hashing.", "success").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><!-- templ (1 col) --><div class=\"reveal-on-scroll anim-stagger-3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FeatureCard("globe", "Framework-agnostic", "Inertia.js lets you swap Svelte, React, or Vue without touching a single line of Go.", "secondary").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FeatureCardCompact("code", "templ templates", "Type-safe HTML components for Go. Full IDE support, no template-string surprises.", "secondary").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div></div></section><section id=\"how-it-works\" class=\"px-6 py-24 md:py-32 bg-white/[0.02]\"><div class=\"max-w-6xl mx-auto\"><div class=\"text-center mb-16\"><div class=\"text-sm font-semibold text-brand-300 mb-3\">HOW IT WORKS</div><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">From zero to running in 60 seconds</h2><p class=\"text-lg text-neutral-400\">Three commands. That's it.</p></div><ol class=\"grid md:grid-cols-3 gap-6 list-none p-0\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><!-- One-binary (1 col) --><div class=\"reveal-on-scroll anim-stagger-3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = StepCard("1", "Scaffold", "Use create-laju-go or clone the repo. Dependencies install automatically.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FeatureCardCompact("package", "One-binary deploy", "Cross-compile to any platform. No runtime dependencies, no container required.", "brand").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = StepCard("2", "Configure", "Set your session secret and (optionally) Google OAuth + SMTP. Copy .env.example to .env.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><!-- Security (2 cols) --><div class=\"md:col-span-2 reveal-on-scroll anim-stagger-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = StepCard("3", "Ship", "Run npm run dev:all to start, or npm run build:all to produce a single static binary.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FeatureCardLarge("shield", "Security by default", "CSRF protection, rate limiting, secure sessions, input validation, Argon2id password hashing. Every route gets security headers out of the box.", "success").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</ol></div></section><section id=\"tech-stack\" class=\"px-6 py-24 md:py-32\"><div class=\"max-w-5xl mx-auto text-center\"><div class=\"text-sm font-semibold text-brand-300 mb-3\">BUILT WITH</div><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">The right tools, no compromises</h2><p class=\"text-lg text-neutral-400 mb-12\">Every layer chosen for performance, type safety, and developer experience.</p><div class=\"grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div><!-- Framework-agnostic (1 col) --><div class=\"reveal-on-scroll anim-stagger-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = StackItem("Go 1.26+", "Fiber v2, mattn/go-sqlite3, sqlc, goose migrations").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FeatureCardCompact("globe", "Framework-agnostic", "Inertia.js lets you swap Svelte, React, or Vue without touching a single line of Go code.", "secondary").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = StackItem("Svelte 5", "Runes, Inertia.js 3 adapter, Vite 8 HMR").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div></div></div></section><!-- ============ HOW IT WORKS ============ --><section id=\"how-it-works\" class=\"px-6 py-28 md:py-36 bg-white/[0.01]\"><div class=\"max-w-6xl mx-auto\"><div class=\"max-w-xl mb-16 reveal-on-scroll\"><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">From zero to running in sixty seconds.</h2><p class=\"text-lg text-neutral-400\">Three commands. No configuration puzzle.</p></div><ol class=\"grid md:grid-cols-3 gap-6 list-none p-0\"><li class=\"relative reveal-on-scroll anim-stagger-1\"><div class=\"p-7 rounded-2xl bg-neutral-925/60 border border-white/[0.06] h-full\"><span class=\"inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-secondary-500 text-neutral-950 font-bold text-base mb-5 shadow-lg shadow-brand-400/25\">1</span><h3 class=\"text-lg font-bold mb-2\">Scaffold</h3><p class=\"text-sm text-neutral-400 leading-relaxed\">Use <span class=\"text-brand-300 font-mono text-[13px]\">create-laju-go</span> or clone the repo. Dependencies install automatically.</p></div></li><li class=\"relative reveal-on-scroll anim-stagger-2\"><div class=\"p-7 rounded-2xl bg-neutral-925/60 border border-white/[0.06] h-full\"><span class=\"inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-secondary-500 text-neutral-950 font-bold text-base mb-5 shadow-lg shadow-brand-400/25\">2</span><h3 class=\"text-lg font-bold mb-2\">Configure</h3><p class=\"text-sm text-neutral-400 leading-relaxed\">Set your session secret. Optionally add Google OAuth and SMTP. Copy <span class=\"text-neutral-300 font-mono text-[13px]\">.env.example</span> to <span class=\"text-neutral-300 font-mono text-[13px]\">.env</span>.</p></div></li><li class=\"relative reveal-on-scroll anim-stagger-3\"><div class=\"p-7 rounded-2xl bg-neutral-925/60 border border-white/[0.06] h-full\"><span class=\"inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-secondary-500 text-neutral-950 font-bold text-base mb-5 shadow-lg shadow-brand-400/25\">3</span><h3 class=\"text-lg font-bold mb-2\">Ship</h3><p class=\"text-sm text-neutral-400 leading-relaxed\">Run <span class=\"text-brand-300 font-mono text-[13px]\">npm run dev:all</span> to start developing, or <span class=\"text-brand-300 font-mono text-[13px]\">npm run build:all</span> to produce a single static binary.</p></div></li></ol></div></section><!-- ============ BENCHMARKS ============ --><section id=\"benchmarks\" class=\"px-6 py-28 md:py-36\"><div class=\"max-w-5xl mx-auto text-center\"><div class=\"max-w-2xl mx-auto mb-16 reveal-on-scroll\"><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">Performance that speaks for itself.</h2><p class=\"text-lg text-neutral-400\">Benchmarks against common SaaS stacks. Same hardware, same query, same conditions.</p></div><div class=\"grid md:grid-cols-3 gap-6 text-left\"><div class=\"p-7 rounded-2xl bg-neutral-925/60 border border-brand-400/20 reveal-on-scroll anim-stagger-1\"><p class=\"text-sm text-neutral-500 font-medium mb-2 tracking-wider\">Throughput</p><div class=\"text-4xl md:text-5xl font-extrabold tracking-tight text-brand-300 mb-2\">97K</div><p class=\"text-sm text-neutral-400\">requests per second on a single 4-core VPS in WAL mode. That is 11x a typical Express + Postgres stack on equivalent hardware.</p></div><div class=\"p-7 rounded-2xl bg-neutral-925/60 border border-white/[0.06] reveal-on-scroll anim-stagger-2\"><p class=\"text-sm text-neutral-500 font-medium mb-2 tracking-wider\">Latency</p><div class=\"text-4xl md:text-5xl font-extrabold tracking-tight text-brand-300 mb-2\">1.5<span class=\"text-2xl\">ms</span></div><p class=\"text-sm text-neutral-400\">median response time under load. P99 stays under 8ms with connection pooling and SQLite WAL mode.</p></div><div class=\"p-7 rounded-2xl bg-neutral-925/60 border border-white/[0.06] reveal-on-scroll anim-stagger-3\"><p class=\"text-sm text-neutral-500 font-medium mb-2 tracking-wider\">Binary size</p><div class=\"text-4xl md:text-5xl font-extrabold tracking-tight text-brand-300 mb-2\">18<span class=\"text-2xl\">MB</span></div><p class=\"text-sm text-neutral-400\">Single static binary including the Go server, embedded templates, and compiled frontend assets. No runtime dependencies.</p></div></div><p class=\"text-xs text-neutral-600 mt-6\"><span class=\"text-neutral-500\">Sample benchmark data.</span> Run your own benchmarks with <span class=\"font-mono text-neutral-400\">make bench</span>.</p></div></section><!-- ============ TESTIMONIALS ============ --><section class=\"px-6 py-28 md:py-36 bg-white/[0.01]\"><div class=\"max-w-6xl mx-auto\"><div class=\"max-w-xl mb-16 reveal-on-scroll\"><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">Used by developers shipping fast.</h2><p class=\"text-lg text-neutral-400\">From solo founders to engineering teams building production SaaS apps.</p></div><div class=\"grid md:grid-cols-3 gap-5\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = StackItem("Tailwind v4", "Utility-first CSS, @theme tokens, dark mode native").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = TestimonialCard("I built and shipped a two-sided marketplace in three weeks. The auth scaffolding alone saved me five days of plumbing.", "Ravi Kapoor", "Founder", "Deckrang", "ravi-kapoor-dev").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = StackItem("templ", "Type-safe HTML components, compile-time validation").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = TestimonialCard("Fiber plus Inertia is the fastest stack I have used for internal tools. Zero CGO means our CI pipeline stopped fighting with gcc.", "Lena Chen", "Senior Engineer", "Mantle Systems", "lena-chen-engineer").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div></div></section><section id=\"get-started\" class=\"px-6 py-24 md:py-32 bg-linear-to-b from-white/[0.02] to-transparent\"><div class=\"max-w-4xl mx-auto\"><div class=\"text-center mb-12\"><div class=\"text-sm font-semibold text-brand-300 mb-3\">GET STARTED</div><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">Choose how to start</h2><p class=\"text-lg text-neutral-400\">Two paths. Same result: a working app in under a minute.</p></div><div class=\"grid md:grid-cols-2 gap-5\"><div class=\"relative p-8 rounded-2xl bg-neutral-925 border border-brand-400/30\"><span class=\"absolute top-4 right-4 px-3 py-1 rounded-full bg-linear-to-r from-brand-400 to-secondary-500 text-neutral-950 text-xs font-bold\">RECOMMENDED</span><div class=\"w-12 h-12 rounded-xl bg-brand-400/20 flex items-center justify-center mb-4\" aria-hidden=\"true\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"text-brand-400\"><polyline points=\"16 3 21 3 21 8\"></polyline><line x1=\"4\" y1=\"20\" x2=\"21\" y2=\"3\"></line><polyline points=\"21 16 21 21 16 21\"></polyline><line x1=\"15\" y1=\"15\" x2=\"21\" y2=\"21\"></line><line x1=\"3\" y1=\"3\" x2=\"9\" y2=\"9\"></line></svg></div><h3 class=\"text-xl font-bold mb-2\">Use the CLI</h3><p class=\"text-sm text-neutral-400 mb-5\">Fastest way. Interactive prompts, automatic setup.</p><div class=\"rounded-lg bg-neutral-950 border border-white/10 p-4 font-mono text-sm mb-5\"><span class=\"text-neutral-500\">$</span> <span class=\"text-brand-300\">npx</span> <span class=\"text-secondary-300\">create-laju-go</span> my-app</div><a href=\"https://www.npmjs.com/package/create-laju-go\" target=\"_blank\" rel=\"noopener\" class=\"block w-full text-center px-5 py-2.5 rounded-lg bg-brand-400 text-neutral-950 font-semibold hover:bg-brand-300 transition-colors\">Install CLI</a></div><div class=\"p-8 rounded-2xl bg-neutral-925 border border-white/10\"><div class=\"w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center mb-4\" aria-hidden=\"true\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"text-neutral-300\"><circle cx=\"12\" cy=\"12\" r=\"3\"></circle><path d=\"M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z\"></path></svg></div><h3 class=\"text-xl font-bold mb-2\">Clone the repo</h3><p class=\"text-sm text-neutral-400 mb-5\">Full control. Inspect the code, fork, customize.</p><div class=\"rounded-lg bg-neutral-950 border border-white/10 p-4 font-mono text-sm mb-2\"><span class=\"text-brand-300\">git</span> clone <span class=\"text-secondary-300\">https://github.com/maulanashalihin/laju-go.git</span></div><div class=\"rounded-lg bg-neutral-950 border border-white/10 p-4 font-mono text-sm mb-5\"><span class=\"text-brand-300\">cd</span> laju-go <span class=\"text-neutral-500\">&amp;&amp;</span> <span class=\"text-brand-300\">npm</span> install</div><a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" class=\"block w-full text-center px-5 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-colors\">Open on GitHub</a></div></div></div></section><section id=\"faq\" class=\"px-6 py-24 md:py-32\"><div class=\"max-w-3xl mx-auto\"><div class=\"text-center mb-12\"><div class=\"text-sm font-semibold text-brand-300 mb-3\">FAQ</div><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">Common questions</h2></div><div class=\"space-y-3\">")
+		templ_7745c5c3_Err = TestimonialCard("The sqlc integration alone is worth the switch. Schema changes that used to take a full day now get caught at compile time.", "Marcus Webb", "Tech Lead", "Rivet Software", "marcus-webb-tech").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FaqItem("Why SQLite instead of Postgres?", "CGO-enabled SQLite (github.com/mattn/go-sqlite3) delivers 2x throughput vs pure-Go drivers. Cross-compiles to a single static binary via Zig CC. It hits 100K+ RPS in our benchmarks — more than enough for most SaaS apps. Swap to Postgres later via the same sqlc-generated interface.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></section><!-- ============ FAQ ============ --><section id=\"faq\" class=\"px-6 py-28 md:py-36\"><div class=\"max-w-3xl mx-auto\"><div class=\"max-w-xl mb-14 reveal-on-scroll\"><h2 class=\"text-4xl md:text-5xl font-extrabold tracking-tight mb-4\">Common questions.</h2></div><div class=\"space-y-3\"><div class=\"reveal-on-scroll\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FaqItem("Can I swap Svelte for React or Vue?", "Yes. That's the whole point of Inertia.js. Drop in the React or Vue adapter, rewrite the components, and the Go backend stays untouched.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FaqItem("Why SQLite instead of Postgres?", "CGO-enabled SQLite via github.com/mattn/go-sqlite3 delivers 2x throughput versus pure-Go drivers and cross-compiles to a single static binary. It hits 97K RPS in benchmarks, enough for most SaaS apps. Swap to Postgres later via the same sqlc-generated interface when you need replicas.").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FaqItem("Is this production-ready?", "Yes. The boilerplate includes session management, CSRF, rate limiting, input validation, error handling, and deployment configs (Docker, systemd, Nginx, Litestream DR). Many apps have shipped on this stack.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div><div class=\"reveal-on-scroll anim-stagger-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FaqItem("What is the license?", "MIT. Use it commercially, modify it, ship it. Attribution appreciated but not required.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FaqItem("Can I swap Svelte for React or Vue?", "Yes. That is the whole point of Inertia.js. Drop in the React or Vue adapter, rewrite the components, and the Go backend stays untouched. No API changes, no new endpoints.").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FaqItem("How do I deploy?", "npm run build:all produces a single static binary plus your dist/ assets. Upload both to any VPS, run the binary. Systemd and Nginx configs are included in docs/deployment/.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div><div class=\"reveal-on-scroll anim-stagger-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div></div></section><section class=\"relative px-6 py-32 overflow-hidden\"><div class=\"absolute inset-0 bg-linear-to-b from-transparent via-brand-400/5 to-transparent\" aria-hidden=\"true\"></div><div class=\"absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-brand-400/15 blur-3xl rounded-full\" aria-hidden=\"true\"></div><div class=\"relative max-w-3xl mx-auto text-center\"><h2 class=\"text-4xl md:text-6xl font-extrabold tracking-tight mb-5\">Stop building boilerplate.</h2><p class=\"text-xl text-neutral-400 mb-8\">Start with everything wired up. Ship your idea this weekend.</p><div class=\"flex flex-wrap gap-3 justify-center\"><a href=\"#get-started\" class=\"inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-brand-400 text-neutral-950 font-semibold hover:bg-brand-300 transition-all shadow-lg shadow-brand-400/30\">Get started now <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line><polyline points=\"12 5 19 12 12 19\"></polyline></svg></a> <a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" class=\"inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-all\">Star on GitHub</a></div></div></section></main><footer class=\"px-6 py-16 border-t border-white/5\"><div class=\"max-w-7xl mx-auto grid md:grid-cols-4 gap-12 mb-12\"><div class=\"md:col-span-1\"><a href=\"/\" class=\"flex items-center gap-3 text-white no-underline mb-4\" aria-label=\"Laju Go home\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 32 32\" fill=\"none\" aria-hidden=\"true\"><defs><linearGradient id=\"brandGradFoot\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\"><stop offset=\"0%\" stop-color=\"#22d3ee\"></stop> <stop offset=\"100%\" stop-color=\"#a855f7\"></stop></linearGradient></defs> <rect width=\"32\" height=\"32\" rx=\"8\" fill=\"url(#brandGradFoot)\"></rect> <path d=\"M19 7L10 17h5l-1 8 9-10h-5l1-8Z\" fill=\"white\"></path></svg> <span class=\"font-bold\">Laju Go</span></a><p class=\"text-sm text-neutral-400 leading-relaxed mb-4 max-w-xs\">High-performance SaaS boilerplate built with Go Fiber, Svelte 5, Inertia.js, and SQLite. Open source, MIT licensed.</p><a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" aria-label=\"Laju Go on GitHub\" class=\"inline-flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z\"></path></svg> Source</a></div>")
+		templ_7745c5c3_Err = FaqItem("Is this production ready?", "Yes. The boilerplate includes session management, CSRF, rate limiting, input validation, error handling, and deployment configs for Docker, systemd, and Nginx. Several apps are running on this stack in production.").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div><div class=\"reveal-on-scroll anim-stagger-3\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = FaqItem("What is the license?", "MIT. Use it commercially, modify it, ship it. Attribution is appreciated but not required.").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</div><div class=\"reveal-on-scroll anim-stagger-4\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = FaqItem("How do I deploy?", "Run npm run build:all to produce a single static binary plus your dist/ assets. Upload both to any VPS and run the binary. Systemd and Nginx configs are included in docs/deployment/.").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div></div></div></section><!-- ============ FINAL CTA ============ --><section class=\"relative px-6 py-32 md:py-40 overflow-hidden\"><div class=\"absolute inset-0 bg-gradient-to-b from-transparent via-brand-400/[0.04] to-transparent\" aria-hidden=\"true\"></div><div class=\"absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-brand-400/12 blur-3xl rounded-full\" aria-hidden=\"true\"></div><div class=\"relative max-w-3xl mx-auto text-center reveal-on-scroll\"><h2 class=\"text-4xl md:text-6xl font-extrabold tracking-tight mb-5 leading-[1.08]\">Stop building boilerplate. <span class=\"text-gradient-brand\">Start shipping.</span></h2><p class=\"text-xl text-neutral-400 mb-10 max-w-lg mx-auto\">Everything wired up. Type-safe end to end. One binary. Ship your idea this weekend.</p><div class=\"flex flex-wrap gap-4 justify-center\"><a href=\"/login\" class=\"inline-flex items-center gap-2 px-8 py-3.5 rounded-lg bg-brand-400 text-neutral-950 font-semibold hover:bg-brand-300 transition-all shadow-xl shadow-brand-400/30 hover:shadow-brand-400/45 active:scale-[0.98] text-base\">Get started <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line><polyline points=\"12 5 19 12 12 19\"></polyline></svg></a> <a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" class=\"inline-flex items-center gap-2 px-8 py-3.5 rounded-lg bg-white/[0.04] border border-white/[0.07] text-white font-semibold hover:bg-white/[0.08] hover:border-white/[0.14] transition-all text-base active:scale-[0.98]\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z\"></path></svg> Star on GitHub</a></div></div></section></main><!-- ============ FOOTER ============ --><footer class=\"px-6 py-16 border-t border-white/[0.04]\"><div class=\"max-w-7xl mx-auto grid md:grid-cols-4 gap-12 mb-10\"><div class=\"md:col-span-1\"><a href=\"/\" class=\"flex items-center gap-2.5 text-white no-underline mb-4\" aria-label=\"Laju Go home\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 32 32\" fill=\"none\" aria-hidden=\"true\"><defs><linearGradient id=\"logoGradFoot\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\"><stop offset=\"0%\" stop-color=\"#22d3ee\"></stop> <stop offset=\"100%\" stop-color=\"#a855f7\"></stop></linearGradient></defs> <rect width=\"32\" height=\"32\" rx=\"8\" fill=\"url(#logoGradFoot)\"></rect> <path d=\"M19 7L10 17h5l-1 8 9-10h-5l1-8Z\" fill=\"white\"></path></svg> <span class=\"font-bold\">Laju Go</span></a><p class=\"text-sm text-neutral-500 leading-relaxed mb-4 max-w-xs\">High-performance SaaS boilerplate. Go Fiber, Svelte 5, Inertia.js, SQLite. Open source, MIT licensed.</p><a href=\"https://github.com/maulanashalihin/laju-go\" target=\"_blank\" rel=\"noopener\" aria-label=\"Laju Go on GitHub\" class=\"inline-flex items-center gap-2 text-neutral-500 hover:text-white transition-colors text-sm\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z\"></path></svg> Source</a></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -191,61 +211,61 @@ func LandingPage(title string, isDev bool, viteURL string, mainCSS string) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div><div class=\"max-w-7xl mx-auto pt-8 border-t border-white/5 flex flex-wrap items-center justify-between gap-4\"><p class=\"text-sm text-neutral-500\">© 2026 Laju Go. MIT License.</p><p class=\"text-sm text-neutral-500\">Built with <span class=\"text-brand-400\">laju</span> by <a href=\"https://github.com/maulanashalihin\" target=\"_blank\" rel=\"noopener\" class=\"text-neutral-300 hover:text-white\">Maulana Shalihin</a></p></div></footer>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div><div class=\"max-w-7xl mx-auto pt-8 border-t border-white/[0.04] flex flex-wrap items-center justify-between gap-4\"><p class=\"text-sm text-neutral-600\">2026 Laju Go. MIT License.</p><p class=\"text-sm text-neutral-600\">Built with <span class=\"text-brand-400\">laju</span> by <a href=\"https://github.com/maulanashalihin\" target=\"_blank\" rel=\"noopener\" class=\"text-neutral-400 hover:text-white transition-colors\">Maulana Shalihin</a></p></div></footer><!-- Scroll-reveal script --><script>\n\t\t\t\t(function() {\n\t\t\t\t\tvar observer = new IntersectionObserver(function(entries) {\n\t\t\t\t\t\tentries.forEach(function(entry) {\n\t\t\t\t\t\t\tif (entry.isIntersecting) {\n\t\t\t\t\t\t\t\tentry.target.classList.add('revealed');\n\t\t\t\t\t\t\t\tobserver.unobserve(entry.target);\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t});\n\t\t\t\t\t}, { threshold: 0.12 });\n\t\t\t\t\tvar els = document.querySelectorAll('.reveal-on-scroll');\n\t\t\t\t\tfor (var i = 0; i < els.length; i++) {\n\t\t\t\t\t\tobserver.observe(els[i]);\n\t\t\t\t\t}\n\t\t\t\t})();\n\t\t\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if isDev {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<script type=\"module\" src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<script type=\"module\" src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(viteURL + "/@vite/client")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 410, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 534, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"></script> <link rel=\"stylesheet\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\"></script> <link rel=\"stylesheet\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 templ.SafeURL
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(viteURL + "/src/app.css")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 411, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 535, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<link rel=\"stylesheet\" href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<link rel=\"stylesheet\" href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 templ.SafeURL
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(mainCSS)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 413, Col: 41}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 537, Col: 41}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -253,38 +273,34 @@ func LandingPage(title string, isDev bool, viteURL string, mainCSS string) templ
 	})
 }
 
-// FooterLink is a single (label, href) pair for footer columns.
-// (type definitions live in types.go)
-
-// featureIcon renders the SVG for a given feature icon name.
-// All SVGs are inline markup so the browser can render them properly.
+// featureIcon renders SVG for a given feature icon name.
 func featureIcon(name string) string {
 	switch name {
 	case "auth":
-		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
 	case "users":
-		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
 	case "zap":
-		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
 	case "database":
-		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`
 	case "file":
-		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`
 	case "code":
-		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`
 	case "package":
-		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`
 	case "shield":
-		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
 	case "globe":
-		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`
+		return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`
 	default:
 		return ""
 	}
 }
 
-// FeatureCard renders a single feature tile in the features grid.
-func FeatureCard(iconName string, title string, desc string, tone string) templ.Component {
+// FeatureCardLarge renders a wide feature card with an icon on the left.
+func FeatureCardLarge(iconName string, title string, desc string, color string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -305,16 +321,12 @@ func FeatureCard(iconName string, title string, desc string, tone string) templ.
 			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"group relative p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-brand-400/30 hover:bg-white/[0.04] transition-all\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var7 = []any{"w-11 h-11 rounded-xl flex items-center justify-center mb-4", toneClasses(tone)}
+		var templ_7745c5c3_Var7 = []any{"relative p-6 md:p-7 rounded-2xl border h-full flex flex-col md:flex-row md:items-start gap-4 md:gap-5 transition-all duration-300", largeCardBorder(color)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var7...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<div class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -327,7 +339,42 @@ func FeatureCard(iconName string, title string, desc string, tone string) templ.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "\" style=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues("background: " + largeCardBg(color))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 571, Col: 215}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var10 = []any{"shrink-0 w-11 h-11 rounded-xl flex items-center justify-center", largeCardIconBg(color)}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var10...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<div class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var11 string
+		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var10).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -335,102 +382,33 @@ func FeatureCard(iconName string, title string, desc string, tone string) templ.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</div><h3 class=\"text-base font-bold mb-2\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var9 string
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(title)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 455, Col: 46}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</h3><p class=\"text-sm text-neutral-400 leading-relaxed\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var10 string
-		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(desc)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 456, Col: 60}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</p></div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-// StepCard renders a numbered step in the how-it-works section.
-func StepCard(number string, title string, desc string) templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var11 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var11 == nil {
-			templ_7745c5c3_Var11 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<li class=\"relative p-6 rounded-2xl bg-neutral-925 border border-white/10\"><span class=\"absolute -top-4 -left-2 w-10 h-10 rounded-xl bg-linear-to-br from-brand-400 to-secondary-500 flex items-center justify-center text-neutral-950 font-bold text-lg shadow-lg shadow-brand-400/30\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</div><div><h3 class=\"text-base font-bold mb-1.5\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var12 string
-		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(number)
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 463, Col: 215}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 576, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</span><div class=\"pt-4\"><h3 class=\"text-lg font-bold mb-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</h3><p class=\"text-sm text-neutral-400 leading-relaxed\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 string
-		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(desc)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 465, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 577, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</h3><p class=\"text-sm text-neutral-400 leading-relaxed\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var14 string
-		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(desc)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 466, Col: 61}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</p></div></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</p></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -438,8 +416,8 @@ func StepCard(number string, title string, desc string) templ.Component {
 	})
 }
 
-// StackItem renders a single tech-stack card.
-func StackItem(title string, desc string) templ.Component {
+// FeatureCardCompact renders a single feature card with icon on top.
+func FeatureCardCompact(iconName string, title string, desc string, color string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -455,38 +433,194 @@ func StackItem(title string, desc string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var15 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var15 == nil {
-			templ_7745c5c3_Var15 = templ.NopComponent
+		templ_7745c5c3_Var14 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var14 == nil {
+			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<div class=\"p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-brand-400/30 transition-colors\"><h3 class=\"font-bold mb-1\">")
+		var templ_7745c5c3_Var15 = []any{"relative p-6 rounded-2xl border h-full transition-all duration-300", compactCardBorder(color)}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var15...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<div class=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
-		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var15).String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 474, Col: 36}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 1, Col: 0}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "</h3><p class=\"text-sm text-neutral-400 leading-relaxed\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\" style=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var17 string
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(desc)
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues("background: " + compactCardBg(color))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 475, Col: 60}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 584, Col: 156}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var18 = []any{"w-10 h-10 rounded-xl flex items-center justify-center mb-4", compactCardIconBg(color)}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var18...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<div class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var19 string
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var18).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ.Raw(featureIcon(iconName)).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</div><h3 class=\"text-sm font-bold mb-1.5\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var20 string
+		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 588, Col: 46}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</h3><p class=\"text-sm text-neutral-400 leading-relaxed\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var21 string
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(desc)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 589, Col: 60}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</p></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// TestimonialCard renders a developer testimonial with avatar.
+func TestimonialCard(quote string, name string, role string, company string, avatarSeed string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var22 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var22 == nil {
+			templ_7745c5c3_Var22 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<div class=\"p-7 rounded-2xl bg-neutral-925/60 border border-white/[0.06] reveal-on-scroll flex flex-col\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" class=\"text-brand-400/40 mb-4 shrink-0\" aria-hidden=\"true\"><path d=\"M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21zm13 0c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z\" fill=\"currentColor\"></path></svg><blockquote class=\"text-sm text-neutral-300 leading-relaxed mb-6 flex-1\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var23 string
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(quote)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 598, Col: 10}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</blockquote><div class=\"flex items-center gap-3 pt-4 border-t border-white/[0.04]\"><img src=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var24 string
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs("https://picsum.photos/seed/" + avatarSeed + "/40/40")
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 601, Col: 67}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "\" alt=\"\" width=\"40\" height=\"40\" loading=\"lazy\" class=\"w-9 h-9 rounded-full object-cover ring-2 ring-white/[0.06]\"><div><p class=\"text-sm font-semibold text-white\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var25 string
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(name)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 603, Col: 54}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "</p><p class=\"text-xs text-neutral-500\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var26 string
+		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(role)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 604, Col: 46}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, ", ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var27 string
+		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(company)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 604, Col: 59}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "</p></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -511,38 +645,38 @@ func FaqItem(q string, a string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var18 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var18 == nil {
-			templ_7745c5c3_Var18 = templ.NopComponent
+		templ_7745c5c3_Var28 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var28 == nil {
+			templ_7745c5c3_Var28 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<details class=\"group p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors\"><summary class=\"flex items-center justify-between cursor-pointer list-none\"><h3 class=\"font-semibold text-base pr-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "<details class=\"group p-5 rounded-2xl bg-white/[0.015] border border-white/[0.05] transition-colors\"><summary class=\"flex items-center justify-between cursor-pointer list-none\"><h3 class=\"font-semibold text-sm md:text-base pr-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var19 string
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(q)
+		var templ_7745c5c3_Var29 string
+		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(q)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 483, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 614, Col: 58}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</h3><span class=\"shrink-0 w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-neutral-400 group-open:bg-brand-400/20 group-open:text-brand-300 transition-colors\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"transition-transform group-open:rotate-45\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"></line><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line></svg></span></summary><p class=\"mt-4 text-sm text-neutral-400 leading-relaxed\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(a)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 488, Col: 62}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</h3><span class=\"shrink-0 w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center text-neutral-500 group-open:bg-brand-400/15 group-open:text-brand-300 transition-colors\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" class=\"transition-transform duration-300 group-open:rotate-45\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"></line><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line></svg></span></summary><p class=\"mt-4 text-sm text-neutral-400 leading-relaxed\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</p></details>")
+		var templ_7745c5c3_Var30 string
+		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(a)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 619, Col: 62}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</p></details>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -567,61 +701,61 @@ func FooterColumn(title string, links FooterLinks) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var21 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var21 == nil {
-			templ_7745c5c3_Var21 = templ.NopComponent
+		templ_7745c5c3_Var31 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var31 == nil {
+			templ_7745c5c3_Var31 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<div><h3 class=\"text-sm font-semibold uppercase tracking-wider text-white mb-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div><h3 class=\"text-sm font-semibold uppercase tracking-wider text-white mb-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var22 string
-		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		var templ_7745c5c3_Var32 string
+		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 495, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 626, Col: 84}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</h3><ul class=\"space-y-2 list-none p-0 m-0\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</h3><ul class=\"space-y-2.5 list-none p-0 m-0\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, link := range links {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<li><a href=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "<li><a href=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var23 templ.SafeURL
-			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(link.FURL))
+			var templ_7745c5c3_Var33 templ.SafeURL
+			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(link.FURL))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 499, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 630, Col: 39}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\" class=\"text-sm text-neutral-400 hover:text-white transition-colors\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var24 string
-			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(link.FLabel)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 499, Col: 123}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "\" class=\"text-sm text-neutral-500 hover:text-white transition-colors\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</a></li>")
+			var templ_7745c5c3_Var34 string
+			templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(link.FLabel)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/index.templ`, Line: 630, Col: 123}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 54, "</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</ul></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 55, "</ul></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -629,5 +763,88 @@ func FooterColumn(title string, links FooterLinks) templ.Component {
 	})
 }
 
-// toneClasses lives in types.go
+// largeCardBorder returns the border class for a large feature card.
+func largeCardBorder(color string) string {
+	switch color {
+	case "brand":
+		return "border-brand-400/20"
+	case "secondary":
+		return "border-secondary-500/20"
+	case "success":
+		return "border-success/20"
+	default:
+		return "border-white/[0.06]"
+	}
+}
+
+// largeCardBg returns the CSS background value for a large feature card.
+func largeCardBg(color string) string {
+	switch color {
+	case "brand":
+		return "rgba(34,211,238,0.03)"
+	case "secondary":
+		return "rgba(168,85,247,0.03)"
+	case "success":
+		return "rgba(16,185,129,0.03)"
+	default:
+		return "rgba(255,255,255,0.015)"
+	}
+}
+
+// largeCardIconBg returns the icon container class for a large feature card.
+func largeCardIconBg(color string) string {
+	switch color {
+	case "brand":
+		return "bg-brand-400/10 text-brand-300"
+	case "secondary":
+		return "bg-secondary-500/10 text-secondary-300"
+	case "success":
+		return "bg-success/10 text-success"
+	default:
+		return "bg-brand-400/10 text-brand-300"
+	}
+}
+
+// compactCardBorder returns border class for a compact feature card.
+func compactCardBorder(color string) string {
+	switch color {
+	case "brand":
+		return "border-brand-400/15 hover:border-brand-400/30"
+	case "secondary":
+		return "border-secondary-500/15 hover:border-secondary-500/30"
+	case "success":
+		return "border-success/15 hover:border-success/30"
+	default:
+		return "border-white/[0.05] hover:border-white/[0.12]"
+	}
+}
+
+// compactCardBg returns background for a compact feature card.
+func compactCardBg(color string) string {
+	switch color {
+	case "brand":
+		return "rgba(34,211,238,0.025)"
+	case "secondary":
+		return "rgba(168,85,247,0.025)"
+	case "success":
+		return "rgba(16,185,129,0.025)"
+	default:
+		return "rgba(255,255,255,0.01)"
+	}
+}
+
+// compactCardIconBg returns the icon container class for a compact feature card.
+func compactCardIconBg(color string) string {
+	switch color {
+	case "brand":
+		return "bg-brand-400/10 text-brand-300"
+	case "secondary":
+		return "bg-secondary-500/10 text-secondary-300"
+	case "success":
+		return "bg-success/10 text-success"
+	default:
+		return "bg-brand-400/10 text-brand-300"
+	}
+}
+
 var _ = templruntime.GeneratedTemplate
