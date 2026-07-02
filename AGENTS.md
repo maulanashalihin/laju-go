@@ -150,6 +150,18 @@ Kalau ragu dengan visual, minta screenshot via agent_browser — saya review dan
 - **OAuth links (`/auth/google`, `/auth/github`)** tetap pake `<a>` biasa tanpa `use:inertia` karena harus redirect ke provider eksternal.
 - **Form submission** pake `router.post()` / `router.put()` dari `@inertiajs/svelte`, bukan `<form>` biasa.
 - **File upload** WAJIB pake `fetch()` (kirim `FormData`), lalu simpan URL hasilnya via `router.put()`. Inertia tidak bisa kirim binary file.
+- **🔴 CRITICAL: fetch() CSRF header** — Setiap `fetch()` ke route yang dilindungi CSRF (`/app/*`, `/admin/*`) WAJIB sertakan header `X-XSRF-TOKEN`. Baca token dari cookie: `getCSRFToken()` dari `lib/utils/helpers`. Tanpa ini, request ditolak 400 "CSRF token missing". Contoh:
+
+  ```typescript
+  import { getCSRFToken } from "$lib/utils/helpers";
+  fetch("/app/upload", {
+    method: "POST",
+    headers: { "X-XSRF-TOKEN": getCSRFToken() },
+    body: formData,
+  });
+  ```
+
+  Inertia's `router.post/put/delete` otomatis handle ini — **hanya `fetch()` manual yang perlu header eksplisit**.
 - **`$effect`** hanya untuk side effects ke luar sistem (document.title, localStorage). Jangan untuk inisialisasi state dari props — pake `$state` langsung atau bungkus dalam function closure.
 
 ### Handlers
@@ -161,6 +173,7 @@ Kalau ragu dengan visual, minta screenshot via agent_browser — saya review dan
 - **PUT/PATCH**: Return JSON for `fetch()` calls, redirect for `router.put()` calls. If redirecting, always 303.
 - Sessions are database-backed (SQLite table). Auth middleware checks `session.Store`.
 - CSRF: Axios (Inertia's HTTP client) auto-sends cookie `XSRF-TOKEN` as header `X-XSRF-TOKEN`. Cookie is set by CSRF middleware on GET responses (`HTTPOnly: false`). CSRF middleware only on `/app/*` routes.
+- **fetch() manual WAJIB kirim X-XSRF-TOKEN header** — Lihat aturan merah di Svelte/Inertia section.
 - `fiber.Map` for untyped response data. Use typed structs for service boundaries.
 
 ## Environment

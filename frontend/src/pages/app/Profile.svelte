@@ -3,7 +3,7 @@
     import { fly } from "svelte/transition";
     import Header from "../../components/Header.svelte";
     import DarkModeToggle from "../../components/DarkModeToggle.svelte";
-    import { Toast } from "../../lib/utils/helpers";
+    import { Toast, getCSRFToken } from "../../lib/utils/helpers";
     import { Upload, Lock, User, Mail } from "lucide-svelte";
 
     interface UserData {
@@ -56,6 +56,9 @@
             isProfileLoading = true;
             fetch("/app/upload", {
                 method: "POST",
+                headers: {
+                    "X-XSRF-TOKEN": getCSRFToken(),
+                },
                 body: formData,
             })
                 .then((response) => response.json())
@@ -90,6 +93,10 @@
         e.preventDefault();
         isProfileLoading = true;
         router.put("/app/profile", profileForm, {
+            onError: (err) => {
+                const msg = (err as any)?.response?.data?.error || (err as any)?.message || "Gagal menyimpan perubahan";
+                Toast(msg, "error");
+            },
             onFinish: () => {
                 isProfileLoading = false;
             },
@@ -116,6 +123,10 @@
 
         isPasswordLoading = true;
         router.put("/app/profile/password", passwordForm, {
+            onError: (err) => {
+                const msg = (err as any)?.response?.data?.error || (err as any)?.message || "Gagal mengubah password";
+                Toast(msg, "error");
+            },
             onFinish: () => {
                 isPasswordLoading = false;
                 passwordForm.current_password = "";
