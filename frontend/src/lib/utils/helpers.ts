@@ -22,6 +22,15 @@ const bgColors: Record<ToastType, string> = {
 };
 
 /**
+ * Read the CSRF token from the XSRF-TOKEN cookie.
+ * Inertia/Axios does this automatically, but plain fetch() needs it explicitly.
+ */
+export function getCSRFToken(): string {
+	const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+	return match ? decodeURIComponent(match[1]) : "";
+}
+
+/**
  * Display a toast notification.
  * Creates a floating notification that auto-dismisses after `duration` ms.
  */
