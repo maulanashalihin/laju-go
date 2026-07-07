@@ -1,12 +1,11 @@
 <script lang="ts">
     import { router, inertia } from "@inertiajs/svelte";
     import { Mail, ArrowLeft } from "lucide-svelte";
+    import Logo from "@components/Logo.svelte";
+    import type { Flash } from "@lib/types";
 
     interface Props {
-        flash?: {
-            error?: string;
-            success?: string;
-        };
+        flash?: Flash;
     }
 
     let { flash }: Props = $props();
@@ -36,43 +35,7 @@
 
     <div class="w-full max-w-md px-6">
         <div class="flex justify-center mb-8">
-            <svg
-                width="48"
-                height="48"
-                viewBox="0 0 100 100"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <defs>
-                    <linearGradient
-                        id="grad1"
-                        x1="0%"
-                        y1="0%"
-                        x2="100%"
-                        y2="0%"
-                    >
-                        <stop
-                            offset="0%"
-                            style="stop-color:#14b8a6;stop-opacity:1"
-                        />
-                        <stop
-                            offset="100%"
-                            style="stop-color:#22d3ee;stop-opacity:1"
-                        />
-                    </linearGradient>
-                </defs>
-                <path d="M30 10 H65 L55 50 H20 Z" fill="url(#grad1)" />
-                <path d="M20 58 H85 L75 90 H10 Z" fill="url(#grad1)" />
-                <rect
-                    x="70"
-                    y="58"
-                    width="20"
-                    height="32"
-                    transform="skewX(-14)"
-                    fill="white"
-                    fill-opacity="0.1"
-                />
-            </svg>
+            <Logo size={48} />
         </div>
 
         <div class="bg-white dark:bg-neutral-925/80 backdrop-blur-xl rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] p-8 shadow-xl shadow-black/5 dark:shadow-black/20">
@@ -124,7 +87,7 @@
                 <button
                     type="submit"
                     disabled={isLoading}
-                    class="w-full py-3 px-4 rounded-xl bg-linear-to-r from-brand-400 to-brand-500 text-neutral-950 font-semibold hover:from-brand-300 hover:to-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-neutral-100 dark:focus:ring-offset-neutral-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    class="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold dark:bg-brand-500 dark:hover:bg-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-neutral-100 dark:focus:ring-offset-neutral-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {#if isLoading}
                         <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">

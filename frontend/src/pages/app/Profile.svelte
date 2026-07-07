@@ -1,22 +1,14 @@
 <script lang="ts">
     import { router, inertia } from "@inertiajs/svelte";
     import { fly } from "svelte/transition";
-    import Header from "../../components/Header.svelte";
-    import DarkModeToggle from "../../components/DarkModeToggle.svelte";
-    import { Toast, getCSRFToken } from "../../lib/utils/helpers";
-    import { Upload, Lock, User, Mail } from "lucide-svelte";
-
-    interface UserData {
-        id: number;
-        email: string;
-        name: string;
-        avatar: string;
-        role: string;
-        email_verified: boolean;
-    }
+    import AppLayout from "@layouts/AppLayout.svelte";
+    import { Toast } from "@lib/notifications/toast";
+    import { getCSRFToken } from "@lib/utils/csrf";
+    import type { User } from "@lib/types";
+    import { Upload, Lock, User as UserIcon, Mail } from "lucide-svelte";
 
     interface Props {
-        user?: UserData;
+        user?: User;
         success?: string;
         error?: string;
     }
@@ -137,16 +129,11 @@
     }
 </script>
 
-<Header group="profile" />
-
-<!-- Main Content -->
-<div class="relative min-h-screen bg-white dark:bg-neutral-950">
-    <!-- Desktop Sidebar Spacer -->
-    <div class="hidden lg:block w-72 fixed inset-y-0 left-0 pointer-events-none"></div>
+<AppLayout {user} group="profile">
 
     <!-- Page Header -->
-    <div class="pt-8 pb-12 px-6 border-b border-neutral-200/80 dark:border-white/[0.04]">
-        <div class="max-w-5xl mx-auto">
+    <div class="pt-8 pb-12 border-b border-neutral-200/80 dark:border-white/[0.04]">
+        <div class="max-w-5xl mx-auto px-6">
             <div class="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 mb-4">
                 <a href="/app" use:inertia class="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">Dashboard</a>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,7 +189,7 @@
             <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 <!-- Avatar -->
                 <div class="relative group">
-                    <div class="w-28 h-28 rounded-2xl bg-gradient-to-br from-brand-400 to-secondary-500 p-1 shadow-lg shadow-brand-400/25">
+                    <div class="w-28 h-28 rounded-2xl bg-brand-600 dark:bg-brand-500 p-1 shadow-lg shadow-brand-600/25">
                         <div class="w-full h-full rounded-xl bg-white dark:bg-neutral-950 overflow-hidden">
                             {#if previewUrl}
                                 <img src={previewUrl} alt="Profile" class="w-full h-full object-cover" />
@@ -213,7 +200,7 @@
                             {/if}
                         </div>
                     </div>
-                    <label class="absolute bottom-0 right-0 w-10 h-10 bg-brand-400 hover:bg-brand-500 text-neutral-950 rounded-xl flex items-center justify-center cursor-pointer transition-all shadow-lg shadow-brand-400/30 group-hover:scale-110">
+                    <label class="absolute bottom-0 right-0 w-10 h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-xl dark:bg-brand-500 dark:hover:bg-brand-400 flex items-center justify-center cursor-pointer transition-all shadow-lg shadow-brand-400/30 group-hover:scale-110">
                         <Upload class="w-5 h-5" />
                         <input type="file" accept="image/*" onchange={handleAvatarChange} class="hidden" />
                     </label>
@@ -243,34 +230,6 @@
             </div>
         </div>
 
-        <!-- Appearance Settings -->
-        <div
-            class="bg-white dark:bg-neutral-925/50 rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] p-6 mb-8"
-            in:fly={{ y: 20, duration: 600, delay: 50 }}
-        >
-            <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 rounded-xl bg-brand-400/10 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2.25m6.364.379l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59M15.75 18.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-neutral-900 dark:text-white">Appearance</h3>
-                    <p class="text-sm text-neutral-600 dark:text-neutral-500">Customize how Laju Go looks on your device</p>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-neutral-900 dark:text-white">Dark Mode</p>
-                    <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Switch between light and dark themes</p>
-                </div>
-                <div class="scale-110 origin-left">
-                    <DarkModeToggle />
-                </div>
-            </div>
-        </div>
-
         <!-- Settings Grid -->
         <div class="grid md:grid-cols-2 gap-6">
             <!-- Personal Information -->
@@ -280,7 +239,7 @@
             >
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-10 h-10 rounded-xl bg-brand-400/10 flex items-center justify-center">
-                        <User class="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                        <UserIcon class="w-5 h-5 text-brand-600 dark:text-brand-400" />
                     </div>
                     <div>
                         <h3 class="text-lg font-semibold text-neutral-900 dark:text-white">Personal Information</h3>
@@ -293,7 +252,7 @@
                         <label for="name" class="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">Full Name</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <User class="w-5 h-5 text-neutral-500" />
+                                <UserIcon class="w-5 h-5 text-neutral-500" />
                             </div>
                             <input
                                 bind:value={profileForm.name}
@@ -325,7 +284,7 @@
                         <button
                             type="submit"
                             disabled={isProfileLoading}
-                            class="w-full px-6 py-3 rounded-xl bg-linear-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-neutral-950 font-semibold transition-all shadow-lg shadow-brand-400/25 hover:shadow-brand-400/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            class="w-full px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition-all dark:bg-brand-500 dark:hover:bg-brand-400 shadow-lg shadow-brand-600/25 hover:shadow-brand-600/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {#if isProfileLoading}
                                 <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -445,4 +404,4 @@
             </div>
         </div>
     </div>
-</div>
+</AppLayout>

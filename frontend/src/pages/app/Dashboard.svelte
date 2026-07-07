@@ -1,7 +1,8 @@
 <script lang="ts">
     import { inertia } from "@inertiajs/svelte";
-    import Header from "../../components/Header.svelte";
     import { fly } from "svelte/transition";
+    import AppLayout from "@layouts/AppLayout.svelte";
+    import type { User } from "@lib/types";
     import {
         TrendingUp,
         TrendingDown,
@@ -17,15 +18,6 @@
         Rocket,
         ArrowRight,
     } from "lucide-svelte";
-
-    interface User {
-        id: number;
-        email: string;
-        name: string;
-        avatar: string;
-        role: string;
-        email_verified: boolean;
-    }
 
     interface Props {
         user?: User;
@@ -107,16 +99,11 @@
     }
 </script>
 
-<Header group="dashboard" />
-
-<!-- Main Content -->
-<div class="relative min-h-screen bg-white dark:bg-neutral-950">
-    <!-- Desktop Sidebar Spacer -->
-    <div class="hidden lg:block w-72 fixed inset-y-0 left-0 pointer-events-none"></div>
+<AppLayout {user} group="dashboard">
 
     <!-- Page Header -->
-    <div class="pt-8 pb-10 px-6 border-b border-neutral-200/80 dark:border-white/[0.04]">
-        <div class="max-w-6xl mx-auto flex items-start justify-between gap-4 flex-wrap">
+    <div class="pt-8 pb-10 border-b border-neutral-200/80 dark:border-white/[0.04]">
+        <div class="max-w-6xl mx-auto px-6 flex items-start justify-between gap-4 flex-wrap">
             <div>
                 <h1 class="text-3xl font-bold text-neutral-900 dark:text-white mb-2 tracking-tight">
                     Welcome back, {user?.name?.split(" ")[0] || "there"}
@@ -180,7 +167,7 @@
                     <a
                         href="/app/profile"
                         use:inertia
-                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-400 text-neutral-950 font-semibold hover:bg-brand-300 transition-all shadow-lg shadow-brand-400/25 hover:shadow-brand-400/40 active:scale-[0.98]"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-semibold transition-all dark:bg-brand-500 dark:hover:bg-brand-400 shadow-lg shadow-brand-600/25 hover:shadow-brand-600/40 active:scale-[0.98]"
                     >
                         Continue setup
                         <ArrowRight class="w-4 h-4" />
@@ -258,9 +245,12 @@
                 </div>
             </div>
 
+            <!-- Right column: Latency + Uptime stacked -->
+            <div class="flex flex-col gap-5">
+
             <!-- Latency stat -->
             <div
-                class="rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] bg-white dark:bg-neutral-925/50 p-6 transition-all hover:border-neutral-300 dark:hover:border-white/[0.12]"
+                class="rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] bg-white dark:bg-neutral-925/50 p-6 transition-all hover:border-brand-400/30"
                 in:fly={{ y: 20, duration: 600, delay: 200 }}
             >
                 <div class="flex items-center gap-2 mb-3">
@@ -288,7 +278,7 @@
 
             <!-- Uptime stat -->
             <div
-                class="rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] bg-white dark:bg-neutral-925/50 p-6 transition-all hover:border-neutral-300 dark:hover:border-white/[0.12]"
+                class="rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] bg-white dark:bg-neutral-925/50 p-6 transition-all hover:border-brand-400/30"
                 in:fly={{ y: 20, duration: 600, delay: 300 }}
             >
                 <div class="flex items-center gap-2 mb-3">
@@ -309,6 +299,8 @@
                     </svg>
                 </div>
             </div>
+
+            </div>
         </div>
 
         <!-- Sample data note -->
@@ -321,7 +313,7 @@
         <div class="grid lg:grid-cols-3 gap-5 pt-2">
             <!-- Activity Feed (2 cols) -->
             <div
-                class="lg:col-span-2 rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] bg-white dark:bg-neutral-925/50 overflow-hidden"
+                class="lg:col-span-2 rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] bg-white dark:bg-neutral-925/50 overflow-hidden transition-all hover:border-brand-400/30"
                 in:fly={{ y: 20, duration: 600, delay: 350 }}
             >
                 <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-200/80 dark:border-white/[0.04]">
@@ -353,7 +345,7 @@
 
             <!-- System Health (1 col) -->
             <div
-                class="rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] bg-white dark:bg-neutral-925/50 overflow-hidden"
+                class="rounded-2xl border border-neutral-200/80 dark:border-white/[0.06] bg-white dark:bg-neutral-925/50 overflow-hidden transition-all hover:border-brand-400/30"
                 in:fly={{ y: 20, duration: 600, delay: 400 }}
             >
                 <div class="px-6 py-4 border-b border-neutral-200/80 dark:border-white/[0.04]">
@@ -387,7 +379,7 @@
             </div>
         </div>
     </div>
-</div>
+</AppLayout>
 
 <script context="module" lang="ts">
     function eventToneBg(tone: string): string {

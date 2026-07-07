@@ -20,6 +20,7 @@ export default defineConfig({
 			"@components": resolve(__dirname, "frontend/src/components"),
 			"@layouts": resolve(__dirname, "frontend/src/layouts"),
 			"@pages": resolve(__dirname, "frontend/src/pages"),
+			"@lib": resolve(__dirname, "frontend/src/lib"),
 		},
 	},
 	plugins: [

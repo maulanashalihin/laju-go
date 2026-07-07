@@ -9,7 +9,15 @@
     "checkJs": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["frontend/src/*"],
+      "@components/*": ["frontend/src/components/*"],
+      "@layouts/*": ["frontend/src/layouts/*"],
+      "@pages/*": ["frontend/src/pages/*"],
+      "@lib/*": ["frontend/src/lib/*"]
+    }
   },
   "include": ["frontend/**/*.ts", "frontend/**/*.svelte"]
 }
