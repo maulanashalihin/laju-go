@@ -164,11 +164,20 @@ Kalau ragu dengan visual, minta screenshot via agent_browser — saya review dan
   Inertia's `router.post/put/delete` otomatis handle ini — **hanya `fetch()` manual yang perlu header eksplisit**.
 - **`$effect`** hanya untuk side effects ke luar sistem (document.title, localStorage). Jangan untuk inisialisasi state dari props — pake `$state` langsung atau bungkus dalam function closure.
 
-### Handlers
+### Three-Tier Rule (🔴 CRITICAL)
 
-- **🔴 CRITICAL: Handlers must NEVER call queries directly.** Semua akses database harus melalui services. Handler → Service → Query. Tidak ada shortcut dari handler ke query. Ini adalah aturan paling penting di project ini — jangan pernah dilanggar.
-- **Pengecualian**: File test (`*_test.go`) BOLEH panggil queries langsung untuk setup data test.
-- **Handler hanya**: Parse request → Panggil service → Return response. Tidak ada business logic. All database access goes through services. Handler → Service → Query. No shortcut from handler to query.
+Arsitektur ketat: **Handler → Service → Query → DB.** Tidak ada layer yang boleh lompat.
+
+| Layer | Boleh | Tidak Boleh |
+|-------|-------|-------------|
+| **Handler** | Parse request, panggil **Service**, return response | Panggil Query, akses DB, business logic |
+| **Service** | Business logic, panggil method di **`app/queries/`** (`s.querier.*`) | `sql.Open`, `db.Exec`, raw SQL, atau akses DB langsung |
+| **Queries** (`app/queries/`) | **SATU-SATUNYA** layer yang execute SQL | — |
+
+⚠️ **Pengecualian**: File test (`*_test.go`) BOLEH panggil queries langsung untuk setup data test.
+
+🔴 **Ini aturan paling penting di project ini — jangan pernah dilanggar.** Setiap akses database WAJIB melalui chain: Handler → Service → Query. Tidak ada shortcut.
+
 - **POST/PUT handlers that redirect**: Use `c.Redirect(path, fiber.StatusSeeOther)` (303). Inertia does not follow 302 correctly for form submissions — it needs 303 to change POST/PUT to GET on redirect.
 - **PUT/PATCH**: Return JSON for `fetch()` calls, redirect for `router.put()` calls. If redirecting, always 303.
 - Sessions are database-backed (SQLite table). Auth middleware checks `session.Store`.

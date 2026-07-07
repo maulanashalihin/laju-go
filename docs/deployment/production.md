@@ -2,18 +2,23 @@
 
 This guide covers deploying Laju Go to production servers, including Ubuntu/Debian deployment, systemd configuration, Nginx reverse proxy, and SSL setup.
 
-## Quick Start: One-Click Deployment
+## Quick Start: Git-Based Deployment (Recommended)
 
-For automated deployment, see [One-Click Deployment Guide](one-click-deployment.md).
+Laju Go menggunakan git-based deployment — kloning repo di server, build, jalankan binary. Sederhana, tanpa container:
 
 ```bash
-# Configure deployment
-cp .deploy.example .deploy
-nano .deploy
-
-# Deploy with one command
-npm run deploy
+# Di server
+cd /opt/laju-go
+git pull
+npm run build:all
+sudo systemctl restart laju-go
 ```
+
+Ada 3 script di `scripts/` untuk membantu:
+
+- `first-deploy.sh` — setup pertama (buat user, direktori, systemd service)
+- `deploy.sh` — full deploy flow
+- `update-deploy.sh` — incremental update (pull + build + restart)
 
 ## Prerequisites
 
@@ -56,6 +61,7 @@ npm run deploy
 ```
 
 This will:
+
 - Build frontend and Go binary **on your local machine**
 - Upload only runtime artifacts (`laju-go`, `dist/`, `migrations/`) to server
 - Configure `.env` file
@@ -521,6 +527,7 @@ sudo journalctl -u laju-go -n 50
 ```
 
 **Common issues**:
+
 - Missing `.env` file
 - Wrong `SESSION_SECRET`
 - Database path not writable

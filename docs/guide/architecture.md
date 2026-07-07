@@ -92,11 +92,11 @@ type Handlers struct {
 **Route setup**:
 
 ```go
-func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
+func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, userService *services.UserService, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
     setupStaticRoutes(app)
     setupPublicRoutes(app, handlers.Public)
     setupAuthRoutes(app, handlers.Auth, handlers.PasswordReset, store, mailerService)
-    setupAppRoutes(app, handlers.App, handlers.Upload, store, csrfMiddleware)
+    setupAppRoutes(app, handlers.App, handlers.Upload, store, userService, csrfMiddleware)
 }
 ```
 
@@ -475,25 +475,40 @@ func main() {
 
     querier := queries.NewQuerier(db)
     userCache := cache.NewUserCache(cfg.UserCacheTTL)
-    sessionStore := session.New(querier)
+    sessionCache := cache.NewSessionCache(cfg.SessionCacheTTL)
+    sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)
+    sessionStore.SetSecure(cfg.AppEnv == "production")
 
-    authService := services.NewAuthService(querier, services.AuthServiceConfig{...})
+    authService := services.NewAuthService(querier, services.AuthServiceConfig{
+        SessionSecret:      cfg.SessionSecret,
+        GoogleClientID:     cfg.GoogleClientID,
+        GoogleClientSecret: cfg.GoogleClientSecret,
+        GoogleRedirectURL:  cfg.GoogleRedirectURL,
+    })
     userService := services.NewUserService(querier, userCache)
-    assetService := services.NewAssetService("./dist/.vite/manifest.json", ".vite-port")
+    assetService := services.NewAssetService("./dist/.vite/manifest.json", ".vite-port", cfg.IsDevelopment())
     inertiaService := services.NewInertiaService(assetService, sessionStore)
 
     routeHandlers := routes.Handlers{
         Public: handlers.NewPublicHandler(authService, userService, inertiaService, assetService),
-        Auth:   handlers.NewAuthHandler(authService, userService, sessionStore, inertiaService),
+        Auth:   handlers.NewAuthHandler(authService, sessionStore, inertiaService),
         App:    handlers.NewAppHandler(userService, sessionStore, inertiaService),
         Upload: handlers.NewUploadHandler(sessionStore, userService),
     }
 
-    csrfMiddleware := routes.SetupCSRFMiddleware(sessionStore, cfg.SessionSecret)
-    // ... mailer, password reset ...
+    csrfMiddleware := routes.SetupCSRFMiddleware(sessionStore, cfg.SessionSecret, cfg.AppEnv == "production")
 
-    app := fiber.New()
-    routes.SetupRoutes(app, routeHandlers, sessionStore, mailerService, csrfMiddleware)
+    appURL := routes.GetAppURL(cfg.AppPort, cfg.AppEnv)
+    mailerService := routes.SetupMailerService(
+        querier, cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass,
+        cfg.FromEmail, cfg.FromName, appURL,
+    )
+    passwordResetHandler := routes.SetupPasswordResetHandler(mailerService, userService, sessionStore, inertiaService)
+    routeHandlers.PasswordReset = passwordResetHandler
+
+    app := fiber.New(fiber.Config{AppName: "Laju"})
+    // Global middleware: compress, CORS, recover, logger (dev only)
+    routes.SetupRoutes(app, routeHandlers, sessionStore, userService, mailerService, csrfMiddleware)
     app.Listen(":" + cfg.AppPort)
 }
 ```
@@ -611,8 +626,9 @@ c.Redirect("/app")  // Inertia follows automatically
 ### Why mattn/go-sqlite3 (CGO)?
 
 - **2x throughput** — outpaces pure-Go drivers in production benchmarks
-- **Static binary via zig** — `make build-linux` cross-compiles with `zig cc` -static
+- **Static binary via zig** — `make build-linux` cross-compiles with `zig cc` for static linking
 - **CGO on macOS** — works out of the box, no setup needed
+- **Git-based deployment** — clone repo on server, `npm run build:all`, run the binary. Simple, no container required.
 
 ### Why Inertia.js Instead of API + SPA?
 
@@ -620,6 +636,30 @@ c.Redirect("/app")  // Inertia follows automatically
 - **Direct service calls** — no HTTP overhead for data fetching
 - **Simplified auth** — session-based, no JWT/token management
 - **SEO-friendly** — initial page load is full HTML
+
+## Git-Based Deployment
+
+Laju Go uses **git-based deployment** — no Docker, no containers, no build tools on the server:
+
+1. Clone repo on server
+2. Locally (or in CI): `npm run build:all`
+3. Upload to server or pull latest code
+4. `sudo systemctl restart laju-go`
+
+Scripts di `scripts/`:
+
+| Script | Usage |
+|--------|-------|
+| `deploy.sh` | Full deploy flow |
+| `first-deploy.sh` | First-time server setup |
+| `update-deploy.sh` | Incremental update |
+
+```bash
+# Production binary lifecycle
+git pull
+npm run build:all
+sudo systemctl restart laju-go
+```
 
 ### Why `app/session/` Is Separate from `app/services/`?
 
@@ -662,6 +702,7 @@ erDiagram
 2. **Indexes** — email and google_id for fast lookups
 3. **Nullable fields** — `google_id` and `password` are nullable (OAuth vs email auth)
 4. **Hard deletes** — sessions are hard-deleted on logout
+5. **Background cleanup** — expired sessions and password resets cleaned every hour via background goroutine
 
 ## Best Practices
 

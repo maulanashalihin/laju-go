@@ -46,3 +46,8 @@ dist
 laju-go
 laju-go.exe
 
+
+# LLM Wiki
+.llm-wiki/
+wiki
+

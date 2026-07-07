@@ -220,14 +220,11 @@ createInertiaApp({
 <h1>Welcome, {user.name}!</h1>
 ```
 
-### Existing Components
+### Icons
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| `Button` | `components/Button.svelte` | Styled button with variants |
-| `Input` | `components/Input.svelte` | Form input with label and error |
-| `Header` | `components/Header.svelte` | App header/navigation |
-| `DarkModeToggle` | `components/DarkModeToggle.svelte` | Light/dark theme toggle |
+Landing page menggunakan inline SVG icons via Go helper `featureIcon()` di `templates/index.templ`. Halaman Inertia (protected pages) menggunakan Svelte components sesuai implementasi masing-masing.
+
+> **Catatan**: Tidak ada `lucide-svelte` atau package icon terpisah. Semua icon landing page adalah inline SVGs.
 
 ---
 
@@ -366,6 +363,7 @@ The Inertia.js backend (Go/Fiber) stays exactly the same — only the frontend/ 
 ### Example Conversion
 
 **Before** (`pages/auth/Login.svelte`):
+
 ```svelte
 <script>
   import { router } from '@inertiajs/svelte';
@@ -385,6 +383,7 @@ The Inertia.js backend (Go/Fiber) stays exactly the same — only the frontend/ 
 ```
 
 **After** (`pages/auth/Login.tsx`):
+
 ```tsx
 import { router } from '@inertiajs/react';
 import { useState } from 'react';

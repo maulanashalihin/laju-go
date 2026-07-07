@@ -25,6 +25,7 @@ Complete guide to protecting production data from loss and implementing effectiv
 - Once lock is released, data is automatically committed
 
 **Data loss ONLY occurs if:**
+
 1. ❌ Power loss before `fsync()` completes
 2. ❌ Disk corruption
 3. ❌ WAL file deleted manually
@@ -184,40 +185,13 @@ echo "Backup completed: $DATE"
 ```
 
 **Schedule with cron**:
+
 ```bash
 # Daily backup at 2 AM
 0 2 * * * /opt/laju-go/scripts/backup.sh
 ```
 
-func (s *BackupService) cleanupOldBackups(keepCount int) {
-    files, _ := os.ReadDir(s.backupDir)
-    var backups []os.DirEntry
-
-    for _, f := range files {
-        if strings.HasPrefix(f.Name(), "backup_") && strings.HasSuffix(f.Name(), ".db") {
-            backups = append(backups, f)
-        }
-    }
-
-    sort.Slice(backups, func(i, j int) bool {
-        return backups[i].Name() < backups[j].Name()
-    })
-
-    if len(backups) > keepCount {
-        for i := 0; i < len(backups)-keepCount; i++ {
-            os.Remove(filepath.Join(s.backupDir, backups[i].Name()))
-        }
-    }
-}
-```
-
-**Usage in main.go:**
-```go
-// Initialize backup service
-backupService := services.NewBackupService(db, "./backups")
-
-// Auto backup every 6 hours, keep last 10 backups
-backupService.AutoBackup(6*time.Hour, 10)
+<!-- BackupService tidak ada di actual codebase. Backup via cron + sqlite3 CLI saja. -->
 ```
 
 ---
@@ -254,6 +228,7 @@ echo "Backup completed: backup_${TIMESTAMP}.tar.gz"
 ```
 
 **Cron job (every 6 hours):**
+
 ```bash
 # crontab -e
 0 */6 * * * cd /path/to/laju-go && ./scripts/backup.sh >> /var/log/laju-backup.log 2>&1
@@ -287,6 +262,7 @@ func autoCheckpoint(db *sql.DB) {
 ```
 
 **Why important:**
+
 - Moves data from WAL → main database
 - Reduces WAL file size
 - Faster recovery on startup
@@ -306,6 +282,7 @@ go install github.com/benbjohnson/litestream/cmd/litestream@latest
 ```
 
 **Configuration (`litestream.yml`):**
+
 ```yaml
 dbs:
   - path: ./data/app.db
@@ -321,11 +298,13 @@ dbs:
 ```
 
 **Run Litestream:**
+
 ```bash
 litestream replicate -config litestream.yml
 ```
 
 **Benefits:**
+
 - ✅ Real-time replication to S3
 - ✅ Point-in-time recovery
 - ✅ Automatic backup management
@@ -567,11 +546,13 @@ echo "Restore completed from $BACKUP_FILE"
 5. **Tested recovery** - Practice restore procedures
 
 **Expected data loss:**
+
 - **With WAL + backups:** < 1 hour of data (usually seconds)
 - **With Litestream:** < 1 second of data
 - **Without WAL:** Minutes to hours
 
 **Recovery time:**
+
 - **Lock timeout:** Automatic (seconds)
 - **Power failure:** Automatic (seconds)
 - **Backup restore:** 5-30 minutes

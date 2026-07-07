@@ -9,30 +9,14 @@ Routes in Laju Go are defined in `routes/web.go` using the Fiber framework's rou
 ## Route File Structure
 
 ```go
-// routes/web.go
-package routes
+// routes/web.go — routes dipisah ke sub-functions:
+// setupStaticRoutes, setupPublicRoutes, setupAuthRoutes, setupAppRoutes
 
-import (
-    "github.com/gofiber/fiber/v2"
-    "laju-go/app/handlers"
-    "laju-go/app/middlewares"
-    "laju-go/app/session"
-)
-
-func SetupRoutes(app *fiber.App, store *session.Store) {
-    // Public routes
-    app.Get("/", handlers.PublicHandler.Index)
-    app.Get("/about", handlers.PublicHandler.About)
-    
-    // Authentication routes
-    app.Get("/login", middlewares.Guest(store), handlers.AuthHandler.ShowLoginForm)
-    app.Post("/login/login", handlers.AuthHandler.Login)
-    
-    // Protected routes
-    app.Get("/app", middlewares.AuthRequired(store), handlers.AppHandler.Dashboard)
-    
-    // Admin routes
-    app.Get("/admin", middlewares.AuthRequired(store), middlewares.AdminRequired, handlers.AdminHandler.Dashboard)
+func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, userService *services.UserService, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
+    setupStaticRoutes(app)
+    setupPublicRoutes(app, handlers.Public)
+    setupAuthRoutes(app, handlers.Auth, handlers.PasswordReset, store, mailerService)
+    setupAppRoutes(app, handlers.App, handlers.Upload, store, userService, csrfMiddleware)
 }
 ```
 
@@ -306,83 +290,45 @@ app.Get("/login", authHandler.ShowLoginForm)
 app.Post("/login", authHandler.Login)
 ```
 
-## Complete Route Setup
+## Actual Route Layout
 
-Here's the complete route setup from Laju Go:
+Routes dipisah ke sub-functions:
 
 ```go
-// routes/web.go
-package routes
+func setupStaticRoutes(app *fiber.App) {
+    app.Static("/dist", "./dist", fiber.Static{CacheDuration: 365 * 24 * time.Hour, MaxAge: 31536000, Compress: true})
+    app.Static("/assets", "./dist/assets", fiber.Static{CacheDuration: 365 * 24 * time.Hour, MaxAge: 31536000, Compress: true})
+    app.Static("/public", "./public", fiber.Static{CacheDuration: 1 * time.Hour, MaxAge: 3600})
+    app.Static("/storage", "./storage", fiber.Static{CacheDuration: 24 * time.Hour, MaxAge: 86400})
+}
 
-import (
-    "github.com/gofiber/fiber/v2"
-    "laju-go/app/handlers"
-    "laju-go/app/middlewares"
-    "laju-go/app/services"
-    "laju-go/app/session"
-)
-
-func SetupRoutes(
-    app *fiber.App,
-    store *session.Store,
-    authService *services.AuthService,
-    userService *services.UserService,
-    mailerService *services.MailerService,
-    inertiaService *services.InertiaService,
-) {
-    // Initialize handlers
-    publicHandler := handlers.NewPublicHandler(inertiaService)
-    authHandler := handlers.NewAuthHandler(authService, mailerService, store)
-    appHandler := handlers.NewAppHandler(userService, inertiaService)
-    uploadHandler := handlers.NewUploadHandler()
-    passwordResetHandler := handlers.NewPasswordResetHandler(userService, mailerService)
-
-    // ===== PUBLIC ROUTES =====
-    app.Get("/", publicHandler.Index)
-    app.Get("/about", publicHandler.About)
-
-    // ===== GUEST ROUTES (redirect if authenticated) =====
+func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, passwordResetHandler *handlers.PasswordResetHandler, store *session.Store, mailerService *services.MailerService) {
     app.Get("/login", middlewares.Guest(store), authHandler.ShowLoginForm)
-    app.Post("/login/login", authHandler.Login)
-    
+    app.Post("/login", middlewares.Guest(store), authHandler.Login, middlewares.AuthRateLimit.Limit())
     app.Get("/register", middlewares.Guest(store), authHandler.ShowRegisterForm)
-    app.Post("/register/register", authHandler.Register)
-
-    // ===== GOOGLE OAUTH =====
+    app.Post("/register", middlewares.Guest(store), authHandler.Register, middlewares.AuthRateLimit.Limit())
     app.Get("/auth/google", authHandler.GoogleLogin)
     app.Get("/auth/google/callback", authHandler.GoogleCallback)
-
-    // ===== PASSWORD RESET =====
+    app.Post("/logout", middlewares.AuthRequired(store), authHandler.Logout)
+    app.Get("/api/me", middlewares.AuthRequired(store), authHandler.Me)
+    app.Get("/api/avatar/:id", authHandler.GetAvatar)
     app.Get("/forgot-password", passwordResetHandler.ShowForgotPasswordForm)
-    app.Post("/forgot-password", passwordResetHandler.SendResetLink)
+    app.Post("/forgot-password", passwordResetHandler.SendResetLink, middlewares.PasswordResetRateLimit.Limit())
     app.Get("/reset-password/:token", passwordResetHandler.ShowResetPasswordForm)
     app.Post("/reset-password/:token", passwordResetHandler.ResetPassword)
+}
 
-    // ===== PROTECTED ROUTES (requires auth) =====
-    protected := app.Group("/", middlewares.AuthRequired(store))
-    
-    // Dashboard
-    protected.Get("/app", appHandler.Dashboard)
-    protected.Get("/app/profile", appHandler.Profile)
-    protected.Put("/app/profile", appHandler.UpdateProfile)
-    protected.Put("/app/profile/password", appHandler.UpdatePassword)
-    
-    // File upload
+func setupAppRoutes(app *fiber.App, appHandler *handlers.AppHandler, uploadHandler *handlers.UploadHandler, store *session.Store, userService *services.UserService, csrfMiddleware *middlewares.CSRFMiddleware) {
+    protected := app.Group("/app", middlewares.AuthRequired(store))
+    protected.Use(csrfMiddleware.Protect())
+    protected.Get("/", appHandler.Dashboard)
+    protected.Get("/profile", appHandler.Profile)
+    protected.Put("/profile", appHandler.UpdateProfile)
+    protected.Put("/profile/password", appHandler.UpdatePassword)
     protected.Post("/upload", uploadHandler.Upload)
-    
-    // API endpoints
-    protected.Get("/api/me", authHandler.Me)
 
-    // ===== LOGOUT =====
-    protected.Post("/logout", authHandler.Logout)
-
-    // ===== ADMIN ROUTES =====
-    admin := app.Group("/admin", middlewares.AuthRequired(store), middlewares.AdminRequired)
-    admin.Get("/", func(c *fiber.Ctx) error {
-        return c.Render("admin/dashboard", fiber.Map{
-            "title": "Admin Dashboard",
-        })
-    })
+    admin := app.Group("/admin", middlewares.AdminRequired(store, userService))
+    admin.Get("/", func(c *fiber.Ctx) error { return c.JSON(fiber.Map{"message": "Admin dashboard"}) })
 }
 ```
 
@@ -541,6 +487,7 @@ app.Get("/users", handlers.GetUsers)
 **Problem**: Route returns 404
 
 **Solutions**:
+
 1. Check route order (specific before parameterized)
 2. Verify HTTP method (GET vs POST)
 3. Check for typos in path
@@ -551,6 +498,7 @@ app.Get("/users", handlers.GetUsers)
 **Problem**: Middleware skipped
 
 **Solutions**:
+
 1. Verify middleware is applied to route
 2. Check if `c.Next()` is called
 3. Ensure middleware order is correct
@@ -560,6 +508,7 @@ app.Get("/users", handlers.GetUsers)
 **Problem**: `c.Params("id")` returns empty
 
 **Solutions**:
+
 1. Check parameter name matches route definition
 2. Verify route is matched (check order)
 3. Use `c.AllParams()` to debug

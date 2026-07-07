@@ -7,6 +7,7 @@ This guide covers [templ](https://templ.guide/) — the type-safe HTML template 
 [templ](https://templ.guide/) compiles Go templates into type-safe Go code at build time. Instead of runtime parsing and reflection (like `html/template`), templ generates `.go` files that are compiled as part of your application.
 
 **Benefits**:
+
 - **Type safety** — Template parameters are checked at compile time
 - **IDE support** — Autocomplete, refactoring, and error detection
 - **Performance** — No runtime template parsing overhead
@@ -29,24 +30,26 @@ templates/
 The HTML shell for Inertia.js-powered pages. Renders the Svelte app mount point with embedded JSON page data:
 
 ```templ
-templ InertiaPage(title string, pageJSON string, viteServerURL string, mainJS string, mainCSS string, styles []string) {
+templ InertiaPage(title string, pageJSON string, isDev bool, viteURL string, csrfToken string, mainJS string, mainCSS string, styles []string) {
     <!doctype html>
     <html lang="en">
         <head>
             <meta charset="UTF-8"/>
             <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
             <title>{ title } - Laju</title>
+            <meta name="csrf-token" content={ csrfToken }/>
+            for _, style := range styles {
+                <link rel="stylesheet" href={ style }/>
+            }
         </head>
-        <body>
+        <body class="bg-gray-50 text-gray-900">
             <div id="app"></div>
-            <!-- Page data JSON embedded for Inertia hydration -->
             @templ.Raw(`<script data-page="app" type="application/json">` + pageJSON + `</script>`)
-            if viteServerURL != "" {
-                <!-- Development: use Vite dev server -->
-                <script type="module" src={ viteServerURL + "/@vite/client" }></script>
-                <script type="module" src={ viteServerURL + "/src/main.ts" }></script>
+            if isDev {
+                <script type="module" src={ viteURL + "/@vite/client" }></script>
+                <link rel="stylesheet" href={ viteURL + "/src/app.css" }/>
+                <script type="module" src={ viteURL + "/src/main.ts" }></script>
             } else {
-                <!-- Production: use hashed assets from manifest -->
                 <link rel="stylesheet" href={ mainCSS }/>
                 <script type="module" src={ mainJS }></script>
             }
@@ -61,7 +64,9 @@ templ InertiaPage(title string, pageJSON string, viteServerURL string, mainJS st
 |-----------|------|---------|
 | `title` | `string` | Page title |
 | `pageJSON` | `string` | JSON-encoded Inertia page data |
-| `viteServerURL` | `string` | Vite dev server URL (empty in production) |
+| `isDev` | `bool` | Whether running in development mode |
+| `viteURL` | `string` | Vite dev server URL (empty in production) |
+| `csrfToken` | `string` | CSRF token embedded as meta tag |
 | `mainJS` | `string` | Hashed JS file path (production only) |
 | `mainCSS` | `string` | Hashed CSS file path (production only) |
 | `styles` | `[]string` | Additional stylesheet URLs |
@@ -71,10 +76,10 @@ templ InertiaPage(title string, pageJSON string, viteServerURL string, mainJS st
 The public landing page — a full standalone HTML page with hero section, features, tech stack, and CTA. Used at the `/` route.
 
 ```templ
-templ LandingPage(title string, viteServerURL string, mainCSS string) {
+templ LandingPage(title string, isDev bool, viteURL string, mainCSS string) {
     <!doctype html>
-    <html lang="en">
-        <!-- Full landing page with CSS animations, gradients, etc. -->
+    <html lang="en" class="dark">
+        <!-- Full landing page with CSS animations, gradients, scroll-reveal, testimonials, FAQ, footer -->
     </html>
 }
 ```
@@ -102,11 +107,12 @@ For non-Inertia pages (like the landing page), templates are rendered directly:
 // app/handlers/public.go
 func (h *PublicHandler) Index(c *fiber.Ctx) error {
     assetData := h.assetService.GetAssetData()
-    viteServerURL, _ := assetData["ViteServerURL"].(string)
+    isDev := assetData["IsDev"].(bool)
+    viteURL, _ := assetData["ViteURL"].(string)
     mainCSS, _ := assetData["MainCSS"].(string)
 
     c.Set("Content-Type", "text/html; charset=utf-8")
-    return templates.LandingPage("Welcome to Laju", viteServerURL, mainCSS).
+    return templates.LandingPage("Welcome to Laju", isDev, viteURL, mainCSS).
         Render(c.Context(), c.Response().BodyWriter())
 }
 ```

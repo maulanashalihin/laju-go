@@ -15,59 +15,69 @@ storage/
 
 | Path | Purpose | Served At |
 |------|---------|-----------|
-| `storage/` | All uploaded files | `/storage/*` |
-| `storage/avatars/` | Profile pictures | `/storage/avatars/*` |
-| `public/` | Static assets (shipped with code) | `/public/*` |
+| `dist/` | Built frontend assets (immutable, 1yr cache) | `/dist/*`, `/assets/*` |
+| `storage/avatars/` | User uploaded avatars | `/storage/*` |
+| `public/` | Static assets (favicon, images) | `/public/*` |
 
 Static file serving is configured in `routes/web.go`:
 
 ```go
-app.Static("/dist", "./dist")          # Built frontend assets
-app.Static("/public", "./public")      # Static assets (images, favicon)
-app.Static("/storage", "./storage")    # Uploaded files
+app.Static("/dist", "./dist", fiber.Static{CacheDuration: 365 * 24 * time.Hour, MaxAge: 31536000, Compress: true})
+app.Static("/assets", "./dist/assets", fiber.Static{CacheDuration: 365 * 24 * time.Hour, MaxAge: 31536000, Compress: true})
+app.Static("/public", "./public", fiber.Static{CacheDuration: 1 * time.Hour, MaxAge: 3600})
+app.Static("/storage", "./storage", fiber.Static{CacheDuration: 24 * time.Hour, MaxAge: 86400})
 ```
 
 ## File Upload
 
-### Handler
+### Handler (Actual Implementation)
 
 ```go
-// app/handlers/upload.go
 func (h *UploadHandler) Upload(c *fiber.Ctx) error {
-    // Get file from multipart form
-    file, err := c.FormFile("avatar")
+    sess, _ := h.store.Get(c)
+    userID := sess.Get("user_id")
+    if userID == nil {
+        return c.Status(401).JSON(fiber.Map{"error": "Not authenticated"})
+    }
+
+    form, err := c.MultipartForm()
     if err != nil {
-        return c.Status(400).JSON(fiber.Map{"error": "No file provided"})
+        return c.Status(400).JSON(fiber.Map{"error": "Failed to parse form"})
     }
 
-    // Validate file type
-    ext := strings.ToLower(filepath.Ext(file.Filename))
-    if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" {
-        return c.Status(400).JSON(fiber.Map{"error": "Invalid file type"})
+    files := form.File["file"]
+    if len(files) == 0 {
+        return c.Status(400).JSON(fiber.Map{"error": "No file uploaded"})
     }
 
-    // Generate unique filename
-    filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
-    path := filepath.Join("./storage/avatars", filename)
+    file := files[0]
 
-    // Save file
-    if err := c.SaveFile(file, path); err != nil {
-        return c.Status(500).JSON(fiber.Map{"error": "Failed to save file"})
-    }
+    // Validate file type (JPEG, PNG, GIF, WEBP)
+    allowedTypes := []string{"image/jpeg", "image/png", "image/gif", "image/webp"}
+    // ... validate content-type ...
 
-    // Update user avatar in DB
+    // Validate file size (max 5MB)
+    if file.Size > 5*1024*1024 { ... }
+
+    // Unique filename: {userID}_{timestamp}{ext}
+    ext := filepath.Ext(file.Filename)
+    filename := fmt.Sprintf("%d_%d%s", userID.(int64), time.Now().UnixNano(), ext)
+    uploadPath := filepath.Join("storage", "avatars", filename)
+    c.SaveFile(file, uploadPath)
+
+    // Update user avatar in database
     avatarURL := "/storage/avatars/" + filename
-    // ... update user record ...
+    h.userService.UpdateAvatar(userID.(int64), avatarURL)
+
+    return c.JSON(fiber.Map{"success": true, "url": avatarURL})
 }
 ```
 
-### Avatar Proxy
-
-For OAuth users (Google), avatars are proxied from external URLs:
+### Avatar Proxy (Actual Implementation)
 
 ```go
-// GET /api/avatar/:id
 func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
+    userID, _ := strconv.ParseInt(c.Params("id"), 10, 64)
     user, _ := h.authService.GetUserByID(userID)
 
     if strings.HasPrefix(user.Avatar, "/storage/") {
@@ -76,7 +86,11 @@ func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
 
     // Proxy from external URL (Google)
     resp, _ := http.Get(user.Avatar)
-    // ...
+    defer resp.Body.Close()
+    body, _ := io.ReadAll(resp.Body)
+    c.Set("Content-Type", resp.Header.Get("Content-Type"))
+    c.Set("Cache-Control", "public, max-age=86400")
+    return c.Send(body)
 }
 ```
 

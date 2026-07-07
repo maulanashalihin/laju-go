@@ -13,6 +13,8 @@ type CachedSessionData struct {
 	Role       string
 	CSRFToken  string
 	CSRFExpiry int64
+	IP         string
+	UserAgent  string
 	ExpiresAt  time.Time
 }
 

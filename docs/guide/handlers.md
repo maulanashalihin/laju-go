@@ -21,20 +21,20 @@ import (
 )
 
 type AuthHandler struct {
-    authService *services.AuthService
-    mailerService *services.MailerService
-    store *session.Store
+    authService    *services.AuthService
+    store          *session.Store
+    inertiaService *services.InertiaService
 }
 
 func NewAuthHandler(
     authService *services.AuthService,
-    mailerService *services.MailerService,
     store *session.Store,
+    inertiaService *services.InertiaService,
 ) *AuthHandler {
     return &AuthHandler{
-        authService: authService,
-        mailerService: mailerService,
-        store: store,
+        authService:    authService,
+        store:          store,
+        inertiaService: inertiaService,
     }
 }
 
@@ -51,13 +51,13 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 
 ## Handler Files
 
-| File | Purpose |
-|------|---------|
-| `auth.go` | Authentication (login, register, OAuth, logout) |
-| `app.go` | Authenticated app pages (dashboard, profile) |
-| `public.go` | Public pages (home, about) |
-| `upload.go` | File upload handling |
-| `password-reset.go` | Password reset flow |
+| File | Struct | Purpose |
+|------|--------|---------|
+| `auth.go` | `AuthHandler` | Login, register, OAuth, logout, me, avatar |
+| `app.go` | `AppHandler` | Dashboard, profile, update profile/password |
+| `public.go` | `PublicHandler` | Landing page, about |
+| `upload.go` | `UploadHandler` | File upload with validation |
+| `password-reset.go` | `PasswordResetHandler` | Forgot/reset password flow |
 
 ## Request Handling
 
@@ -189,30 +189,32 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 return c.Redirect("/login?error=invalid_credentials")
 ```
 
-### Render Template
+### Direct Template Rendering (for landing page)
 
 ```go
-func (h *PublicHandler) About(c *fiber.Ctx) error {
-    return c.Render("pages/about", fiber.Map{
-        "title": "About Us",
-        "content": "Welcome to Laju Go",
-    })
+func (h *PublicHandler) Index(c *fiber.Ctx) error {
+    assetData := h.assetService.GetAssetData()
+    isDev := assetData["IsDev"].(bool)
+    viteURL, _ := assetData["ViteURL"].(string)
+    mainCSS, _ := assetData["MainCSS"].(string)
+
+    c.Set("Content-Type", "text/html; charset=utf-8")
+    return templates.LandingPage("Laju Go", isDev, viteURL, mainCSS).
+        Render(c.Context(), c.Response().BodyWriter())
 }
 ```
 
-### Inertia Response
+### Inertia Response (default for protected routes)
 
 ```go
 func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
-    return h.inertiaService.Render(c, "Dashboard", fiber.Map{
-        "user": c.Locals("user"),
-        "stats": fiber.Map{
-            "totalUsers": 100,
-            "activeUsers": 50,
-        },
+    return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
+        "user": user,
     })
 }
 ```
+
+> InertiaService auto-detects whether to return full HTML (initial load) or JSON (XHR navigation). Component name maps to `frontend/src/pages/{name}.svelte`.
 
 ### File Download
 
