@@ -47,7 +47,8 @@ laju-go
 laju-go.exe
 
 
-# LLM Wiki
-.llm-wiki/
-wiki
+# LLM Wiki (track wiki/ + raw/; ignore auto-generated meta + outputs)
+.llm-wiki/outputs/
+.llm-wiki/meta/
+/wiki
 
