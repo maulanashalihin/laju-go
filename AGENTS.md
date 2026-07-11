@@ -65,10 +65,8 @@ routes/web.go → app/handlers/ → app/services/ → app/queries/ → SQLite
 
 ## Testing
 
-| Approach | Scope | Command |
-|----------|-------|---------|
-| Go unit/integration | Services, queries, handlers | `go test ./...` |
-| E2E browser | Auth flows, form submit, visual | `agent_browser` via pi |
+- `go test ./...` — unit/integration (in-memory SQLite, no mock)
+- **agent_browser E2E**: inject session langsung via SQL untuk skip login. Detail di wiki: [Agent Browser Testing](.llm-wiki/wiki/concepts/agent-browser-testing.md)
 
 ## Minimal .env
 
