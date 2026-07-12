@@ -68,6 +68,12 @@ routes/web.go → app/handlers/ → app/services/ → app/queries/ → SQLite
 - `go test ./...` — unit/integration (in-memory SQLite, no mock)
 - **agent_browser E2E**: inject session langsung via SQL untuk skip login. Detail di wiki: [Agent Browser Testing](.llm-wiki/wiki/concepts/agent-browser-testing.md)
 
+## Migration Rules
+
+- 🔴 **Jangan edit migration yang sudah di-deploy.** Buat file migrasi baru.
+- Goose skip migration yang sudah di-apply — edit file lama tidak berefek di production.
+- Satu file = satu tabel (lihat wiki: [Single-Table Migration](.llm-wiki/wiki/concepts/concept-single-table-migration.md)).
+
 ## Minimal .env
 
 ```
