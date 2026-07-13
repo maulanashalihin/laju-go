@@ -21,8 +21,8 @@ routes/web.go → app/handlers/ → app/services/ → app/queries/ → SQLite
 
 | Task | npm | Make |
 |------|-----|------|
-| Dev (both) | `npm run dev:all` | `make dev-all` |
-| Dev Go only | `npm run dev:go` | `make dev-go` |
+| Dev (both) | `npm run dev:all` | — |
+| Dev Go only | `npm run dev:go` | — |
 | Build | `npm run build:all` | `make build` |
 | Test | `go test ./...` | `make test` |
 | Generate sqlc | `npm run db:generate` | `make db-generate` |
@@ -30,7 +30,7 @@ routes/web.go → app/handlers/ → app/services/ → app/queries/ → SQLite
 | Migrate DB | `npm run db:migrate` | `make migrate` |
 
 > **Build order matters**: `vite build` must run before `go build` because the Go binary reads `dist/.vite/manifest.json`.
-> **goose vs Goose AI**: Gunakan `go run github.com/pressly/goose/v3/cmd/goose@latest` (bukan binary `goose`).
+> **Migrate via `go run`**: `go run github.com/pressly/goose/v3/cmd/goose@latest` (jangan pake binary `goose`).
 
 ## Three-Tier Rule (🔴 CRITICAL)
 
@@ -52,7 +52,7 @@ routes/web.go → app/handlers/ → app/services/ → app/queries/ → SQLite
 - ❌ Jangan `$effect` untuk init state dari props → `$state(value ?? default)`
 - ✅ `$effect` hanya untuk side effects: `document.title`, `localStorage`
 - ✅ Internal link WAJIB `use:inertia` dari `@inertiajs/svelte` — tanpanya full page reload
-- 🔴 **fetch() CSRF header**: tiap `fetch()` ke `/app/*` atau `/admin/*` WAJIB `X-XSRF-TOKEN` dari `getCSRFToken()` (`lib/utils/helpers`). Inertia's `router.*` auto-handle ini.
+- 🔴 **fetch() CSRF header**: tiap `fetch()` ke `/app/*` atau `/admin/*` WAJIB `X-XSRF-TOKEN` dari `getCSRFToken()` (`lib/utils/csrf.ts`). Inertia's `router.*` auto-handle ini.
 - Form submission pake `router.post()`/`router.put()`, bukan `<form>` biasa
 - File upload via `fetch() + FormData`, simpan URL hasil via `router.put()`
 - OAuth links (`/auth/google`, `/auth/github`) pake `<a>` biasa tanpa `use:inertia`
@@ -89,9 +89,6 @@ APP_PORT, APP_ENV, DB_PATH, SESSION_SECRET
 
 ## Wiki (Detail Lebih Lanjut)
 
-Detail lebih lanjut (deployment, design standards, HTTP conventions, migration convention, dsb) ada di `.llm-wiki/wiki/`. Cari dengan `wiki_search` atau `read` langsung file-nya.
+Detail lebih lanjut (deployment, design standards, HTTP conventions, migration convention, dsb) ada di `.llm-wiki/wiki/`. Gunakan tools wiki native: `wiki_search`, `wiki_recall`, `wiki_ensure_page`, `wiki_observe`, `wiki_retro`.
 
-Pages yang tersedia:
-
-- **Concepts**: three-tier-architecture, svelte-5-reactivity-rules, csrf-protection, inertia-spa-navigation, single-table-migration, e2e-browser-testing, design-standards, deployment, http-conventions, testing-strategy, cgo-cross-compilation, code-generation, mobile-first-design
-- **Entities**: templ, goose-migration, go-fiber, inertia-js, sqlc, sqlite, svelte-5, vite, agent-browser
+Atau langsung: `read_file`, `grep`, `glob` pada path `.llm-wiki/`.
