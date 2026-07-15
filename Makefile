@@ -48,9 +48,10 @@ migrate:
 
 db-refresh:
 	rm -f ./data/app.db ./data/app.db-shm ./data/app.db-wal ./data/app.db-wal2
+	rm -rf ./data/cache
 
 clean:
-	rm -rf $(BINARY) tmp/ dist/ data/*.db*
+	rm -rf $(BINARY) tmp/ dist/ data/*.db* data/cache
 
 docker:
 	docker build -t $(APP_NAME) .

@@ -14,7 +14,7 @@
     "build:linux": "cross-env GOOS=linux GOARCH=amd64 go build -o laju-go ./cmd/laju-go",
     "deploy": "./scripts/deploy.sh",
     "serve": "go run ./cmd/laju-go",
-    "db:refresh": "rimraf ./data/app.db ./data/app.db-shm ./data/app.db-wal",
+    "db:refresh": "rimraf ./data/app.db ./data/app.db-shm ./data/app.db-wal ./data/cache",
     "db:migrate": "go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 ./data/app.db up",
     "db:migrate:status": "go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 ./data/app.db status",
     "db:migrate:down": "go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 ./data/app.db down",

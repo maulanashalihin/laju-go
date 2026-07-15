@@ -78,18 +78,20 @@ func main() {
 	querier := queries.NewQuerier(db)
 
 	// Initialize NutsDB for persistent cache (session + user profile)
+	// If NutsDB is unavailable, the app continues without cache (graceful degradation).
+	var userCache *cache.UserCache
+	var sessionCache *cache.SessionCache
+
 	ndb, err := cache.Open(cfg.NutsDBPath)
 	if err != nil {
-		slog.Error("failed to initialize nutsdb", "error", err)
-		os.Exit(1)
+		slog.Warn("nutsdb unavailable, running without cache", "error", err, "path", cfg.NutsDBPath)
+		userCache = cache.NewUserCache(nil, cfg.UserCacheTTL)
+		sessionCache = cache.NewSessionCache(nil, cfg.SessionCacheBuffer)
+	} else {
+		defer ndb.Close()
+		userCache = cache.NewUserCache(ndb.DB, cfg.UserCacheTTL)
+		sessionCache = cache.NewSessionCache(ndb.DB, cfg.SessionCacheBuffer)
 	}
-	defer ndb.Close()
-
-	// Initialize user profile cache (NutsDB-backed)
-	userCache := cache.NewUserCache(ndb.DB, cfg.UserCacheTTL)
-
-	// Initialize session cache (NutsDB-backed, survives restarts)
-	sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheBuffer)
 
 	// Initialize session store with database + in-memory cache
 	sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)

@@ -31,6 +31,10 @@ func NewUserCache(db *nutsdb.DB, ttl time.Duration) *UserCache {
 
 // Get retrieves a user from cache. Returns nil if not found or expired.
 func (c *UserCache) Get(userID int64) *models.User {
+	if c.db == nil {
+		return nil
+	}
+
 	var entry userCacheEntry
 
 	err := c.db.View(func(tx *nutsdb.Tx) error {
@@ -55,7 +59,7 @@ func (c *UserCache) Get(userID int64) *models.User {
 
 // Set stores a user in cache with the configured TTL.
 func (c *UserCache) Set(user *models.User) {
-	if user == nil {
+	if c.db == nil || user == nil {
 		return
 	}
 
@@ -77,6 +81,9 @@ func (c *UserCache) Set(user *models.User) {
 
 // Invalidate removes a user from cache (call after updates).
 func (c *UserCache) Invalidate(userID int64) {
+	if c.db == nil {
+		return
+	}
 	c.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.Delete("users", int64Key(userID))
 	})
@@ -84,6 +91,9 @@ func (c *UserCache) Invalidate(userID int64) {
 
 // Clear removes all cached entries.
 func (c *UserCache) Clear() {
+	if c.db == nil {
+		return
+	}
 	c.db.Update(func(tx *nutsdb.Tx) error {
 		keys, err := tx.GetKeys("users")
 		if err != nil {
@@ -98,6 +108,9 @@ func (c *UserCache) Clear() {
 
 // Size returns the approximate number of cached entries.
 func (c *UserCache) Size() int {
+	if c.db == nil {
+		return 0
+	}
 	count := 0
 	c.db.View(func(tx *nutsdb.Tx) error {
 		keys, err := tx.GetKeys("users")

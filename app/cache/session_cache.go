@@ -40,6 +40,10 @@ func NewSessionCache(db *nutsdb.DB, buffer time.Duration) *SessionCache {
 
 // Get retrieves a cached session. Returns nil + false if not found or expired.
 func (c *SessionCache) Get(sessionID string) (*CachedSessionData, bool) {
+	if c.db == nil {
+		return nil, false
+	}
+
 	var data CachedSessionData
 
 	err := c.db.View(func(tx *nutsdb.Tx) error {
@@ -64,6 +68,10 @@ func (c *SessionCache) Get(sessionID string) (*CachedSessionData, bool) {
 
 // Set stores a session in NutsDB cache with TTL.
 func (c *SessionCache) Set(sessionID string, data CachedSessionData) {
+	if c.db == nil {
+		return
+	}
+
 	raw, err := json.Marshal(data)
 	if err != nil {
 		return
@@ -83,6 +91,9 @@ func (c *SessionCache) Set(sessionID string, data CachedSessionData) {
 
 // Invalidate removes a session from cache.
 func (c *SessionCache) Invalidate(sessionID string) {
+	if c.db == nil {
+		return
+	}
 	c.db.Update(func(tx *nutsdb.Tx) error {
 		return tx.Delete("sessions", []byte(sessionID))
 	})
@@ -90,6 +101,9 @@ func (c *SessionCache) Invalidate(sessionID string) {
 
 // Clear removes all cached sessions.
 func (c *SessionCache) Clear() {
+	if c.db == nil {
+		return
+	}
 	c.db.Update(func(tx *nutsdb.Tx) error {
 		keys, err := tx.GetKeys("sessions")
 		if err != nil {
