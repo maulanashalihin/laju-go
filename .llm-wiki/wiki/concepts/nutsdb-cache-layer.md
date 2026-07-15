@@ -9,6 +9,7 @@ Laju Go uses [NutsDB](https://github.com/nutsdb/nutsdb) — an embedded key-valu
 ### Wrapper (`app/cache/nutsdb.go`)
 
 Shared NutsDB instance opened at startup with:
+
 - **MMap** RW mode (memory-mapped files for near-RAM read speed)
 - **HintKeyValAndRAMIdxMode** (index in RAM for fast lookups)
 - **16MB segments**
@@ -18,12 +19,13 @@ Shared NutsDB instance opened at startup with:
 
 | Bucket | Key | Value | TTL Strategy |
 |--------|-----|-------|-------------|
-| `"sessions"` | Session ID (string) | `CachedSessionData` (JSON) | Remaining session TTL + cache buffer |
-| `"users"` | User ID (int64 big-endian) | `userCacheEntry` (JSON + app-level ExpiresAt) | `USER_CACHE_TTL` env var (default 15m) |
+| `"sessions"` | Session ID (string) | `CachedSessionData` (JSON) | Remaining session TTL + buffer |
+| `"users"` | User ID (int64 big-endian) | `userCacheEntry` (JSON + app-level ExpiresAt) | `USER_CACHE_TTL` env var (default 30m) |
 
 ### Dual TTL Safety
 
 Each entry has two layers of expiry:
+
 1. **Application-level** `ExpiresAt` field in the struct — sub-second precision
 2. **NutsDB native TTL** on `tx.Put()` — second granularity, acts as backup safety net
 
@@ -32,15 +34,17 @@ If app-level TTL expires, the entry is lazily invalidated on next `Get()`. The N
 ## Cache Types
 
 ### UserCache (`app/cache/user_cache.go`)
+
 - Key: `int64Key(userID)` (8 bytes big-endian)
-- TTL: `USER_CACHE_TTL` (default 15m, set 0 to disable)
+- TTL: `USER_CACHE_TTL` (default 30m, set 0 to disable)
 - Methods: `Get()`, `Set()`, `Invalidate()`, `Clear()`, `Size()`
 - Used by `UserService` for profile lookups and role checks
 - Auto-invalidated on profile updates
 
 ### SessionCache (`app/cache/session_cache.go`)
+
 - Key: `sessionID` (string, raw bytes)
-- TTL: Remaining session lifetime + `SESSION_CACHE_TTL` buffer (default 5m)
+- TTL: Remaining session lifetime + `SESSION_CACHE_BUFFER` buffer (default 5m)
 - Methods: `Get()`, `Set()`, `Invalidate()`, `Clear()`
 - Stores: UserID, Email, Role, CSRFToken, IP, UserAgent, ExpiresAt
 - Used by `session.Store` to reduce DB reads on every authenticated request
@@ -50,7 +54,7 @@ If app-level TTL expires, the entry is lazily invalidated on next `Get()`. The N
 ```go
 ndb, _ := cache.Open(cfg.NutsDBPath)            // default: ./data/cache
 userCache := cache.NewUserCache(ndb.DB, cfg.UserCacheTTL)
-sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheTTL)
+sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheBuffer)
 sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)
 userService := services.NewUserService(querier, userCache)
 ```
@@ -60,8 +64,8 @@ userService := services.NewUserService(querier, userCache)
 | Env | Default | Description |
 |-----|---------|-------------|
 | `NUTSDB_PATH` | `./data/cache` | NutsDB data directory |
-| `USER_CACHE_TTL` | `15m` | User profile cache TTL |
-| `SESSION_CACHE_TTL` | `5m` | Session cache TTL |
+| `USER_CACHE_TTL` | `30m` | User profile cache TTL |
+| `SESSION_CACHE_BUFFER` | `5m` | Buffer added to remaining session lifetime for NutsDB TTL |
 
 ## Benefits
 

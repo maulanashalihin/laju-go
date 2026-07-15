@@ -31,9 +31,9 @@ type Config struct {
 	// Session
 	SessionTTL time.Duration
 	// Cache
-	UserCacheTTL    time.Duration
-	SessionCacheTTL time.Duration
-	NutsDBPath      string
+	UserCacheTTL       time.Duration
+	SessionCacheBuffer time.Duration
+	NutsDBPath         string
 }
 
 var AppConfig *Config
@@ -64,8 +64,8 @@ func Load() *Config {
 		// Session
 		SessionTTL: getSessionTTL(),
 		// Cache
-		UserCacheTTL:    getUserCacheTTL(),
-		SessionCacheTTL: getSessionCacheTTL(),
+		UserCacheTTL:       getUserCacheTTL(),
+		SessionCacheBuffer: getSessionCacheBuffer(),
 		NutsDBPath:      getEnv("NUTSDB_PATH", "./data/cache"),
 	}
 
@@ -126,10 +126,11 @@ func getSessionTTL() time.Duration {
 	return d
 }
 
-// getSessionCacheTTL returns the session cache TTL from env.
-// Default: 5 minutes. Shorter than user cache because sessions update more frequently.
-func getSessionCacheTTL() time.Duration {
-	val := getEnv("SESSION_CACHE_TTL", "5m")
+// getSessionCacheBuffer returns the session cache buffer duration from env.
+// This buffer is added to the remaining session lifetime as NutsDB TTL.
+// Default: 5 minutes.
+func getSessionCacheBuffer() time.Duration {
+	val := getEnv("SESSION_CACHE_BUFFER", "5m")
 	d, err := time.ParseDuration(val)
 	if err != nil {
 		return 5 * time.Minute
@@ -140,10 +141,10 @@ func getSessionCacheTTL() time.Duration {
 // getUserCacheTTL returns the user profile cache TTL from env.
 // Default: 15 minutes. Set to 0 to disable caching.
 func getUserCacheTTL() time.Duration {
-	val := getEnv("USER_CACHE_TTL", "15m")
+	val := getEnv("USER_CACHE_TTL", "30m")
 	d, err := time.ParseDuration(val)
 	if err != nil {
-		return 15 * time.Minute
+		return 30 * time.Minute
 	}
 	return d
 }

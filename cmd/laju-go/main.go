@@ -89,7 +89,7 @@ func main() {
 	userCache := cache.NewUserCache(ndb.DB, cfg.UserCacheTTL)
 
 	// Initialize session cache (NutsDB-backed, survives restarts)
-	sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheTTL)
+	sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheBuffer)
 
 	// Initialize session store with database + in-memory cache
 	sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)

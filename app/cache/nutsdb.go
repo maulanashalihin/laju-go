@@ -2,6 +2,7 @@ package cache
 
 import (
 	"log"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -14,7 +15,12 @@ type NutsDB struct {
 }
 
 // Open opens or creates a NutsDB database at the given directory.
+// Auto-creates the directory if it doesn't exist.
 func Open(dir string) (*NutsDB, error) {
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, err
+	}
+
 	db, err := nutsdb.Open(
 		nutsdb.DefaultOptions,
 		nutsdb.WithDir(dir),

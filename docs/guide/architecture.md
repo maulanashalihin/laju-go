@@ -404,7 +404,7 @@ type UserCache struct {
 // app/cache/session_cache.go — session data cache
 type SessionCache struct {
     db  *nutsdb.DB
-    ttl time.Duration  // Configurable via SESSION_CACHE_TTL env var
+    buffer time.Duration  // Configurable via SESSION_CACHE_BUFFER env var
 }
 ```
 
@@ -427,7 +427,7 @@ Initialized at startup in `cmd/laju-go/main.go`:
 ```go
 ndb, _ := cache.Open(cfg.NutsDBPath)
 userCache := cache.NewUserCache(ndb.DB, cfg.UserCacheTTL)
-sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheTTL)
+sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheBuffer)
 ```
 
 ---
@@ -506,7 +506,7 @@ func main() {
 
     querier := queries.NewQuerier(db)
     userCache := cache.NewUserCache(cfg.UserCacheTTL)
-    sessionCache := cache.NewSessionCache(cfg.SessionCacheTTL)
+    sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheBuffer)
     sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)
     sessionStore.SetSecure(cfg.AppEnv == "production")
 

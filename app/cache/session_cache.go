@@ -20,19 +20,22 @@ type CachedSessionData struct {
 	ExpiresAt  time.Time `json:"exp"`
 }
 
-// SessionCache provides NutsDB-backed session caching with TTL.
+// SessionCache provides NutsDB-backed session caching.
+// The buffer duration is added to the remaining session lifetime so the NutsDB entry
+// outlives the session itself by a small margin (safety net).
 // Thread-safe via NutsDB transaction isolation.
 type SessionCache struct {
-	db  *nutsdb.DB
-	ttl time.Duration
+	db     *nutsdb.DB
+	buffer time.Duration
 }
 
 // NewSessionCache creates a session cache backed by NutsDB.
-func NewSessionCache(db *nutsdb.DB, ttl time.Duration) *SessionCache {
-	if ttl <= 0 {
-		ttl = 5 * time.Minute
+// buffer is the extra time added to remaining session lifetime as NutsDB TTL.
+func NewSessionCache(db *nutsdb.DB, buffer time.Duration) *SessionCache {
+	if buffer <= 0 {
+		buffer = 5 * time.Minute
 	}
-	return &SessionCache{db: db, ttl: ttl}
+	return &SessionCache{db: db, buffer: buffer}
 }
 
 // Get retrieves a cached session. Returns nil + false if not found or expired.
@@ -66,10 +69,11 @@ func (c *SessionCache) Set(sessionID string, data CachedSessionData) {
 		return
 	}
 
-	// Use session remaining TTL plus cache buffer as NutsDB TTL
-	maxTTL := time.Until(data.ExpiresAt) + c.ttl
-	if maxTTL < c.ttl {
-		maxTTL = c.ttl
+	// NutsDB TTL = remaining session lifetime + buffer
+	// This ensures the cache entry outlives the session's actual expiry.
+	maxTTL := time.Until(data.ExpiresAt) + c.buffer
+	if maxTTL < c.buffer {
+		maxTTL = c.buffer
 	}
 
 	c.db.Update(func(tx *nutsdb.Tx) error {
