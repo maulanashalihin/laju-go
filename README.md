@@ -45,7 +45,7 @@ Visit `http://localhost:8080` to see your application running.
 
 - **SQLite (mattn/go-sqlite3)** — CGO-based, 2x throughput vs pure-Go drivers
 - **WAL Mode + mmap** — Optimized for production workloads
-- **In-Memory Caching** — Session & user profile TTL caches avoid DB lookups
+- **NutsDB-Backed Persistent Cache** — Session & user profile caches survive restarts via embedded NutsDB key-value store
 - **Background Cleanup** — Expired sessions & tokens auto-purged every hour
 
 ## 📁 Project Structure
@@ -58,7 +58,7 @@ laju-go/
 │   ├── services/              # Business logic layer
 │   ├── queries/               # sqlc-generated query code
 │   ├── middlewares/           # Auth, CSRF, rate limiting
-│   ├── cache/                 # In-memory TTL caches
+│   ├── cache/                 # NutsDB-backed persistent TTL caches
 │   ├── models/                # Data structures + DTOs
 │   ├── session/               # Session store (SQLite + cache)
 │   └── config/                # Env-based configuration
