@@ -1,256 +1,213 @@
 # Design Principles
 
-> Panduan design untuk agent saat generate halaman baru di project Go Fiber + Svelte 5 + Inertia.js + Tailwind CSS v4.
+> **Boilerplate frontend principles.** Baca brief → infer design direction → apply anti-slop rules.
+> Framework agnostic. Contextual — tidak semua aturan aktif otomatis.
 
 ---
 
-## ⚠️ Anti AI-Slop (BACA INI DULU)
+## 0. BRIEF INFERENCE
 
-AI punya pola default yang bikin semua output keliatan sama. **Hindari ini sebelum nulis kode.**
+Sebelum nulis kode, **baca ruangannya.** Jangan lompat ke default aesthetic.
 
-### 🎨 Warna — AI Defaults
+### 0.A Signals
 
-| ❌ AI Slop | Kenapa | ✅ Ganti dengan |
-|-----------|--------|----------------|
-| **Purple/blue glow + dark mesh** hero | Tanda paling jelas "AI generated" | Gradient brand (cyan→violet) atau radial gradient lembut |
-| **Warm beige/cream bg** (`#f5f1ea`, `#f7f5f1`, `#efeae0`) | LLM default "premium consumer" — semua proyek sama | Pakai token `neutral-*` dari `@theme` |
-| **Brass/ochre/oxblood** (`#b08947`, `#9a2436`, `#9c6e2a`) | Sepaket sama beige bg | `brand-400` (cyan) atau `secondary-500` (violet) |
-| **Random gradient di setiap section** | Tanpa intent, murahan | Satu gradient di hero aja, sisanya solid |
-| **Pure black `#000` untuk dark mode** | Crushing detail, kasar | `neutral-950` (`#070b16`) |
-| **Opacity/transparency stacking** 3+ layer | Visual noise, aksesibilitas jelek | Max 2 layer overlay, sisanya solid |
+1. **Page kind** — landing (SaaS/consumer/agency), portfolio, editorial, dashboard/admin, auth page
+2. **Vibe words** — "minimalist", "premium", "playful", "brutalist", "editorial", "dark tech", "Apple-y", "B2B serious"
+3. **Reference** — URL, screenshot, produk, brand kompetitor
+4. **Audience** — B2B procurement vs consumer vs developer. Audience pilih aesthetic, bukan selera kamu
+5. **Quiet constraints** — aksesibilitas, sektor publik, regulated industry. Ini **override** aesthetic preference
 
-### 🔤 Tipografi — AI Tells
+### 0.B Design Read
 
-| ❌ AI Slop | Kenapa | ✅ Ganti dengan |
-|-----------|--------|----------------|
-| **Inter default** | AI selalu fallback ke Inter | OK pakai Inter (sudah di `@theme`), **jangan import ulang** via Google Fonts |
-| **Fraunces / Instrument Serif** | Dua font favorit LLM — ketahuan | Jangan dipakai. Serif jarang dibutuhkan |
-| **Serif buat "creative" / "premium"** | AI always reach for serif when brief says "creative" | **Default sans-serif.** Serif cuma kalo brand explicit nyebut nama font |
-| **Mixed-family emphasis** (sans headline satu kata serif) | Amatir, AI tell klasik | Italic/bold dari font yang SAMA |
-| **Headline > 8 words** | Gak bisa dibaca cepat | Max 8 words untuk display headline |
+Sebelum generate, output satu baris:
 
-### 📐 Layout — AI Patterns
+> *"Reading this as: \<page kind> for \<audience>, with a \<vibe> language."*
 
-| ❌ AI Slop | Kenapa | ✅ Ganti dengan |
-|-----------|--------|----------------|
-| **Centered hero** (text + CTA di tengah) | Default AI tiap kali bikin landing | Split screen, left-aligned + asset, atau asymmetric |
-| **3 equal feature cards** | Paling obvious AI layout ever | Variasi ukuran (1 card besar + 2 kecil), grid asimetris |
-| **Cards-inside-cards-inside-cards** | AI suka nesting cards tak terbatas | Flat hierarchy, border/divider cukup |
-| **"Innovate" / "Empower" / "Revolutionize"** di headline | Kata buzzword AI | Bicara konkret: "Track your team's weekly velocity" |
-| **Left text + right image** tiap section | Bolak-balik pattern membosankan | Variasi: full-width, grid, overlap, background-image |
-| **Glassmorphism di semua card** | 2023 trend, udah mati | Border tipis + bg solid, glass cuma untuk overlay/navbar |
-| **Infinite scroll + micro-animations everywhere** | Gak semua perlu gerak | Animasi cuma untuk hirarki & entry point |
+### 0.C Anti-Default Discipline
 
-### 🧠 Mental Model
-
-Sebelum nulis kode, tanya: *"Apakah ini default yang bakal AI lain hasilkan juga?"*
-
-Kalau jawabannya "iya" — **ubah pendekatannya.** Jangan puas sama layout pertama yang keluar dari prompt.
+Jangan default ke: purple gradient, centered hero di atas dark mesh, 3 equal feature cards, glassmorphism di semua card, Inter + slate-900. Ini LLM defaults. **Reach past them deliberately.**
 
 ---
 
-## Stack & Conventions
+## 1. THE THREE DIALS
 
-| Layer | Teknologi | Aturan |
-|-------|-----------|--------|
-| **Frontend** | Svelte 5 (runes) | Wajib `<script lang="ts">`, rune `$state`/`$derived`/`$props`, **jangan** `$effect` untuk derived state |
-| **Routing SPA** | Inertia.js | Internal link wajib `use:inertia` dari `@inertiajs/svelte` |
-| **HTTP Forms** | Inertia `router.post()`/`router.put()` | Jangan `<form>` biasa |
-| **fetch()** | Manual fetch wajib `X-XSRF-TOKEN` header via `getCSRFToken()` | `lib/utils/csrf.ts` |
-| **Styling** | Tailwind CSS v4 | File di `frontend/src/app.css` — semua token warna sudah di `@theme` |
-| **Icons** | Lucide Svelte (`lucide-svelte`) | Satu keluarga icon, `stroke-width="2"` global |
-| **Animasi** | Svelte `transition:` + CSS | GSAP untuk landing page canggih, Svelte transition cukup untuk dashboard |
-| **Font** | Inter (sans) + JetBrains Mono (mono) — `@theme` di `app.css` |
+Setelah design read, set tiga dial. Semua keputusan layout/motion/density di bawah digate oleh ini.
 
-## Color System
+| Dial | 1 | 10 | Default |
+|------|---|----|---------|
+| **DESIGN_VARIANCE** | Perfect Symmetry | Artsy Chaos | **7** |
+| **MOTION_INTENSITY** | Static | Cinematic / Physics | **5** |
+| **VISUAL_DENSITY** | Airy gallery | Cockpit packed | **4** |
 
-Semua token sudah terdefinisi di `frontend/src/app.css`. **Jangan define ulang.**
+### Dial Inference
 
-### Brand
+| Brief | VARIANCE | MOTION | DENSITY |
+|-------|----------|--------|---------|
+| Minimalist / clean / editorial / Linear-style | 5-6 | 3-4 | 2-3 |
+| Premium consumer / Apple-y / luxury | 7-8 | 5-7 | 3-4 |
+| Playful / Awwwards / experimental / agency | 9-10 | 8-10 | 3-4 |
+| Landing / portfolio / marketing (default) | 7-9 | 6-8 | 3-5 |
+| Trust-first / public-sector / aksesibilitas | 3-4 | 2-3 | 4-5 |
+| Admin dashboard | 3-5 | 2-3 | 6-8 |
+| Auth / settings page | 3-4 | 1-2 | 3-4 |
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `brand-400` | `#22d3ee` (cyan-teal) | Buttons, links, focus rings, primary accent |
-| `brand-600` / `brand-700` | Darker cyan | Hover/active states, dark mode button bg |
-| `secondary-500` | `#a855f7` (violet) | Secondary accent, premium highlights, gradients |
+---
 
-### Neutrals (cool navy-tinted)
+## 2. ANTI AI-SLOP RULES
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `neutral-50` | `#f8fafc` | Light mode page bg |
-| `neutral-950` | `#070b16` | Dark mode page bg — **jangan pure black** |
-| `neutral-925` | `#0b111f` | Dark mode raised surface (card, sidebar) |
-| `neutral-850` | `#172033` | Extra surface step |
-| `neutral-800`..`600` | Slate scale | Text — `neutral-900` untuk headline, `neutral-600` body |
+### 🎨 Warna
 
-### Semantic
+| ❌ AI Slop | ✅ Ganti |
+|-----------|---------|
+| Purple/blue glow + dark mesh hero | Gradient solid yang intentional, atau radial gradient lembut |
+| Warm beige/cream bg (`#f5f1ea`, `#efeae0`) | Cool neutrals (slate/zinc/stone scale) |
+| Brass/ochre/oxblood accent (`#b08947`, `#9a2436`) | High-contrast singular accent (emerald, electric blue, deep rose) |
+| Random gradient di tiap section | Satu gradient di hero aja |
+| Pure black `#000` dark mode | Navy-tinted near-black (`#0f172a`, `#070b16`) |
+| Opacity stacking 3+ layer | Max 2 layer overlay |
+| **Premium-consumer palette ban** — beige+brass+espresso (`#f5f1ea` / `#b08947` / `#1a1714`) | Cold luxury, forest, black+tan, cobalt+cream, terracotta+slate |
+| Max 1 accent per page | Satu accent, konsisten dari hero sampe footer |
 
-| Token | Value |
-|-------|-------|
-| `success` | `#10b981` (green) |
-| `warning` | `#f59e0b` (amber) |
-| `error` | `#ef4444` (red) |
-| `info` | `#3b82f6` (blue) |
+### 🔤 Tipografi
 
-### Pola Penggunaan
+| ❌ AI Slop | ✅ Ganti |
+|-----------|---------|
+| Inter sebagai default font | OK (boleh), tapi jangan import ulang via Google Fonts. Geist > Inter untuk modern feel |
+| Fraunces / Instrument Serif | **Banned.** Dua font favorit LLM |
+| Serif buat "creative"/"premium" | **Default sans-serif.** Serif cuma kalo brand explicit nyebut |
+| Mixed-family emphasis (sans headline + serif word) | Italic/bold dari font yang SAMA |
+| Headline > 8 words | Max 8 words display; >8 pake 2 lines |
+| Em-dash (`—`) tanpa spasi | `—` with spaces (`word — word`) |
 
-- **Satu accent per viewport** — treat accent seperti highlighter yang cuma bisa dipakai sekali
-- **CTA buttons**: `bg-brand-600 hover:bg-brand-700 text-white` + `shadow-lg shadow-brand-600/25`
-- **Ghost buttons**: `bg-neutral-200/80 dark:bg-neutral-800 hover:bg-neutral-300/80`
-- **Borders**: `border-neutral-200/80 dark:border-white/[0.04]` — invisible di dark mode, subtle di light
-- **Cards**: bg-white dark:bg-neutral-925/50 + border + rounded-2xl
-- **Gradient hero**: pakai utility `bg-gradient-hero` atau inline `linear-gradient(135deg, ...)`
+### 📐 Layout
 
-## Shadow System
+| ❌ AI Slop | ✅ Ganti |
+|-----------|---------|
+| Centered hero + CTA | Split screen, left-aligned + asset, asymmetric |
+| 3 equal feature cards | Variasi ukuran (1 besar + 2 kecil), grid asimetris |
+| Cards-inside-cards-inside-cards | Flat hierarchy, border/divider cukup |
+| Left text + right image tiap section | Variasi: full-width, grid, overlap, background-image |
+| Zigzag alternation > 2 sections | Break dengan full-width section, bento, marquee |
+| Glassmorphism di semua card | Border tipis + bg solid. Glass cuma untuk overlay/navbar |
+| Eyebrow di **setiap** section | Max 1 eyebrow per 3 sections |
+| Split-header (left headline + right explainer) | Stack vertical. Split cuma kalo ada alasan komposisi |
+| Button text wrap di desktop | Perpendek label. Max 3 words untuk primary CTA |
+| Duplicate CTA intent | Satu label per intent. "Contact" + "Get in touch" = pilih satu |
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `shadow-soft` | Custom soft shadow | Default card shadow |
-| `shadow-glow-brand` | Cyan glow | Premium highlight, hero section |
-| `shadow-glow-brand-lg` | Larger cyan glow | Landing page hero CTA |
+### 🧩 Komponen & State
 
-Dark mode tidak pakai shadow — pakai `border-white/[0.04-0.06]` subtle.
+| ❌ AI Slop | ✅ Ganti |
+|-----------|---------|
+| Loading = spinner saja | Skeletal loader sesuai shape final layout |
+| Empty state = kosong | Beautiful empty state + instruksi |
+| Hanya implementasi "success state" | Selalu implement: loading, empty, error, success |
+| Keyboard/Screen reader diabaikan | Focus visible, label, role, contrast WCAG AA |
+| Placeholder-as-label | Label di atas input. Placeholder cuma contoh |
 
-## Typography
+### 📸 Gambar
 
-### Scale
+Landing dan portfolio adalah **visual product.** Text-only pages dengan fake-screenshot divs adalah slop.
 
-| Element | Class | Keterangan |
-|---------|-------|-----------|
-| Page H1 | `text-3xl font-bold tracking-tight` | Dashboard page title |
-| Section title | `text-base font-semibold` | Card headers |
-| Card title | `text-sm font-medium` | Item titles |
-| Body | `text-sm text-neutral-600 dark:text-neutral-400` | Body text |
-| Small | `text-xs text-neutral-500` | Meta, timestamps |
-| Mono | `font-mono` | Data numbers |
+Prioritas:
 
-### Hero (landing page)
+1. **Generate gambar** — kalo ada image-gen tool di environment, pakai
+2. **Real photos** — picsum.photos, Unsplash, atau brand assets
+3. **Last resort** — placeholder `<!-- TODO: hero image -->`, jangan fake divs
 
-- Max **2 lines** untuk headline di desktop
-- Subtext max **20 words**, max 3-4 lines
-- Default range: `text-4xl md:text-5xl lg:text-6xl`
-- CTA harus visible tanpa scroll
-- Top padding max `pt-24` — lebih dari itu keliatan floating
+**Logo wall** harus real SVG. Jangan plain text wordmarks. Source: Simple Icons, atau inline SVG monogram.
 
-## Layout Patterns
+### 🎬 Motion
 
-### Bento Grid
+| Prinsip | Aturan |
+|---------|--------|
+| Entry animasi | Ada, tapi subtle. `fade` + `translateY` cukup |
+| Scroll-triggered | Hanya untuk hero dan section divider |
+| Hover cards | `translateY(-2px)` + shadow, atau border highlight |
+| Button press | `scale(0.97)` — tactile feedback |
+| **Banned** | Infinite auto-scroll carousel, parallax everywhere, confetti |
 
-```
-grid md:grid-cols-2 lg:grid-cols-3 gap-5
-```
+---
 
-- Mix cell sizes (col-span-2 untuk primary card)
-- Rounded-2xl border cards
-- Konsisten spacing `gap-5`
-- **Anti-pattern:** jangan 3 card sama persis — variasi ukuran
+## 3. DESIGN SYSTEM MAP
 
-### App Shell
+Pilih foundation sesuai brief. Jangan invent CSS untuk yang punya official package.
 
-```
-div min-h-screen bg-neutral-50 dark:bg-neutral-950
-  + fixed sidebar (w-72, hidden lg:flex)
-  + fixed header (h-16, left-72)
-  + content area (max-w-6xl mx-auto px-6 py-8)
-```
+| Brief | Official Design System |
+|-------|----------------------|
+| Microsoft/enterprise/dashboard | Fluent UI |
+| Google-ish UI | Material Web (Material 3) |
+| IBM-style B2B | Carbon |
+| GitHub-style devtool | Primer |
+| Public-sector UK | GOV.UK Frontend |
+| US public-sector | USWDS |
+| Modern accessible React | Radix Themes |
+| Tailwind SaaS (default) | shadcn/ui (with customization) |
 
-### Auth Page
+**Satu sistem per project.** Jangan mix Fluent + Carbon dalam satu tree.
 
-```
-min-h-screen bg-neutral-50 dark:bg-neutral-950
-  + centered card (max-w-md mx-auto)
-```
+Untuk aesthetic murni (bukan sistem resmi):
 
-### Page Structure (Inertia)
+| Aesthetic | Implementasi |
+|-----------|-------------|
+| Glassmorphism | `backdrop-filter` + border highlight + solid fallback |
+| Bento grid | CSS Grid. No library owns this |
+| Brutalism | Native CSS, monospace, raw borders |
+| Editorial | Serif type, asymmetric grid, whitespace |
+| Dark tech | Mono + accent neon, terminal motifs |
 
-```svelte
-<script lang="ts">
-  import AppLayout from "@layouts/AppLayout.svelte";
-  import type { User } from "@lib/types";
+---
 
-  interface Props {
-    user?: User;
-    success?: string;
-    error?: string;
-  }
-  let { user }: Props = $props();
-</script>
+## 4. LAYOUT DISCIPLINE (Hard Rules)
 
-<AppLayout {user} group="dashboard">
-  <div class="max-w-6xl mx-auto px-6 py-8 space-y-6">
-    <!-- page content -->
-  </div>
-</AppLayout>
-```
+Aturan ini **wajib**. Melanggar = shipping broken work.
 
-### Form Patterns
+### Hero
 
-- Label **above** input, helper text optional, error text **below**
-- `gap-2` untuk input blocks
-- **Never** placeholder-as-label
-- Submit via `router.post()` / `router.put()` / `router.delete()`
-- Flash messages dari `$page.props.flash`
+- **MUST fit in viewport** — headline max 2 lines, subtext max 20 words, CTA visible tanpa scroll
+- Font scale: `text-4xl md:text-5xl lg:text-6xl` default. Jangan `text-7xl` untuk headline >6 words
+- Top padding max `pt-24` — lebih dari itu floating
+- Max **4 text elements**: eyebrow (opsional) + headline + subtext + CTAs
+- **Banned in hero:** tagline below CTA, trust strip, pricing teaser, feature list, avatar row, logo wall
+- Logo wall = dedicated section **di bawah hero**
 
-### Animasi & Transisi
+### Navigation
 
-- Entry animasi: `in:fly={{ y: 20, duration: 600 }}`
-- Staggered list: `delay: 100 + i * 50`
-- Dark mode toggle ada di `@components/DarkModeToggle.svelte`
-- Responsive: mobile menu drawer pake `transition:fly={{ x: 300 }}`
-- Hover card: `hover:border-brand-400/30 hover:shadow-xl hover:shadow-brand-400/5`
-- Button press: `active:scale-[0.98]`
+- Satu line di desktop. Kalo tidak muat di `lg`: kondens label, drop secondary items, atau hamburger
+- Height max 80px, default 64-72px
 
-## Anti-Patterns (Teknis)
+### Bento Grids
 
-| ❌ Jangan | ✅ Ganti dengan |
-|-----------|----------------|
-| `$effect` buat derived state | `$derived()` |
-| `h-screen` buat hero | `min-h-[100dvh]` |
-| `<form>` biasa untuk Inertia | `router.post()` / `router.put()` |
-| `<a href>` internal link | `<a use:inertia href="...">` |
-| Inter font via Google link | `@theme` di `app.css` (Inter sudah di set) |
-| Pure black `#000` / pure white `#fff` | `neutral-950` / `neutral-50` |
-| `lucide-react` | `lucide-svelte` |
-| Campur >1 keluarga icon | Satu: **Lucide Svelte** |
-| fetch() ke /app/ tanpa CSRF | `X-XSRF-TOKEN` header via `getCSRFToken()` |
-| Custom SVG icon manual | Pakai Lucide, cari glyph yang sesuai |
-| Button text wrap di desktop | Perpendek label (max 3 words untuk CTA) |
-| Duplicate CTA intent | Satu label per intent |
+- Jumlah cell = jumlah konten. 3 items → 3 cells. **Jangan ada empty cell**
+- Rhythm: variasi komposisi, jangan 6 left-image-right-text berturut-turut
+- Butuh variasi visual: minimal 2-3 cell punya gambar/gradient/pattern, bukan text-only
 
-## Component File Convention
+### Section Repetition
 
-```
-frontend/src/
-├── components/        # Shared UI (DarkModeToggle, Logo)
-├── layouts/           # AppLayout, AuthLayout — pakai Snippet children
-├── pages/app/         # Authenticated pages (Dashboard, Profile)
-├── pages/auth/        # Auth pages (Login, Register, ForgotPassword, ResetPassword)
-└── lib/
-    ├── types.ts       # User, Flash interfaces
-    ├── utils/csrf.ts  # getCSRFToken()
-    └── i18n/          # Terjemahan (en/id)
-```
+- Satu layout family bisa muncul **max 1 kali** per page
+- Landing 8 sections harus pakai minimal **4 layout families** berbeda
+- Zigzag (image+text alternating) max **2 sections berturut-turut**. Ke-3 = fail
 
-### Inertia Props Flow
+### Mobile
 
-```
-Handler (Go) → inertiaService.Render(c, "app/Dashboard", fiber.Map{
-    "user": user,         // dari session cache
-    "flash": {...},       // auto-merged dari session.flash
-    "errors": {...},      // validation errors
-  }) → Inertia response → Svelte page ($page.props.user)
-```
+- Setiap multi-column layout harus declare `< 768px` fallback
+- Navigation single-line di mobile → hamburger/drawer
 
-### Halaman Baru Checklist
+---
 
-- [ ] Handler file terpisah (`app/handlers/`) — ikut pattern module
-- [ ] Svelte page di `frontend/src/pages/` — Svelte 5 runes
-- [ ] Layout sesuai role (`AppLayout` untuk auth, `AuthLayout` untuk guest)
-- [ ] Inertia internal links pakai `use:inertia`
-- [ ] Form pakai `router.post()` / `router.put()` / `router.delete()`
-- [ ] CSRF header untuk manual `fetch()`
-- [ ] `@theme` tokens untuk warna — jangan hardcode hex
-- [ ] Satu accent color per viewport
-- [ ] max-w-[1400px] mx-auto untuk page container
-- [ ] **Cek anti-slop section** — apakah output keliatan "AI generated"?
+## 5. PRE-FLIGHT CHECKLIST
+
+Sebelum declare selesai, cek ini:
+
+- [ ] Hero fits viewport? Headline ≤2 lines, subtext ≤20 words?
+- [ ] Navigation satu line di desktop?
+- [ ] Eyebrow count ≤ ceil(sectionCount / 3)?
+- [ ] Zigzag alternation ≤ 2 consecutive?
+- [ ] Loading + empty + error states ada?
+- [ ] Button text tidak wrap?
+- [ ] CTA intent tidak duplikat?
+- [ ] Contrast WCAG AA (4.5:1 body, 3:1 large)?
+- [ ] Satu accent warna per page?
+- [ ] no `#000` for dark mode bg?
+- [ ] Gambar real (generated/photo)? Bukan fake divs?
+- [ ] Focus visible + keyboard navigable?
+- [ ] `min-h-[100dvh]` bukan `h-screen` untuk hero?
