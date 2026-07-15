@@ -35,6 +35,10 @@ Setelah design read, set tiga dial. Semua keputusan layout/motion/density di baw
 
 Lihat juga: [[vibe-minimalist]], [[vibe-premium-consumer]], [[vibe-playful-experimental]], [[vibe-dark-tech]], [[vibe-brutalist]]
 
+> 📖 **Vibe library bersifat opsional.** Ini cuma referensi — setiap project bisa punya vibe sendiri.
+> Mau nambah vibe? Buat page `concepts/vibe-<nama>` dan link dari sini.
+> Mau skip vibe? Langsung ke pre-flight checklist aja.
+
 | Dial | 1 | 10 | Default |
 |------|---|----|---------|
 | **DESIGN_VARIANCE** | Perfect Symmetry | Artsy Chaos | **8** |
