@@ -100,14 +100,6 @@ Setiap handler struct punya dependency sendiri, jangan numpuk di satu struct rak
 - Goose skip migration yang sudah di-apply — edit file lama tidak berefek di production.
 - Satu file = satu tabel (lihat wiki: [Single-Table Migration](.llm-wiki/wiki/concepts/concept-single-table-migration.md)).
 
-## Minimal .env
-
-```
-APP_PORT, APP_ENV, DB_PATH, SESSION_SECRET, NUTSDB_PATH
-```
-
-Lihat `.env.example` untuk semua opsi + default.
-
 ## Gotchas
 
 - `.vite-port` stale? `rm .vite-port && restart Vite`
