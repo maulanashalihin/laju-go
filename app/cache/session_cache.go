@@ -1,101 +1,99 @@
 package cache
 
 import (
-	"sync"
+	"encoding/json"
 	"time"
+
+	"github.com/nutsdb/nutsdb"
 )
 
-// CachedSessionData holds the session fields we cache in memory.
-// This avoids a database lookup on every authenticated request.
+// CachedSessionData holds the session fields we cache.
+// Survives restarts via NutsDB persistence.
 type CachedSessionData struct {
-	UserID     int64
-	Email      string
-	Role       string
-	CSRFToken  string
-	CSRFExpiry int64
-	IP         string
-	UserAgent  string
-	ExpiresAt  time.Time
+	UserID     int64     `json:"uid"`
+	Email      string    `json:"email"`
+	Role       string    `json:"role"`
+	CSRFToken  string    `json:"csrf,omitempty"`
+	CSRFExpiry int64     `json:"csrf_exp,omitempty"`
+	IP         string    `json:"ip,omitempty"`
+	UserAgent  string    `json:"ua,omitempty"`
+	ExpiresAt  time.Time `json:"exp"`
 }
 
-type sessionCacheEntry struct {
-	data      CachedSessionData
-	expiresAt time.Time
-}
-
-// SessionCache provides TTL-based in-memory caching for sessions.
-// Thread-safe via sync.RWMutex.
+// SessionCache provides NutsDB-backed session caching with TTL.
+// Thread-safe via NutsDB transaction isolation.
 type SessionCache struct {
-	mu   sync.RWMutex
-	data map[string]sessionCacheEntry
-	ttl  time.Duration
+	db  *nutsdb.DB
+	ttl time.Duration
 }
 
-// NewSessionCache creates a session cache with the given TTL.
-// A background goroutine periodically purges expired entries.
-func NewSessionCache(ttl time.Duration) *SessionCache {
-	c := &SessionCache{
-		data: make(map[string]sessionCacheEntry),
-		ttl:  ttl,
+// NewSessionCache creates a session cache backed by NutsDB.
+func NewSessionCache(db *nutsdb.DB, ttl time.Duration) *SessionCache {
+	if ttl <= 0 {
+		ttl = 5 * time.Minute
 	}
-	go c.cleanup()
-	return c
+	return &SessionCache{db: db, ttl: ttl}
 }
 
 // Get retrieves a cached session. Returns nil + false if not found or expired.
 func (c *SessionCache) Get(sessionID string) (*CachedSessionData, bool) {
-	c.mu.RLock()
-	entry, ok := c.data[sessionID]
-	c.mu.RUnlock()
+	var data CachedSessionData
 
-	if !ok || time.Now().After(entry.expiresAt) {
-		if ok {
-			c.mu.Lock()
-			delete(c.data, sessionID)
-			c.mu.Unlock()
+	err := c.db.View(func(tx *nutsdb.Tx) error {
+		val, err := tx.Get("sessions", []byte(sessionID))
+		if err != nil {
+			return err
 		}
+		return json.Unmarshal(val, &data)
+	})
+	if err != nil {
 		return nil, false
 	}
 
-	return &entry.data, true
-}
-
-// Set stores a session in cache with the configured TTL.
-func (c *SessionCache) Set(sessionID string, data CachedSessionData) {
-	c.mu.Lock()
-	c.data[sessionID] = sessionCacheEntry{
-		data:      data,
-		expiresAt: time.Now().Add(c.ttl),
+	// Check session expiry (from source of truth)
+	if time.Now().After(data.ExpiresAt) {
+		c.Invalidate(sessionID)
+		return nil, false
 	}
-	c.mu.Unlock()
+
+	return &data, true
 }
 
-// Invalidate removes a session from cache (call after update/destroy).
+// Set stores a session in NutsDB cache with TTL.
+func (c *SessionCache) Set(sessionID string, data CachedSessionData) {
+	raw, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+
+	// Use session remaining TTL plus cache buffer as NutsDB TTL
+	maxTTL := time.Until(data.ExpiresAt) + c.ttl
+	if maxTTL < c.ttl {
+		maxTTL = c.ttl
+	}
+
+	c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.Put("sessions", []byte(sessionID), raw, ttlToUint32(maxTTL))
+	})
+}
+
+// Invalidate removes a session from cache.
 func (c *SessionCache) Invalidate(sessionID string) {
-	c.mu.Lock()
-	delete(c.data, sessionID)
-	c.mu.Unlock()
+	c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.Delete("sessions", []byte(sessionID))
+	})
 }
 
 // Clear removes all cached sessions.
 func (c *SessionCache) Clear() {
-	c.mu.Lock()
-	c.data = make(map[string]sessionCacheEntry)
-	c.mu.Unlock()
-}
-
-// cleanup runs in a goroutine, evicting expired entries every 5 minutes.
-func (c *SessionCache) cleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-	for range ticker.C {
-		c.mu.Lock()
-		now := time.Now()
-		for id, entry := range c.data {
-			if now.After(entry.expiresAt) {
-				delete(c.data, id)
-			}
+	c.db.Update(func(tx *nutsdb.Tx) error {
+		keys, err := tx.GetKeys("sessions")
+		if err != nil {
+			return nil
 		}
-		c.mu.Unlock()
-	}
+		for _, key := range keys {
+			tx.Delete("sessions", key)
+		}
+		return nil
+	})
 }

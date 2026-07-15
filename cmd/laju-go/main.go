@@ -77,11 +77,19 @@ func main() {
 	// Initialize querier
 	querier := queries.NewQuerier(db)
 
-	// Initialize user profile cache
-	userCache := cache.NewUserCache(cfg.UserCacheTTL)
+	// Initialize NutsDB for persistent cache (session + user profile)
+	ndb, err := cache.Open(cfg.NutsDBPath)
+	if err != nil {
+		slog.Error("failed to initialize nutsdb", "error", err)
+		os.Exit(1)
+	}
+	defer ndb.Close()
 
-	// Initialize session cache (in-memory, avoids DB lookup on every request)
-	sessionCache := cache.NewSessionCache(cfg.SessionCacheTTL)
+	// Initialize user profile cache (NutsDB-backed)
+	userCache := cache.NewUserCache(ndb.DB, cfg.UserCacheTTL)
+
+	// Initialize session cache (NutsDB-backed, survives restarts)
+	sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheTTL)
 
 	// Initialize session store with database + in-memory cache
 	sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)

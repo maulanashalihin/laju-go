@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -9,8 +10,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newTestUserCache(t *testing.T, ttl time.Duration) (*UserCache, func()) {
+	t.Helper()
+	dir, err := os.MkdirTemp("", "cache-test-*")
+	require.NoError(t, err)
+
+	ndb, err := Open(dir)
+	require.NoError(t, err)
+
+	c := NewUserCache(ndb.DB, ttl)
+	return c, func() {
+		ndb.Close()
+		os.RemoveAll(dir)
+	}
+}
+
 func TestUserCacheGetSet(t *testing.T) {
-	c := NewUserCache(5 * time.Minute)
+	c, cleanup := newTestUserCache(t, 5*time.Minute)
+	defer cleanup()
 
 	user := &models.User{ID: 1, Name: "Alice", Email: "alice@example.com"}
 	c.Set(user)
@@ -22,12 +39,15 @@ func TestUserCacheGetSet(t *testing.T) {
 }
 
 func TestUserCacheGetMiss(t *testing.T) {
-	c := NewUserCache(5 * time.Minute)
+	c, cleanup := newTestUserCache(t, 5*time.Minute)
+	defer cleanup()
+
 	assert.Nil(t, c.Get(999))
 }
 
 func TestUserCacheInvalidate(t *testing.T) {
-	c := NewUserCache(5 * time.Minute)
+	c, cleanup := newTestUserCache(t, 5*time.Minute)
+	defer cleanup()
 
 	user := &models.User{ID: 1, Name: "Bob"}
 	c.Set(user)
@@ -38,7 +58,8 @@ func TestUserCacheInvalidate(t *testing.T) {
 }
 
 func TestUserCacheExpiry(t *testing.T) {
-	c := NewUserCache(50 * time.Millisecond)
+	c, cleanup := newTestUserCache(t, 50*time.Millisecond)
+	defer cleanup()
 
 	user := &models.User{ID: 1, Name: "Carol"}
 	c.Set(user)
@@ -49,7 +70,8 @@ func TestUserCacheExpiry(t *testing.T) {
 }
 
 func TestUserCacheClear(t *testing.T) {
-	c := NewUserCache(5 * time.Minute)
+	c, cleanup := newTestUserCache(t, 5*time.Minute)
+	defer cleanup()
 
 	c.Set(&models.User{ID: 1, Name: "One"})
 	c.Set(&models.User{ID: 2, Name: "Two"})
@@ -60,7 +82,8 @@ func TestUserCacheClear(t *testing.T) {
 }
 
 func TestUserCacheSize(t *testing.T) {
-	c := NewUserCache(5 * time.Minute)
+	c, cleanup := newTestUserCache(t, 5*time.Minute)
+	defer cleanup()
 
 	assert.Equal(t, 0, c.Size())
 	c.Set(&models.User{ID: 1, Name: "A"})
@@ -70,7 +93,8 @@ func TestUserCacheSize(t *testing.T) {
 }
 
 func TestUserCacheOverwrite(t *testing.T) {
-	c := NewUserCache(5 * time.Minute)
+	c, cleanup := newTestUserCache(t, 5*time.Minute)
+	defer cleanup()
 
 	c.Set(&models.User{ID: 1, Name: "Original"})
 	c.Set(&models.User{ID: 1, Name: "Updated"})

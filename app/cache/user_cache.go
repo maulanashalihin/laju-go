@@ -1,104 +1,111 @@
 package cache
 
 import (
-	"sync"
+	"encoding/json"
 	"time"
 
+	"github.com/nutsdb/nutsdb"
 	"github.com/maulanashalihin/laju-go/app/models"
 )
 
-type cacheEntry struct {
-	user      *models.User
-	expiresAt time.Time
+// userCacheEntry wraps a user with application-level TTL.
+type userCacheEntry struct {
+	User      *models.User `json:"u"`
+	ExpiresAt time.Time    `json:"exp"`
 }
 
-// UserCache provides TTL-based in-memory caching for user profiles.
-// Thread-safe via sync.RWMutex.
+// UserCache provides NutsDB-backed user profile caching with TTL.
+// Thread-safe via NutsDB transaction isolation.
 type UserCache struct {
-	mu   sync.RWMutex
-	data map[int64]cacheEntry
-	ttl  time.Duration
+	db  *nutsdb.DB
+	ttl time.Duration
 }
 
-// NewUserCache creates a user profile cache with the given TTL.
-// A background goroutine periodically purges expired entries.
-func NewUserCache(ttl time.Duration) *UserCache {
-	c := &UserCache{
-		data: make(map[int64]cacheEntry),
-		ttl:  ttl,
+// NewUserCache creates a user profile cache backed by NutsDB.
+func NewUserCache(db *nutsdb.DB, ttl time.Duration) *UserCache {
+	if ttl <= 0 {
+		ttl = 15 * time.Minute
 	}
-	go c.cleanup()
-	return c
+	return &UserCache{db: db, ttl: ttl}
 }
 
 // Get retrieves a user from cache. Returns nil if not found or expired.
 func (c *UserCache) Get(userID int64) *models.User {
-	c.mu.RLock()
-	entry, ok := c.data[userID]
-	c.mu.RUnlock()
+	var entry userCacheEntry
 
-	if !ok || time.Now().After(entry.expiresAt) {
-		// Expired: clean up
-		if ok {
-			c.mu.Lock()
-			delete(c.data, userID)
-			c.mu.Unlock()
+	err := c.db.View(func(tx *nutsdb.Tx) error {
+		val, err := tx.Get("users", int64Key(userID))
+		if err != nil {
+			return err
 		}
+		return json.Unmarshal(val, &entry)
+	})
+	if err != nil {
 		return nil
 	}
 
-	return entry.user
+	// Application-level TTL check (supports sub-second precision)
+	if time.Now().After(entry.ExpiresAt) {
+		c.Invalidate(userID)
+		return nil
+	}
+
+	return entry.User
 }
 
 // Set stores a user in cache with the configured TTL.
 func (c *UserCache) Set(user *models.User) {
-	c.mu.Lock()
-	c.data[user.ID] = cacheEntry{
-		user:      user,
-		expiresAt: time.Now().Add(c.ttl),
+	if user == nil {
+		return
 	}
-	c.mu.Unlock()
+
+	entry := userCacheEntry{
+		User:      user,
+		ExpiresAt: time.Now().Add(c.ttl),
+	}
+
+	raw, err := json.Marshal(entry)
+	if err != nil {
+		return
+	}
+
+	// NutsDB native TTL (second granularity) as safety net
+	c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.Put("users", int64Key(user.ID), raw, ttlToUint32(c.ttl))
+	})
 }
 
 // Invalidate removes a user from cache (call after updates).
 func (c *UserCache) Invalidate(userID int64) {
-	c.mu.Lock()
-	delete(c.data, userID)
-	c.mu.Unlock()
+	c.db.Update(func(tx *nutsdb.Tx) error {
+		return tx.Delete("users", int64Key(userID))
+	})
 }
 
 // Clear removes all cached entries.
 func (c *UserCache) Clear() {
-	c.mu.Lock()
-	c.data = make(map[int64]cacheEntry)
-	c.mu.Unlock()
-}
-
-// cleanup runs in a goroutine, evicting expired entries every 5 minutes.
-func (c *UserCache) cleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-	for range ticker.C {
-		c.mu.Lock()
-		now := time.Now()
-		for id, entry := range c.data {
-			if now.After(entry.expiresAt) {
-				delete(c.data, id)
-			}
+	c.db.Update(func(tx *nutsdb.Tx) error {
+		keys, err := tx.GetKeys("users")
+		if err != nil {
+			return nil
 		}
-		c.mu.Unlock()
-	}
+		for _, key := range keys {
+			tx.Delete("users", key)
+		}
+		return nil
+	})
 }
 
-// Size returns the number of non-expired cached entries (for debugging).
+// Size returns the approximate number of cached entries.
 func (c *UserCache) Size() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
 	count := 0
-	for _, entry := range c.data {
-		if time.Now().Before(entry.expiresAt) {
-			count++
+	c.db.View(func(tx *nutsdb.Tx) error {
+		keys, err := tx.GetKeys("users")
+		if err != nil {
+			return nil
 		}
-	}
+		count = len(keys)
+		return nil
+	})
 	return count
 }

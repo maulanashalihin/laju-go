@@ -33,6 +33,7 @@ type Config struct {
 	// Cache
 	UserCacheTTL    time.Duration
 	SessionCacheTTL time.Duration
+	NutsDBPath      string
 }
 
 var AppConfig *Config
@@ -65,6 +66,7 @@ func Load() *Config {
 		// Cache
 		UserCacheTTL:    getUserCacheTTL(),
 		SessionCacheTTL: getSessionCacheTTL(),
+		NutsDBPath:      getEnv("NUTSDB_PATH", "./data/cache"),
 	}
 
 	return AppConfig
