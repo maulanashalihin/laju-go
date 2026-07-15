@@ -1,6 +1,10 @@
-# NutsDB Cache Layer
+# NutsDB Cache Layer (REMOVED)
 
-## Overview
+> ⚠️ **NutsDB has been removed as of commit `a9e8001`.**
+> Session cache now uses in-memory `sync.RWMutex` + `map`.
+> See `app/cache/session_cache.go` and [[sources/obs-2026-07-15-removed-nutsdb-replaced-with-in-memory-session-cache]] for details.
+
+## Overview (Historical)
 
 Laju Go uses [NutsDB](https://github.com/nutsdb/nutsdb) — an embedded key-value store written in pure Go — as a **persistent TTL cache** for sessions and user profiles. Unlike in-memory caches, NutsDB data survives server restarts with no data loss.
 

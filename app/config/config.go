@@ -30,7 +30,6 @@ type Config struct {
 	FromName  string
 	// Session
 	SessionTTL time.Duration
-
 }
 
 var AppConfig *Config
@@ -60,7 +59,6 @@ func Load() *Config {
 		FromName:  getEnv("FROM_NAME", "Laju"),
 		// Session
 		SessionTTL: getSessionTTL(),
-
 	}
 
 	return AppConfig
@@ -119,7 +117,3 @@ func getSessionTTL() time.Duration {
 	}
 	return d
 }
-
-
-
-
