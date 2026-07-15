@@ -106,11 +106,7 @@ Setiap handler struct punya dependency sendiri, jangan numpuk di satu struct rak
 APP_PORT, APP_ENV, DB_PATH, SESSION_SECRET, NUTSDB_PATH
 ```
 
-Env opsional dengan default:
-
-- `NUTSDB_PATH=./data/cache` — persistent cache storage
-- `USER_CACHE_TTL=30m` — user profile cache TTL
-- `SESSION_CACHE_BUFFER=5m` — buffer di atas session lifetime
+Lihat `.env.example` untuk semua opsi + default.
 
 ## Gotchas
 
