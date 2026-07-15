@@ -72,6 +72,16 @@ func (h *OrderHandler) Cancel(c *fiber.Ctx) error { ... }
 
 Setiap handler struct punya dependency sendiri, jangan numpuk di satu struct raksasa.
 
+## Design Principles (Wajib Dibaca Sebelum Generate Frontend)
+
+Sebelum nulis kode frontend apapun (halaman baru, komponen, landing page):
+
+1. **`wiki_recall`** `design-principles` — baca brief inference, set three dials, apply anti-slop rules
+2. **Pilih vibe** — refer ke vibe pages: [[vibe-minimalist]], [[vibe-premium-consumer]], [[vibe-playful-experimental]], [[vibe-dark-tech]], [[vibe-brutalist]]
+3. **Cek `frontend/src/app.css`** — gunakan token warna yang sudah ada (`brand-*`, `secondary-*`, `neutral-*`). Jangan define ulang
+4. **Apply `@theme` tokens** — semua warna/shadow/font sudah di `@theme`. Jangan hardcode hex
+5. **Pre-flight checklist** — dari `design-principles` section 5, sebelum declare selesai
+
 ## Svelte 5 Rules
 
 - ❌ Jangan `$effect` untuk derived state → ganti `$derived()`
