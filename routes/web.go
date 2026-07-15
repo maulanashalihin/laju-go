@@ -28,7 +28,7 @@ func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, userSe
 	setupPublicRoutes(app, handlers.Public)
 
 	// Setup auth routes
-	setupAuthRoutes(app, handlers.Auth, handlers.PasswordReset, store, mailerService)
+	setupAuthRoutes(app, handlers.Auth, handlers.PasswordReset, store, mailerService, csrfMiddleware)
 
 	// Setup app routes (protected)
 	setupAppRoutes(app, handlers.App, handlers.Upload, store, userService, csrfMiddleware)
@@ -64,7 +64,7 @@ func setupPublicRoutes(app *fiber.App, handler *handlers.PublicHandler) {
 	app.Get("/about", handler.About)
 }
 
-func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, passwordResetHandler *handlers.PasswordResetHandler, store *session.Store, mailerService *services.MailerService) {
+func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, passwordResetHandler *handlers.PasswordResetHandler, store *session.Store, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
 	// Login routes (with Guest middleware)
 	app.Get("/login", middlewares.Guest(store), authHandler.ShowLoginForm)
 	app.Post("/login", middlewares.Guest(store), authHandler.Login, middlewares.AuthRateLimit.Limit())
@@ -77,8 +77,8 @@ func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, password
 	app.Get("/auth/google", authHandler.GoogleLogin)
 	app.Get("/auth/google/callback", authHandler.GoogleCallback)
 
-	// Logout (requires auth)
-	app.Post("/logout", middlewares.AuthRequired(store), authHandler.Logout)
+	// Logout (requires auth + CSRF protection)
+	app.Post("/logout", middlewares.AuthRequired(store), csrfMiddleware.Protect(), authHandler.Logout)
 
 	// API: Get current user
 	app.Get("/api/me", middlewares.AuthRequired(store), authHandler.Me)
