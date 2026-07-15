@@ -110,6 +110,10 @@ func (h *UploadHandler) Upload(c *fiber.Ctx) error {
 		})
 	}
 
+	// Sync session with new avatar URL
+	sess.Set("avatar", avatarURL)
+	sess.Save()
+
 	slog.Info("upload success", "handler", "Upload", "avatar_url", avatarURL)
 
 	// Return the file URL

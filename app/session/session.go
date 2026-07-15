@@ -35,13 +35,16 @@ type Session struct {
 
 // SessionData represents the data stored in session
 type SessionData struct {
-	UserID     int64  `json:"user_id"`
-	Email      string `json:"email"`
-	Role       string `json:"role"`
-	CSRFToken  string `json:"csrf_token,omitempty"`
-	CSRFExpiry int64  `json:"csrf_expiry,omitempty"`
-	IP         string `json:"ip,omitempty"`
-	UserAgent  string `json:"ua,omitempty"`
+	UserID        int64  `json:"user_id"`
+	Name          string `json:"name,omitempty"`
+	Email         string `json:"email"`
+	Avatar        string `json:"avatar,omitempty"`
+	EmailVerified bool   `json:"email_verified,omitempty"`
+	Role          string `json:"role"`
+	CSRFToken     string `json:"csrf_token,omitempty"`
+	CSRFExpiry    int64  `json:"csrf_expiry,omitempty"`
+	IP            string `json:"ip,omitempty"`
+	UserAgent     string `json:"ua,omitempty"`
 }
 
 // New creates a new session store with database backend and optional in-memory cache.
@@ -94,14 +97,17 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 							"session_id", cookieValue,
 							"stored_ip", cached.IP, "got_ip", ClientIP(c))
 						s.sessionCache.Set(cookieValue, cache.CachedSessionData{
-							UserID:     cached.UserID,
-							Email:      cached.Email,
-							Role:       cached.Role,
-							CSRFToken:  cached.CSRFToken,
-							CSRFExpiry: cached.CSRFExpiry,
-							IP:         ClientIP(c),
-							UserAgent:  c.Get("User-Agent"),
-							ExpiresAt:  cached.ExpiresAt,
+							UserID:        cached.UserID,
+							Name:          cached.Name,
+							Email:         cached.Email,
+							Avatar:        cached.Avatar,
+							EmailVerified: cached.EmailVerified,
+							Role:          cached.Role,
+							CSRFToken:     cached.CSRFToken,
+							CSRFExpiry:    cached.CSRFExpiry,
+							IP:            ClientIP(c),
+							UserAgent:     c.Get("User-Agent"),
+							ExpiresAt:     cached.ExpiresAt,
 						})
 					} else {
 						// Valid IP mismatch — possible session hijack, invalidate
@@ -130,7 +136,14 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 					session.userID = cached.UserID
 					session.expiresAt = cached.ExpiresAt
 					session.values["user_id"] = cached.UserID
+					if cached.Name != "" {
+						session.values["name"] = cached.Name
+					}
 					session.values["email"] = cached.Email
+					if cached.Avatar != "" {
+						session.values["avatar"] = cached.Avatar
+					}
+					session.values["email_verified"] = cached.EmailVerified
 					session.values["role"] = cached.Role
 					if cached.CSRFToken != "" {
 						session.values["csrf_token"] = cached.CSRFToken
@@ -209,7 +222,14 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 					}
 
 					session.values["user_id"] = data.UserID
+					if data.Name != "" {
+						session.values["name"] = data.Name
+					}
 					session.values["email"] = data.Email
+					if data.Avatar != "" {
+						session.values["avatar"] = data.Avatar
+					}
+					session.values["email_verified"] = data.EmailVerified
 					session.values["role"] = data.Role
 					if data.CSRFToken != "" {
 						session.values["csrf_token"] = data.CSRFToken
@@ -221,14 +241,17 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 					// Store in cache for subsequent requests
 					if s.sessionCache != nil {
 						s.sessionCache.Set(cookieValue, cache.CachedSessionData{
-							UserID:     data.UserID,
-							Email:      data.Email,
-							Role:       data.Role,
-							CSRFToken:  data.CSRFToken,
-							CSRFExpiry: data.CSRFExpiry,
-							IP:         data.IP,
-							UserAgent:  data.UserAgent,
-							ExpiresAt:  dbSession.ExpiresAt,
+							UserID:        data.UserID,
+							Name:          data.Name,
+							Email:         data.Email,
+							Avatar:        data.Avatar,
+							EmailVerified: data.EmailVerified,
+							Role:          data.Role,
+							CSRFToken:     data.CSRFToken,
+							CSRFExpiry:    data.CSRFExpiry,
+							IP:            data.IP,
+							UserAgent:     data.UserAgent,
+							ExpiresAt:     dbSession.ExpiresAt,
 						})
 					}
 				}
@@ -288,8 +311,20 @@ func (s *Session) Save() error {
 		sessionData.UserID = int64(userID)
 	}
 
+	if name, ok := s.values["name"].(string); ok {
+		sessionData.Name = name
+	}
+
 	if email, ok := s.values["email"].(string); ok {
 		sessionData.Email = email
+	}
+
+	if avatar, ok := s.values["avatar"].(string); ok {
+		sessionData.Avatar = avatar
+	}
+
+	if emailVerified, ok := s.values["email_verified"].(bool); ok {
+		sessionData.EmailVerified = emailVerified
 	}
 
 	if role, ok := s.values["role"].(string); ok {
@@ -341,14 +376,17 @@ func (s *Session) Save() error {
 		// Seed cache after creation
 		if s.store.sessionCache != nil {
 			s.store.sessionCache.Set(s.id, cache.CachedSessionData{
-				UserID:     sessionData.UserID,
-				Email:      sessionData.Email,
-				Role:       sessionData.Role,
-				CSRFToken:  sessionData.CSRFToken,
-				CSRFExpiry: sessionData.CSRFExpiry,
-				IP:         sessionData.IP,
-				UserAgent:  sessionData.UserAgent,
-				ExpiresAt:  s.expiresAt,
+				UserID:        sessionData.UserID,
+				Name:          sessionData.Name,
+				Email:         sessionData.Email,
+				Avatar:        sessionData.Avatar,
+				EmailVerified: sessionData.EmailVerified,
+				Role:          sessionData.Role,
+				CSRFToken:     sessionData.CSRFToken,
+				CSRFExpiry:    sessionData.CSRFExpiry,
+				IP:            sessionData.IP,
+				UserAgent:     sessionData.UserAgent,
+				ExpiresAt:     s.expiresAt,
 			})
 		}
 	} else {
@@ -368,14 +406,17 @@ func (s *Session) Save() error {
 		// Refresh cache after update
 		if s.store.sessionCache != nil {
 			s.store.sessionCache.Set(s.id, cache.CachedSessionData{
-				UserID:     sessionData.UserID,
-				Email:      sessionData.Email,
-				Role:       sessionData.Role,
-				CSRFToken:  sessionData.CSRFToken,
-				CSRFExpiry: sessionData.CSRFExpiry,
-				IP:         sessionData.IP,
-				UserAgent:  sessionData.UserAgent,
-				ExpiresAt:  s.expiresAt,
+				UserID:        sessionData.UserID,
+				Name:          sessionData.Name,
+				Email:         sessionData.Email,
+				Avatar:        sessionData.Avatar,
+				EmailVerified: sessionData.EmailVerified,
+				Role:          sessionData.Role,
+				CSRFToken:     sessionData.CSRFToken,
+				CSRFExpiry:    sessionData.CSRFExpiry,
+				IP:            sessionData.IP,
+				UserAgent:     sessionData.UserAgent,
+				ExpiresAt:     s.expiresAt,
 			})
 		}
 	}
@@ -435,8 +476,20 @@ func (s *Session) Regenerate() error {
 		sessionData.UserID = int64(userID)
 	}
 
+	if name, ok := s.values["name"].(string); ok {
+		sessionData.Name = name
+	}
+
 	if email, ok := s.values["email"].(string); ok {
 		sessionData.Email = email
+	}
+
+	if avatar, ok := s.values["avatar"].(string); ok {
+		sessionData.Avatar = avatar
+	}
+
+	if emailVerified, ok := s.values["email_verified"].(bool); ok {
+		sessionData.EmailVerified = emailVerified
 	}
 
 	if role, ok := s.values["role"].(string); ok {
@@ -476,14 +529,17 @@ func (s *Session) Regenerate() error {
 	if s.store.sessionCache != nil {
 		s.store.sessionCache.Invalidate(s.id)
 		s.store.sessionCache.Set(newID, cache.CachedSessionData{
-			UserID:     sessionData.UserID,
-			Email:      sessionData.Email,
-			Role:       sessionData.Role,
-			CSRFToken:  sessionData.CSRFToken,
-			CSRFExpiry: sessionData.CSRFExpiry,
-			IP:         sessionData.IP,
-			UserAgent:  sessionData.UserAgent,
-			ExpiresAt:  s.expiresAt,
+			UserID:        sessionData.UserID,
+			Name:          sessionData.Name,
+			Email:         sessionData.Email,
+			Avatar:        sessionData.Avatar,
+			EmailVerified: sessionData.EmailVerified,
+			Role:          sessionData.Role,
+			CSRFToken:     sessionData.CSRFToken,
+			CSRFExpiry:    sessionData.CSRFExpiry,
+			IP:            sessionData.IP,
+			UserAgent:     sessionData.UserAgent,
+			ExpiresAt:     s.expiresAt,
 		})
 	}
 
@@ -568,13 +624,16 @@ func (s *Store) setFingerprint(c *fiber.Ctx, sessionID string, cached *cache.Cac
 
 	// Reconstruct full session data JSON with fingerprint
 	newData := SessionData{
-		UserID:     cached.UserID,
-		Email:      cached.Email,
-		Role:       cached.Role,
-		CSRFToken:  cached.CSRFToken,
-		CSRFExpiry: cached.CSRFExpiry,
-		IP:         ip,
-		UserAgent:  ua,
+		UserID:        cached.UserID,
+		Name:          cached.Name,
+		Email:         cached.Email,
+		Avatar:        cached.Avatar,
+		EmailVerified: cached.EmailVerified,
+		Role:          cached.Role,
+		CSRFToken:     cached.CSRFToken,
+		CSRFExpiry:    cached.CSRFExpiry,
+		IP:            ip,
+		UserAgent:     ua,
 	}
 	newJSON, err := json.Marshal(newData)
 	if err != nil {
@@ -596,14 +655,17 @@ func (s *Store) setFingerprint(c *fiber.Ctx, sessionID string, cached *cache.Cac
 	// Update cache
 	if s.sessionCache != nil {
 		s.sessionCache.Set(sessionID, cache.CachedSessionData{
-			UserID:     cached.UserID,
-			Email:      cached.Email,
-			Role:       cached.Role,
-			CSRFToken:  cached.CSRFToken,
-			CSRFExpiry: cached.CSRFExpiry,
-			IP:         ip,
-			UserAgent:  ua,
-			ExpiresAt:  cached.ExpiresAt,
+			UserID:        cached.UserID,
+			Name:          cached.Name,
+			Email:         cached.Email,
+			Avatar:        cached.Avatar,
+			EmailVerified: cached.EmailVerified,
+			Role:          cached.Role,
+			CSRFToken:     cached.CSRFToken,
+			CSRFExpiry:    cached.CSRFExpiry,
+			IP:            ip,
+			UserAgent:     ua,
+			ExpiresAt:     cached.ExpiresAt,
 		})
 	}
 
@@ -619,13 +681,16 @@ func (s *Store) SetSecure(secure bool) {
 
 // CreateAuthenticatedSession sets user authentication data on the session and saves it.
 // Helper to avoid duplicating the Set/Save pattern across multiple handlers.
-func (s *Store) CreateAuthenticatedSession(c *fiber.Ctx, userID int64, email, role string) error {
+func (s *Store) CreateAuthenticatedSession(c *fiber.Ctx, userID int64, name, email, avatar, role string, emailVerified bool) error {
 	sess, err := s.Get(c)
 	if err != nil {
 		return err
 	}
 	sess.Set("user_id", userID)
+	sess.Set("name", name)
 	sess.Set("email", email)
+	sess.Set("avatar", avatar)
+	sess.Set("email_verified", emailVerified)
 	sess.Set("role", role)
 	return sess.Save()
 }

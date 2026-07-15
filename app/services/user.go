@@ -4,39 +4,26 @@ import (
 	"context"
 	"errors"
 
-	"github.com/maulanashalihin/laju-go/app/cache"
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/maulanashalihin/laju-go/app/queries"
 )
 
 type UserService struct {
 	querier *queries.Querier
-	cache   *cache.UserCache
 }
 
-func NewUserService(querier *queries.Querier, userCache *cache.UserCache) *UserService {
+func NewUserService(querier *queries.Querier) *UserService {
 	return &UserService{
 		querier: querier,
-		cache:   userCache,
 	}
 }
 
-// GetProfile retrieves a user's profile (with cache)
+// GetProfile retrieves a user's profile directly from DB.
 func (s *UserService) GetProfile(userID int64) (*models.UserResponse, error) {
-	// Check cache first
-	if user := s.cache.Get(userID); user != nil {
-		response := user.ToResponse()
-		return &response, nil
-	}
-
-	// Cache miss: query DB
 	user, err := s.querier.GetUserByID(context.Background(), userID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Store in cache
-	s.cache.Set(user)
 
 	response := user.ToResponse()
 	return &response, nil
@@ -47,25 +34,17 @@ func (s *UserService) GetProfileByEmail(email string) (*models.User, error) {
 	return s.querier.GetUserByEmail(context.Background(), email)
 }
 
-// UpdatePassword updates a user's password (invalidates cache)
+// UpdatePassword updates a user's password
 func (s *UserService) UpdatePassword(userID int64, hashedPassword string) error {
-	err := s.querier.UpdateUserPassword(context.Background(), userID, hashedPassword)
-	if err == nil {
-		s.cache.Invalidate(userID)
-	}
-	return err
+	return s.querier.UpdateUserPassword(context.Background(), userID, hashedPassword)
 }
 
-// UpdateAvatar updates a user's avatar URL (invalidates cache)
+// UpdateAvatar updates a user's avatar URL
 func (s *UserService) UpdateAvatar(userID int64, avatarURL string) error {
-	err := s.querier.UpdateUserAvatar(context.Background(), userID, avatarURL)
-	if err == nil {
-		s.cache.Invalidate(userID)
-	}
-	return err
+	return s.querier.UpdateUserAvatar(context.Background(), userID, avatarURL)
 }
 
-// UpdateProfile updates a user's profile (invalidates cache)
+// UpdateProfile updates a user's profile
 func (s *UserService) UpdateProfile(userID int64, req models.UpdateProfileRequest) (*models.UserResponse, error) {
 	user, err := s.querier.GetUserByID(context.Background(), userID)
 	if err != nil {
@@ -84,14 +63,11 @@ func (s *UserService) UpdateProfile(userID int64, req models.UpdateProfileReques
 		return nil, err
 	}
 
-	// Invalidate old cache entry
-	s.cache.Invalidate(userID)
-
 	response := user.ToResponse()
 	return &response, nil
 }
 
-// ChangePassword changes a user's password (invalidates cache)
+// ChangePassword changes a user's password
 func (s *UserService) ChangePassword(userID int64, oldPassword, newPassword string) error {
 	user, err := s.querier.GetUserByID(context.Background(), userID)
 	if err != nil {
@@ -113,33 +89,20 @@ func (s *UserService) ChangePassword(userID int64, oldPassword, newPassword stri
 		return err
 	}
 
-	err = s.querier.UpdateUserPassword(context.Background(), userID, hashedPassword)
-	if err == nil {
-		s.cache.Invalidate(userID)
-	}
-	return err
+	return s.querier.UpdateUserPassword(context.Background(), userID, hashedPassword)
 }
 
-// DeleteAccount deletes a user's account (invalidates cache)
+// DeleteAccount deletes a user's account
 func (s *UserService) DeleteAccount(userID int64) error {
-	err := s.querier.DeleteUser(context.Background(), userID)
-	if err == nil {
-		s.cache.Invalidate(userID)
-	}
-	return err
+	return s.querier.DeleteUser(context.Background(), userID)
 }
 
-// IsAdmin checks if a user is an admin (with cache)
+// IsAdmin checks if a user is an admin (direct DB query).
 func (s *UserService) IsAdmin(userID int64) (bool, error) {
-	if user := s.cache.Get(userID); user != nil {
-		return user.Role == models.RoleAdmin, nil
-	}
-
 	user, err := s.querier.GetUserByID(context.Background(), userID)
 	if err != nil {
 		return false, err
 	}
 
-	s.cache.Set(user)
 	return user.Role == models.RoleAdmin, nil
 }

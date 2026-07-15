@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log/slog"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/maulanashalihin/laju-go/app/services"
@@ -23,25 +21,22 @@ func NewAppHandler(userService *services.UserService, store *session.Store, iner
 	}
 }
 
+// sessionUser builds a UserResponse from session values.
+func sessionUser(sess *session.Session) *models.UserResponse {
+	return &models.UserResponse{
+		ID:            sess.Get("user_id").(int64),
+		Name:          toStr(sess.Get("name")),
+		Email:         toStr(sess.Get("email")),
+		Avatar:        toStr(sess.Get("avatar")),
+		Role:          models.UserRole(toStr(sess.Get("role"))),
+		EmailVerified: toBool(sess.Get("email_verified")),
+	}
+}
+
 // Dashboard renders the main app dashboard using Inertia
 func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
-	// Get user info from locals (set by AuthRequired middleware)
-	userID := c.Locals("user_id")
-
-	if userID == nil {
-		// Should not happen as AuthRequired middleware handles this
-		return c.Redirect("/login")
-	}
-
-	slog.Info("loading dashboard", "handler", "Dashboard", "user_id", userID)
-	
-	user, err := h.userService.GetProfile(userID.(int64))
-	if err != nil {
-		slog.Error("dashboard get profile error", "handler", "Dashboard", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to load dashboard: " + err.Error(),
-		})
-	}
+	sess, _ := h.store.Get(c)
+	user := sessionUser(sess)
 
 	return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
 		"user": user,
@@ -50,20 +45,8 @@ func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
 
 // Profile returns user profile (Inertia)
 func (h *AppHandler) Profile(c *fiber.Ctx) error {
-	// Get user info from locals (set by AuthRequired middleware)
-	userID := c.Locals("user_id")
-
-	if userID == nil {
-		// Should not happen as AuthRequired middleware handles this
-		return c.Redirect("/login")
-	}
-
-	user, err := h.userService.GetProfile(userID.(int64))
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to load profile",
-		})
-	}
+	sess, _ := h.store.Get(c)
+	user := sessionUser(sess)
 
 	return h.inertiaService.Render(c, "app/Profile", fiber.Map{
 		"user": user,
@@ -94,6 +77,16 @@ func (h *AppHandler) UpdateProfile(c *fiber.Ctx) error {
 			"error": "Failed to update profile",
 		})
 	}
+
+	// Sync session with updated name/avatar
+	sess, _ := h.store.Get(c)
+	if req.Name != "" {
+		sess.Set("name", user.Name)
+	}
+	if req.Avatar != "" {
+		sess.Set("avatar", user.Avatar)
+	}
+	sess.Save()
 
 	return h.inertiaService.Render(c, "app/Profile", fiber.Map{
 		"user":    user,
@@ -138,22 +131,42 @@ func (h *AppHandler) UpdatePassword(c *fiber.Ctx) error {
 	}
 
 	// Change password
-	err := h.userService.ChangePassword(userID.(int64), req.CurrentPassword, req.NewPassword)
-	if err != nil {
+	if err := h.userService.ChangePassword(userID.(int64), req.CurrentPassword, req.NewPassword); err != nil {
 		return h.inertiaService.Render(c, "app/Profile", fiber.Map{
 			"error": err.Error(),
 		})
 	}
 
-	user, err := h.userService.GetProfile(userID.(int64))
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to load profile",
-		})
-	}
+	sess, _ := h.store.Get(c)
+	user := sessionUser(sess)
 
 	return h.inertiaService.Render(c, "app/Profile", fiber.Map{
 		"user":    user,
 		"success": "Password changed successfully",
 	})
 }
+
+// toStr safely extracts a string from an interface{}, defaulting to empty string.
+func toStr(v interface{}) string {
+	if v == nil {
+		return ""
+	}
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+// toBool safely extracts a bool from an interface{}, defaulting to false.
+func toBool(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	b, ok := v.(bool)
+	if !ok {
+		return false
+	}
+	return b
+}
+

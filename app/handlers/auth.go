@@ -67,7 +67,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return c.Redirect("/register", fiber.StatusSeeOther)
 	}
 
-	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Email, string(user.Role)); err != nil {
+	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Name, user.Email, user.Avatar, string(user.Role), user.EmailVerified); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create session",
 		})
@@ -107,7 +107,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Redirect("/login", fiber.StatusSeeOther)
 	}
 
-	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Email, string(user.Role)); err != nil {
+	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Name, user.Email, user.Avatar, string(user.Role), user.EmailVerified); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create session",
 		})
@@ -168,7 +168,7 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	}
 
 	// Create session
-	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Email, string(user.Role)); err != nil {
+	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Name, user.Email, user.Avatar, string(user.Role), user.EmailVerified); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create session",
 		})

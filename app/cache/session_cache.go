@@ -10,14 +10,17 @@ import (
 // CachedSessionData holds the session fields we cache.
 // Survives restarts via NutsDB persistence.
 type CachedSessionData struct {
-	UserID     int64     `json:"uid"`
-	Email      string    `json:"email"`
-	Role       string    `json:"role"`
-	CSRFToken  string    `json:"csrf,omitempty"`
-	CSRFExpiry int64     `json:"csrf_exp,omitempty"`
-	IP         string    `json:"ip,omitempty"`
-	UserAgent  string    `json:"ua,omitempty"`
-	ExpiresAt  time.Time `json:"exp"`
+	UserID        int64     `json:"uid"`
+	Name          string    `json:"name,omitempty"`
+	Email         string    `json:"email"`
+	Avatar        string    `json:"avatar,omitempty"`
+	EmailVerified bool      `json:"ev,omitempty"`
+	Role          string    `json:"role"`
+	CSRFToken     string    `json:"csrf,omitempty"`
+	CSRFExpiry    int64     `json:"csrf_exp,omitempty"`
+	IP            string    `json:"ip,omitempty"`
+	UserAgent     string    `json:"ua,omitempty"`
+	ExpiresAt     time.Time `json:"exp"`
 }
 
 // SessionCache provides NutsDB-backed session caching.
