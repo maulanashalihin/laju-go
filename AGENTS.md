@@ -110,6 +110,17 @@ Sebelum nulis kode frontend apapun (halaman baru, komponen, landing page):
 - Goose skip migration yang sudah di-apply — edit file lama tidak berefek di production.
 - Satu file = satu tabel (lihat wiki: [Single-Table Migration](.llm-wiki/wiki/concepts/concept-single-table-migration.md)).
 
+## ⚠️ Aturan Generated Files
+
+🔴 **JANGAN edit `*_templ.go` langsung.** File ini auto-generated dari `*.templ`.
+
+| File sumber | Generate dengan |
+|------------|----------------|
+| `*.templ` | `templ generate` |
+| `queries/*.sql` | `npm run db:generate` (sqlc) |
+
+Kalau perlu `<br>` atau whitespace di templ, tulis manual — jangan andelin newline dari source karena di-strip saat generate.
+
 ## Gotchas
 
 - `.vite-port` stale? `rm .vite-port && restart Vite`
