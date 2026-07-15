@@ -66,7 +66,7 @@ func Load() *Config {
 		// Cache
 		UserCacheTTL:       getUserCacheTTL(),
 		SessionCacheBuffer: getSessionCacheBuffer(),
-		NutsDBPath:      getEnv("NUTSDB_PATH", "./data/cache"),
+		NutsDBPath:         getEnv("NUTSDB_PATH", "./data/cache"),
 	}
 
 	return AppConfig
