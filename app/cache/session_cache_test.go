@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -9,24 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestSessionCache(t *testing.T, buffer time.Duration) (*SessionCache, func()) {
+func newTestSessionCache(t *testing.T) *SessionCache {
 	t.Helper()
-	dir, err := os.MkdirTemp("", "cache-test-*")
-	require.NoError(t, err)
-
-	ndb, err := Open(dir)
-	require.NoError(t, err)
-
-	c := NewSessionCache(ndb.DB, buffer)
-	return c, func() {
-		ndb.Close()
-		os.RemoveAll(dir)
-	}
+	return NewSessionCache()
 }
 
 func TestSessionCacheGetSet(t *testing.T) {
-	c, cleanup := newTestSessionCache(t, 5*time.Minute)
-	defer cleanup()
+	c := newTestSessionCache(t)
 
 	sessionID := "test-session-1"
 	data := CachedSessionData{
@@ -50,16 +38,14 @@ func TestSessionCacheGetSet(t *testing.T) {
 }
 
 func TestSessionCacheGetMiss(t *testing.T) {
-	c, cleanup := newTestSessionCache(t, 5*time.Minute)
-	defer cleanup()
+	c := newTestSessionCache(t)
 
 	_, ok := c.Get("nonexistent-session")
 	assert.False(t, ok)
 }
 
 func TestSessionCacheInvalidate(t *testing.T) {
-	c, cleanup := newTestSessionCache(t, 5*time.Minute)
-	defer cleanup()
+	c := newTestSessionCache(t)
 
 	sessionID := "test-session-2"
 	data := CachedSessionData{
@@ -78,8 +64,7 @@ func TestSessionCacheInvalidate(t *testing.T) {
 }
 
 func TestSessionCacheExpiry(t *testing.T) {
-	c, cleanup := newTestSessionCache(t, 5*time.Minute)
-	defer cleanup()
+	c := newTestSessionCache(t)
 
 	sessionID := "test-session-3"
 	data := CachedSessionData{
@@ -98,8 +83,7 @@ func TestSessionCacheExpiry(t *testing.T) {
 }
 
 func TestSessionCacheClear(t *testing.T) {
-	c, cleanup := newTestSessionCache(t, 5*time.Minute)
-	defer cleanup()
+	c := newTestSessionCache(t)
 
 	c.Set("sid-1", CachedSessionData{
 		UserID:    1,
@@ -126,8 +110,7 @@ func TestSessionCacheClear(t *testing.T) {
 }
 
 func TestSessionCacheOverwrite(t *testing.T) {
-	c, cleanup := newTestSessionCache(t, 5*time.Minute)
-	defer cleanup()
+	c := newTestSessionCache(t)
 
 	sessionID := "test-session-4"
 	c.Set(sessionID, CachedSessionData{
@@ -147,8 +130,7 @@ func TestSessionCacheOverwrite(t *testing.T) {
 }
 
 func TestSessionCacheTTLBuffer(t *testing.T) {
-	c, cleanup := newTestSessionCache(t, 30*time.Minute)
-	defer cleanup()
+	c := newTestSessionCache(t)
 
 	sessionID := "test-session-5"
 	data := CachedSessionData{
@@ -164,8 +146,7 @@ func TestSessionCacheTTLBuffer(t *testing.T) {
 }
 
 func TestSessionCacheExpiredSessionAtSet(t *testing.T) {
-	c, cleanup := newTestSessionCache(t, 5*time.Minute)
-	defer cleanup()
+	c := newTestSessionCache(t)
 
 	sessionID := "test-session-6"
 	data := CachedSessionData{

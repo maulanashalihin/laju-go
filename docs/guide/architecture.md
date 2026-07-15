@@ -387,47 +387,26 @@ Loaded once at startup via `config.Load()`.
 
 ### 9. Cache Layer (`app/cache/`)
 
-**Purpose**: Persistent TTL cache for user profiles and sessions using embedded NutsDB key-value store. Survives server restarts.
+**Purpose**: Fast in-memory session cache using `sync.RWMutex` + `map`. Reduces SQLite reads on every authenticated request. Cache is ephemeral — the source of truth is SQLite.
 
 ```go
-// app/cache/nutsdb.go — shared wrapper
-type NutsDB struct {
-    DB *nutsdb.DB   // MMap mode for near-RAM speed
-}
-
-// app/cache/user_cache.go — user profile cache
-type UserCache struct {
-    db  *nutsdb.DB
-    ttl time.Duration  // Configurable via USER_CACHE_TTL env var
-}
-
-// app/cache/session_cache.go — session data cache
+// app/cache/session_cache.go — in-memory session cache
 type SessionCache struct {
-    db  *nutsdb.DB
-    buffer time.Duration  // Configurable via SESSION_CACHE_BUFFER env var
+    mu   sync.RWMutex
+    data map[string]cacheEntry
 }
 ```
 
-**Buckets**:
-
-| Bucket | Key | Value | TTL |
-|--------|-----|-------|-----|
-| `"sessions"` | `sessionID` (string) | `CachedSessionData` (JSON) | Session TTL + buffer |
-| `"users"` | `userID` (int64 BE) | `userCacheEntry` (JSON) | `USER_CACHE_TTL` |
-
-**Dual TTL safety**: Each entry has an application-level `ExpiresAt` field (sub-second precision) plus NutsDB native TTL (second granularity) as a backup safety net.
+Entry expiration is checked on every `Get()` call via the session's `ExpiresAt` field. Expired entries are automatically cleaned up on access.
 
 Used by:
 
-- `UserService` for profile lookups and role checks — auto-invalidated on updates via `Invalidate(userID)`
 - `session.Store` for session data lookups — reduces DB reads on every authenticated request
 
 Initialized at startup in `cmd/laju-go/main.go`:
 
 ```go
-ndb, _ := cache.Open(cfg.NutsDBPath)
-userCache := cache.NewUserCache(ndb.DB, cfg.UserCacheTTL)
-sessionCache := cache.NewSessionCache(ndb.DB, cfg.SessionCacheBuffer)
+sessionCache := cache.NewSessionCache()
 ```
 
 ---

@@ -30,9 +30,7 @@ type Config struct {
 	FromName  string
 	// Session
 	SessionTTL time.Duration
-	// Cache
-	SessionCacheBuffer time.Duration
-	NutsDBPath         string
+
 }
 
 var AppConfig *Config
@@ -62,9 +60,7 @@ func Load() *Config {
 		FromName:  getEnv("FROM_NAME", "Laju"),
 		// Session
 		SessionTTL: getSessionTTL(),
-		// Cache
-		SessionCacheBuffer: getSessionCacheBuffer(),
-		NutsDBPath:         getEnv("NUTSDB_PATH", "./data/cache"),
+
 	}
 
 	return AppConfig
@@ -124,16 +120,6 @@ func getSessionTTL() time.Duration {
 	return d
 }
 
-// getSessionCacheBuffer returns the session cache buffer duration from env.
-// This buffer is added to the remaining session lifetime as NutsDB TTL.
-// Default: 5 minutes.
-func getSessionCacheBuffer() time.Duration {
-	val := getEnv("SESSION_CACHE_BUFFER", "5m")
-	d, err := time.ParseDuration(val)
-	if err != nil {
-		return 5 * time.Minute
-	}
-	return d
-}
+
 
 
