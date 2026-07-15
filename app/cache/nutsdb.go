@@ -34,14 +34,11 @@ func Open(dir string) (*NutsDB, error) {
 
 	ndb := &NutsDB{DB: db}
 
-	// Create buckets
+	// Ensure buckets exist (ignore "already exists" error on subsequent runs)
 	for _, bucket := range []string{"sessions", "users"} {
-		if err := db.Update(func(tx *nutsdb.Tx) error {
+		_ = db.Update(func(tx *nutsdb.Tx) error {
 			return tx.NewBucket(nutsdb.DataStructureBTree, bucket)
-		}); err != nil {
-			db.Close()
-			return nil, err
-		}
+		})
 	}
 
 	log.Printf("[nutsdb] opened at %s", dir)
