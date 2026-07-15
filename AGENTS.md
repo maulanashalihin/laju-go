@@ -112,6 +112,7 @@ Sebelum nulis kode frontend apapun (halaman baru, komponen, landing page):
 
 ## Gotchas
 
+- 🔴 **Jangan edit `*_templ.go`** — di-generate `templ generate`
 - `.vite-port` stale? `rm .vite-port && restart Vite`
 - `go.sum` is gitignored — `go mod tidy` if needed
 - `dist/` gitignored kecuali `.gitkeep`
