@@ -33,23 +33,41 @@ Jangan default ke: purple gradient, centered hero di atas dark mesh, 3 equal fea
 
 Setelah design read, set tiga dial. Semua keputusan layout/motion/density di bawah digate oleh ini.
 
+Lihat juga: [[vibe-minimalist]], [[vibe-premium-consumer]], [[vibe-playful-experimental]], [[vibe-dark-tech]], [[vibe-brutalist]]
+
 | Dial | 1 | 10 | Default |
 |------|---|----|---------|
-| **DESIGN_VARIANCE** | Perfect Symmetry | Artsy Chaos | **7** |
-| **MOTION_INTENSITY** | Static | Cinematic / Physics | **5** |
+| **DESIGN_VARIANCE** | Perfect Symmetry | Artsy Chaos | **8** |
+| **MOTION_INTENSITY** | Static | Cinematic / Physics | **6** |
 | **VISUAL_DENSITY** | Airy gallery | Cockpit packed | **4** |
 
 ### Dial Inference
 
-| Brief | VARIANCE | MOTION | DENSITY |
-|-------|----------|--------|---------|
-| Minimalist / clean / editorial / Linear-style | 5-6 | 3-4 | 2-3 |
-| Premium consumer / Apple-y / luxury | 7-8 | 5-7 | 3-4 |
-| Playful / Awwwards / experimental / agency | 9-10 | 8-10 | 3-4 |
-| Landing / portfolio / marketing (default) | 7-9 | 6-8 | 3-5 |
-| Trust-first / public-sector / aksesibilitas | 3-4 | 2-3 | 4-5 |
-| Admin dashboard | 3-5 | 2-3 | 6-8 |
-| Auth / settings page | 3-4 | 1-2 | 3-4 |
+| Signal / Brief | VARIANCE | MOTION | DENSITY | Related vibe |
+|---------------|----------|--------|---------|-------------|
+| Minimalist / clean / editorial / Linear-style | 5-6 | 3-4 | 2-3 | [[vibe-minimalist]] |
+| Premium consumer / Apple-y / luxury / brand | 7-8 | 5-7 | 3-4 | [[vibe-premium-consumer]] |
+| Playful / wild / Awwwards / experimental / agency | 9-10 | 8-10 | 3-4 | [[vibe-playful-experimental]] |
+| Dark tech / devtool / hacker | 4-5 | 2-3 | 5-7 | [[vibe-dark-tech]] |
+| Brutalist / raw / anti-design | 8-10 | 2-3 | 4-6 | [[vibe-brutalist]] |
+| Trust-first / public-sector / regulated / aksesibilitas | 3-4 | 2-3 | 4-5 | — |
+| Landing page / portfolio / marketing site (default) | 7-9 | 6-8 | 3-5 | — |
+| Redesign - preserve | match existing | +1 | match existing | — |
+| Redesign - overhaul | +2 | +2 | match existing | — |
+
+### Use-Case Presets
+
+| Use case | VARIANCE | MOTION | DENSITY |
+|----------|----------|--------|---------|
+| Landing (SaaS, mainstream) | 7 | 6 | 4 |
+| Landing (Agency / creative) | 9 | 8 | 3 |
+| Landing (Premium consumer) | 7 | 6 | 3 |
+| Portfolio (Designer / studio) | 8 | 7 | 3 |
+| Portfolio (Developer) | 6 | 5 | 4 |
+| Editorial / Blog | 6 | 4 | 3 |
+| Public-sector service | 3 | 2 | 5 |
+| Redesign - preserve | match | match+1 | match |
+| Redesign - overhaul | +2 | +2 | match |
 
 ---
 

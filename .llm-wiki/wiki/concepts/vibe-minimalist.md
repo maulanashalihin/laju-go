@@ -1,3 +1,5 @@
+> Related: [[design-principles]]
+
 # Vibe: Minimalist / Clean
 
 **Source:** [taste-skill/minimalist-skill](https://github.com/Leonxlnx/taste-skill/tree/main/skills/minimalist-skill) — Premium Utilitarian Minimalism.

@@ -1,3 +1,5 @@
+> Related: [[design-principles]]
+
 # Vibe: Dark Tech / Devtool
 
 **Vibe:** VSCode, GitHub, Linear dark, Vercel. Functional, technical.

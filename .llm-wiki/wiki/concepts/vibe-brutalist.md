@@ -1,3 +1,5 @@
+> Related: [[design-principles]]
+
 # Vibe: Industrial Brutalism
 
 **Source:** [taste-skill/brutalist-skill](https://github.com/Leonxlnx/taste-skill/tree/main/skills/brutalist-skill) — industrial-brutalist-ui.

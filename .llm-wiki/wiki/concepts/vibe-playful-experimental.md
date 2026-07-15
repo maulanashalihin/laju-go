@@ -1,3 +1,5 @@
+> Related: [[design-principles]]
+
 # Vibe: Playful / Agency / Experimental
 
 **Vibe:** Awwwards winners, Stripe press, Vercel, Dribbble featured. Individual, avant-garde.

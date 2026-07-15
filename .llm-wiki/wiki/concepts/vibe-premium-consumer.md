@@ -1,3 +1,5 @@
+> Related: [[design-principles]]
+
 # Vibe: Premium / High-End Agency
 
 **Source:** [taste-skill/soft-skill](https://github.com/Leonxlnx/taste-skill/tree/main/skills/soft-skill) — high-end-visual-design.
