@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/nutsdb/nutsdb"
 	"github.com/maulanashalihin/laju-go/app/models"
+	"github.com/nutsdb/nutsdb"
 )
 
 // userCacheEntry wraps a user with application-level TTL.
