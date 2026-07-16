@@ -5,7 +5,7 @@ status: stub
 
 # Inertia SPA Navigation
 
-Inertia.js enables single-page application (SPA) navigation in Laju Go without building a separate API.
+Inertia.js enables single-page application (SPA) navigation in Laju Go without building a separate API. Server-side integration via [fiber-inertia](https://github.com/maulanashalihin/fiber-inertia) — native `func(c *fiber.Ctx) error`, published Go library.
 
 ## Navigation Types
 
@@ -18,9 +18,19 @@ Inertia.js enables single-page application (SPA) navigation in Laju Go without b
 
 ## Redirect Rules
 
-- POST/PUT handlers must use `c.Redirect(path, fiber.StatusSeeOther)` (303)
-- Inertia does not follow 302 correctly for form submissions — 303 changes POST/PUT to GET on redirect
+- POST/PUT redirect: `h.inertiaService.Redirect(c, path)` — returns 303 See Other, Inertia client follows via XHR
+- External redirect (OAuth, external URLs): `h.inertiaService.Location(c, url)` — returns 409 + `X-Inertia-Location`, triggers `window.location`
+- Back navigation: `h.inertiaService.Back(c)` or `h.inertiaService.Back(c, "/fallback")` — reads Referer header
+- Inertia does not follow 302 correctly for form submissions — use `Redirect()` (303) not raw `c.Redirect()`
+
+## Library
+
+Inertia server-side logic handled by `github.com/maulanashalihin/fiber-inertia`:
+
+- `app/services/inertia.go` wraps the library and adds laju-go-specific features (Vite URLs, CSRF injection, flash messages)
+- All methods promoted via embedding: `Render`, `Redirect`, `Location`, `Back`, `Middleware`
+- See [fiber-inertia docs](https://github.com/maulanashalihin/fiber-inertia) for full API
 
 ## Source
 
-Captured from [[sources/SRC-2026-07-06-001]].
+Captured from [[sources/obs-2026-07-16-fiber-inertia-integrated-into-laju-go]] — integration of fiber-inertia library.

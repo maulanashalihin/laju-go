@@ -7,6 +7,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.47
+	github.com/maulanashalihin/fiber-inertia v0.0.0-20260716125151-36b399d56bb4
 	github.com/maulanashalihin/tusdfiber v1.0.2
 	github.com/pressly/goose/v3 v3.20.0
 	github.com/stretchr/testify v1.11.1

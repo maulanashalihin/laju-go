@@ -168,6 +168,9 @@ func main() {
 		Level: compress.LevelBestSpeed,
 	}))
 
+	// Inertia middleware: asset version checking, shared props, Vary header
+	app.Use(inertiaService.Middleware())
+
 	// CORS with explicit allowed origins (no AllowOriginsFunc in production)
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Join(cfg.AllowedOrigins, ","),

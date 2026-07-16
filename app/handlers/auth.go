@@ -54,17 +54,17 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 
 	if req.Name == "" || req.Email == "" || req.Password == "" {
 		h.store.Flash(c, "error", "All fields are required")
-		return c.Redirect("/register", fiber.StatusSeeOther)
+		return h.inertiaService.Redirect(c, "/register")
 	}
 
 	user, err := h.authService.Register(req.Name, req.Email, req.Password)
 	if err != nil {
 		if errors.Is(err, services.ErrUserAlreadyExists) {
 			h.store.Flash(c, "error", "Email already registered")
-			return c.Redirect("/register", fiber.StatusSeeOther)
+			return h.inertiaService.Redirect(c, "/register")
 		}
 		h.store.Flash(c, "error", "Failed to register user. Please try again.")
-		return c.Redirect("/register", fiber.StatusSeeOther)
+		return h.inertiaService.Redirect(c, "/register")
 	}
 
 	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Name, user.Email, user.Avatar, string(user.Role), user.EmailVerified); err != nil {
@@ -79,7 +79,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	}
 
 	slog.Info("session created", "handler", "Auth.Register", "user_id", user.ID, "redirect", "/app")
-	return c.Redirect("/app", fiber.StatusSeeOther)
+	return h.inertiaService.Redirect(c, "/app")
 }
 
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
@@ -101,10 +101,10 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidCredentials) {
 			h.store.Flash(c, "error", "Invalid email or password")
-			return c.Redirect("/login", fiber.StatusSeeOther)
+			return h.inertiaService.Redirect(c, "/login")
 		}
 		h.store.Flash(c, "error", "Failed to login. Please try again.")
-		return c.Redirect("/login", fiber.StatusSeeOther)
+		return h.inertiaService.Redirect(c, "/login")
 	}
 
 	if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Name, user.Email, user.Avatar, string(user.Role), user.EmailVerified); err != nil {
@@ -119,7 +119,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	slog.Info("session created", "handler", "Auth.Login", "user_id", user.ID, "redirect", "/app")
-	return c.Redirect("/app", fiber.StatusSeeOther)
+	return h.inertiaService.Redirect(c, "/app")
 }
 
 func (h *AuthHandler) Logout(c *fiber.Ctx) error {
@@ -128,7 +128,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 
 	slog.Info("user logged out", "handler", "Auth.Logout", "redirect", "/login")
 
-	return c.Redirect("/login", fiber.StatusSeeOther)
+	return h.inertiaService.Redirect(c, "/login")
 }
 
 func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
@@ -142,7 +142,9 @@ func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 	})
 
 	url := h.authService.GetOAuthURL(state)
-	return c.Redirect(url)
+	// Use Location() so Inertia triggers a full window.location navigation
+	// to Google's OAuth page (not an XHR follow).
+	return h.inertiaService.Location(c, url)
 }
 
 func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
@@ -181,7 +183,7 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 
 	slog.Info("session created", "handler", "Auth.GoogleCallback", "user_id", user.ID, "redirect", "/app")
 
-	return c.Redirect("/app", fiber.StatusSeeOther)
+	return h.inertiaService.Redirect(c, "/app")
 }
 
 func (h *AuthHandler) Me(c *fiber.Ctx) error {

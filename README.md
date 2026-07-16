@@ -95,7 +95,7 @@ laju-go/
 | **Build Tool** | Vite 8 |
 | **Styling** | Tailwind CSS 4 |
 | **Templating** | templ — type-safe Go HTML |
-| **SPA Bridge** | Inertia.js 3 |
+| **SPA Bridge** | Inertia.js 3 via [fiber-inertia](https://github.com/maulanashalihin/fiber-inertia) |
 | **Icons** | Lucide Svelte |
 
 ### Why `mattn/go-sqlite3` (CGO)?

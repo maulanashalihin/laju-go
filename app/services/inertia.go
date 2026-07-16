@@ -2,142 +2,125 @@ package services
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	fiberinertia "github.com/maulanashalihin/fiber-inertia"
 	"github.com/maulanashalihin/laju-go/app/session"
-	"github.com/maulanashalihin/laju-go/templates"
 )
 
-// InertiaService provides Inertia.js response helpers
+// InertiaService wraps fiber-inertia with laju-go-specific features:
+// Vite asset URLs, CSRF token injection, and flash message support.
+//
+// All handlers continue to use the same Render(c, component, props) API
+// they used before — no handler changes needed.
 type InertiaService struct {
-	assetService *AssetService  // Asset service for production builds
-	store        *session.Store // Session store for flash messages
+	*fiberinertia.Inertia // embedded — provides Render, Redirect, Location, Back
 }
 
-// NewInertiaService creates a new InertiaService
+// NewInertiaService creates an InertiaService backed by fiber-inertia.
+//
+// The library handles the core Inertia protocol (JSON vs HTML auto-detect,
+// asset versioning, shared props, partial reloads). This wrapper adds:
+//   - Custom root HTML with Vite dev/prod asset URLs
+//   - CSRF token injection into <meta> tag
+//   - Flash messages as a shared prop (available on every render)
 func NewInertiaService(assetService *AssetService, store *session.Store) *InertiaService {
-	return &InertiaService{
-		assetService: assetService,
-		store:        store,
-	}
-}
-
-// Render renders an Inertia response (auto-detect HTML vs JSON)
-func (s *InertiaService) Render(c *fiber.Ctx, component string, props fiber.Map) error {
-	// Read flash messages from cookies and add to props
-	if s.store != nil {
-		if flashError := s.store.GetFlash(c, "error"); flashError != "" {
-			if props == nil {
-				props = fiber.Map{}
-			}
-			props["flash"] = fiber.Map{
-				"error": flashError,
-			}
-		}
-		
-		if flashSuccess := s.store.GetFlash(c, "success"); flashSuccess != "" {
-			if props == nil {
-				props = fiber.Map{}
-			}
-			if props["flash"] == nil {
-				props["flash"] = fiber.Map{}
-			}
-			props["flash"].(fiber.Map)["success"] = flashSuccess
-		}
-	}
-
-	// For Inertia requests, return JSON
-	if c.Get("X-Inertia") == "true" {
-		return s.renderJSON(c, component, props)
-	}
-
-	// For initial page load, render HTML template
-	return s.renderHTML(c, component, props)
-}
-
-// renderJSON renders Inertia JSON response
-func (s *InertiaService) renderJSON(c *fiber.Ctx, component string, props fiber.Map) error {
-	c.Set("X-Inertia", "true")
-	c.Set("X-Inertia-Version", "1.0")
-	c.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
-	c.Set("Vary", "Cookie, X-Inertia")
-	c.Set("Content-Type", "application/json")
-
-	return c.JSON(fiber.Map{
-		"component": component,
-		"props":     props,
-		"url":       c.OriginalURL(),
-	})
-}
-
-// renderHTML renders initial HTML page load
-func (s *InertiaService) renderHTML(c *fiber.Ctx, component string, props fiber.Map) error {
-	pageData, _ := json.Marshal(fiber.Map{
-		"component": component,
-		"props":     props,
-		"url":       c.OriginalURL(),
+	in := fiberinertia.New(fiberinertia.Config{
+		Version: "1.0",
+		Render: func(c *fiber.Ctx, page *fiberinertia.Page) error {
+			return renderInertiaHTML(c, page, assetService, store)
+		},
 	})
 
-	title, _ := props["Title"].(string)
-	isDev := s.assetService.IsDevelopment()
+	// Flash messages: available as a shared prop on every page render.
+	// The flash cookie is consumed on read (one-time use).
+	in.ShareFunc("flash", func(c *fiber.Ctx) interface{} {
+		flash := make(fiber.Map)
+		if err := store.GetFlash(c, "error"); err != "" {
+			flash["error"] = err
+		}
+		if success := store.GetFlash(c, "success"); success != "" {
+			flash["success"] = success
+		}
+		if len(flash) > 0 {
+			return flash
+		}
+		return nil
+	})
+
+	return &InertiaService{Inertia: in}
+}
+
+// renderInertiaHTML renders the root HTML page for initial (non-Inertia) loads.
+// It is passed as Config.Render to the fiber-inertia adapter.
+func renderInertiaHTML(c *fiber.Ctx, page *fiberinertia.Page, assetService *AssetService, store *session.Store) error {
+	pageJSON, err := json.Marshal(page)
+	if err != nil {
+		return fmt.Errorf("inertia: marshal page: %w", err)
+	}
+
+	title, _ := page.Props["Title"].(string)
+	isDev := assetService.IsDevelopment()
+
+	// Vite dev server URL (from .vite-port file)
 	viteURL := ""
 	if isDev {
-		viteURL = s.assetService.GetViteServerURL()
+		viteURL = assetService.GetViteServerURL()
 	}
+
+	// CSRF token from session (injected into <meta> tag for JS access)
 	csrfToken := ""
-	if sess, err := s.store.Get(c); err == nil {
-		if token := sess.Get("csrf_token"); token != nil {
-			csrfToken = token.(string)
-		}
-	}
-	mainJS := s.assetService.GetMainJS()
-	mainCSS := s.assetService.GetMainCSS()
-
-	c.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
-	c.Set("Vary", "Cookie, X-Inertia")
-	c.Set("Content-Type", "text/html; charset=utf-8")
-	return templates.InertiaPage(title, string(pageData), isDev, viteURL, csrfToken, mainJS, mainCSS, nil).Render(c.Context(), c.Response().BodyWriter())
-}
-
-// RenderWithMeta renders an Inertia response with additional metadata
-func (s *InertiaService) RenderWithMeta(c *fiber.Ctx, component string, props fiber.Map, meta fiber.Map) error {
-	if c.Get("X-Inertia") == "true" {
-		c.Set("X-Inertia", "true")
-		c.Set("X-Inertia-Version", "1.0")
-		c.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
-		c.Set("Vary", "Cookie, X-Inertia")
-		c.Set("Content-Type", "application/json")
-
-		response := fiber.Map{
-			"component": component,
-			"props":     props,
-			"url":       c.OriginalURL(),
-		}
-
-		if meta != nil {
-			response["meta"] = meta
-		}
-
-		return c.JSON(response)
-	}
-
-	pageData, _ := json.Marshal(fiber.Map{
-		"component": component,
-		"props":     props,
-		"url":       c.OriginalURL(),
-		"meta":      meta,
-	})
-
-	title, _ := props["Title"].(string)
-	csrfToken := ""
-	if sess, err := s.store.Get(c); err == nil {
+	if sess, err := store.Get(c); err == nil {
 		if token := sess.Get("csrf_token"); token != nil {
 			csrfToken = token.(string)
 		}
 	}
 
-	c.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
-	c.Set("Vary", "Cookie, X-Inertia")
-	c.Set("Content-Type", "text/html; charset=utf-8")
-	return templates.InertiaPage(title, string(pageData), false, "", csrfToken, "", "", nil).Render(c.Context(), c.Response().BodyWriter())
+	// Production asset URLs (from Vite manifest)
+	mainJS := assetService.GetMainJS()
+	mainCSS := assetService.GetMainCSS()
+
+	var html string
+	if isDev {
+		html = fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%s - Laju</title>
+    <meta name="description" content="Laju Go Fiber - High Performance SaaS Boilerplate">
+    <link rel="icon" href="/public/favicon.png">
+    <meta name="csrf-token" content="%s">
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div id="app"></div>
+    <script data-page="app" type="application/json">%s</script>
+    <script type="module" src="%s/@vite/client"></script>
+    <link rel="stylesheet" href="%s/src/app.css">
+    <script type="module" src="%s/src/main.ts"></script>
+</body>
+</html>`, title, csrfToken, pageJSON, viteURL, viteURL, viteURL)
+	} else {
+		html = fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%s - Laju</title>
+    <meta name="description" content="Laju Go Fiber - High Performance SaaS Boilerplate">
+    <link rel="icon" href="/public/favicon.png">
+    <meta name="csrf-token" content="%s">
+    <link rel="stylesheet" href="%s">
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div id="app"></div>
+    <script data-page="app" type="application/json">%s</script>
+    <script type="module" src="%s"></script>
+</body>
+</html>`, title, csrfToken, mainCSS, pageJSON, mainJS)
+	}
+
+	c.Set(fiber.HeaderContentType, "text/html; charset=utf-8")
+	return c.SendString(html)
 }

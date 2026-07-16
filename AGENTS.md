@@ -95,7 +95,9 @@ Sebelum nulis kode frontend apapun (halaman baru, komponen, landing page):
 
 ## HTTP Conventions
 
-- POST/PUT redirect: `c.Redirect(path, fiber.StatusSeeOther)` (303, bukan 302)
+- POST/PUT redirect: `h.inertiaService.Redirect(c, path)` — otomatis 303 See Other, Inertia-aware
+- External redirect (OAuth, logout ke external): `h.inertiaService.Location(c, url)` — 409 Conflict + `X-Inertia-Location` → trigger `window.location`
+- Back navigation: `h.inertiaService.Back(c)` atau `h.inertiaService.Back(c, "/fallback")`
 - PUT/PATCH: return JSON untuk `fetch()`, redirect 303 untuk `router.put()`
 - `fiber.Map` untuk adhoc response data. Typed structs untuk service boundaries.
 
@@ -114,6 +116,7 @@ Sebelum nulis kode frontend apapun (halaman baru, komponen, landing page):
 
 - 🔴 **Edit `.templ` saja, jangan `*_templ.go`.** File `*_templ.go` akan ditimpa `templ generate`
 - `.vite-port` stale? `rm .vite-port && restart Vite`
+- `app/services/inertia.go` wraps `github.com/maulanashalihin/fiber-inertia` (published library) — semua method (Render, Redirect, Location, Back) di-promote via embedding
 - `go.sum` is gitignored — `go mod tidy` if needed
 - `dist/` gitignored kecuali `.gitkeep`
 - Air tidak watch `.templ` — regenerate manual
