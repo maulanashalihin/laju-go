@@ -102,12 +102,23 @@ func main() {
 	// Initialize Inertia service (auto-detects Vite from .vite-port)
 	inertiaService := services.NewInertiaService(assetService, sessionStore)
 
+	// Create storage directories
+	if err := os.MkdirAll("storage/uploads", 0755); err != nil {
+		slog.Error("failed to create uploads directory", "error", err)
+		os.Exit(1)
+	}
+	if err := os.MkdirAll("storage/avatars", 0755); err != nil {
+		slog.Error("failed to create avatars directory", "error", err)
+		os.Exit(1)
+	}
+
 	// Initialize handlers
+	uploadHandler := handlers.NewUploadHandler(sessionStore, userService, "storage/uploads")
 	routeHandlers := routes.Handlers{
 		Public: handlers.NewPublicHandler(authService, userService, inertiaService, assetService),
 		Auth:   handlers.NewAuthHandler(authService, sessionStore, inertiaService),
 		App:    handlers.NewAppHandler(userService, sessionStore, inertiaService),
-		Upload: handlers.NewUploadHandler(sessionStore, userService),
+		Upload: uploadHandler,
 	}
 
 	// Setup CSRF middleware (Secure cookies only in production with HTTPS)
@@ -139,6 +150,10 @@ func main() {
 	app := fiber.New(fiber.Config{
 		AppName:      "Laju",
 		ErrorHandler: customErrorHandler,
+		// Required for TUS resumable upload — streams request body instead of buffering
+		StreamRequestBody: true,
+		// Read buffer for streaming large uploads
+		ReadBufferSize: 64 * 1024,
 	})
 
 	// Global middleware
@@ -157,8 +172,8 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     strings.Join(cfg.AllowedOrigins, ","),
 		AllowCredentials: true,
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Inertia, X-Inertia-Version, X-Requested-With",
-		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Inertia, X-Inertia-Version, X-Requested-With, Tus-Resumable, Upload-Length, Upload-Offset, Upload-Metadata, Upload-Draft-Interop-Version, Upload-Complete, Upload-Incomplete, Upload-Concat, Upload-Defer-Length",
+		AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD",
 	}))
 
 	app.Get("/health", func(c *fiber.Ctx) error {

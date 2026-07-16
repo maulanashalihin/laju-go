@@ -94,6 +94,16 @@ func (h *AppHandler) UpdateProfile(c *fiber.Ctx) error {
 	})
 }
 
+// UploadTest renders the upload test page
+func (h *AppHandler) UploadTest(c *fiber.Ctx) error {
+	sess, _ := h.store.Get(c)
+	user := sessionUser(sess)
+
+	return h.inertiaService.Render(c, "app/UploadTest", fiber.Map{
+		"user": user,
+	})
+}
+
 // UpdatePassword updates user password (Inertia)
 func (h *AppHandler) UpdatePassword(c *fiber.Ctx) error {
 	// Get user info from locals (set by AuthRequired middleware)
@@ -169,4 +179,3 @@ func toBool(v interface{}) bool {
 	}
 	return b
 }
-

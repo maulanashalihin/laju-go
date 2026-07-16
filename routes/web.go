@@ -52,7 +52,7 @@ func setupStaticRoutes(app *fiber.App) {
 		CacheDuration: 1 * time.Hour,
 		MaxAge:        3600,
 	})
-	// Uploaded files (avatars etc. — moderate cache)
+	// Uploaded files (avatars, completed uploads — moderate cache)
 	app.Static("/storage", "./storage", fiber.Static{
 		CacheDuration: 24 * time.Hour,
 		MaxAge:        86400,
@@ -106,8 +106,17 @@ func setupAppRoutes(app *fiber.App, appHandler *handlers.AppHandler, uploadHandl
 	protected.Put("/profile", appHandler.UpdateProfile)
 	protected.Put("/profile/password", appHandler.UpdatePassword)
 
-	// Upload
-	protected.Post("/upload", uploadHandler.Upload)
+	// Upload Test page
+	protected.Get("/upload", appHandler.UploadTest)
+
+	// Avatar upload (legacy multipart, for Profile page)
+	protected.Post("/upload", uploadHandler.AvatarUpload)
+
+	// TUS resumable upload protocol endpoints — directly on app.
+	// AuthRequired applied internally by RegisterTUSRoutes via /tus prefix middleware.
+	// BasePath = /tus/files/ so Location URLs correctly include /tus/ prefix.
+	authMiddleware := middlewares.AuthRequired(store)
+	uploadHandler.RegisterTUSRoutes(app, authMiddleware)
 
 	// Admin-only routes
 	admin := app.Group("/admin", middlewares.AdminRequired(store, userService))

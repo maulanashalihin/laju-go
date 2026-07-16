@@ -13,6 +13,11 @@ func AuthRequired(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		slog.Debug("checking auth", "path", c.Path())
 
+		// Skip auth for OPTIONS (CORS preflight) — browser doesn't send cookies
+		if c.Method() == fiber.MethodOptions {
+			return c.Next()
+		}
+
 		sess, err := store.Get(c)
 		if err != nil {
 			slog.Error("auth session error", "error", err)

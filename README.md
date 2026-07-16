@@ -18,6 +18,13 @@ Visit `http://localhost:8080` to see your application running.
 
 ## ✨ Features
 
+### File Upload (TUS Protocol)
+
+- **TUS Resumable Upload** — Powered by [tusdfiber](https://github.com/maulanashalihin/tusdfiber), native Go Fiber implementation
+- **Drag & Drop** — Test page at `/app/upload` with progress bars via `tus-js-client`
+- **Large File Support** — Up to 1GB per upload, chunked via PATCH requests
+- **Post-Processing** — Completed files copied to `storage/completed/` for easy access
+
 ### Authentication & Security
 
 - **Email/Password** — Argon2id hashing, session management
@@ -66,7 +73,7 @@ laju-go/
 │   └── src/
 │       ├── components/        # Header, DarkModeToggle
 │       ├── pages/auth/        # Login, Register, ForgotPassword, ResetPassword
-│       ├── pages/app/         # Dashboard, Profile
+│       ├── pages/app/         # Dashboard, Profile, UploadTest
 │       └── lib/i18n/          # Internationalization (en/id)
 ├── queries/                   # SQL source files (write here → sqlc)
 ├── routes/                    # Route definitions

@@ -9,6 +9,7 @@
 		Menu,
 		X,
 		User,
+		Upload,
 	} from "lucide-svelte";
 	import DarkModeToggle from "@components/DarkModeToggle.svelte";
 	import Logo from "@components/Logo.svelte";
@@ -48,6 +49,13 @@
 			group: "dashboard",
 			show: true,
 			icon: LayoutDashboard,
+		},
+		{
+			href: "/app/upload",
+			label: "Upload Test",
+			group: "upload",
+			show: true,
+			icon: Upload,
 		},
 		{
 			href: "/app/profile",
