@@ -7,7 +7,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.47
-	github.com/maulanashalihin/tusdfiber v1.0.1
+	github.com/maulanashalihin/tusdfiber v1.0.2
 	github.com/pressly/goose/v3 v3.20.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tus/tusd/v2 v2.10.0
