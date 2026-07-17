@@ -128,11 +128,11 @@ func setupAppRoutes(app *fiber.App, appHandler *handlers.AppHandler, uploadHandl
 }
 
 // SetupCSRFMiddleware sets up the CSRF middleware
-func SetupCSRFMiddleware(store *session.Store, secret string, secure bool) *middlewares.CSRFMiddleware {
+func SetupCSRFMiddleware(secret string, secure bool) *middlewares.CSRFMiddleware {
 	config := middlewares.DefaultCSRFConfig(secret)
 	config.Secure = secure
 	config.SameSite = "Lax"
-	return middlewares.NewCSRFMiddleware(store, config)
+	return middlewares.NewCSRFMiddleware(config)
 }
 
 // SetupMailerService sets up the mailer service

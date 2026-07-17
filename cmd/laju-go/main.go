@@ -122,7 +122,7 @@ func main() {
 	}
 
 	// Setup CSRF middleware (Secure cookies only in production with HTTPS)
-	csrfMiddleware := routes.SetupCSRFMiddleware(sessionStore, cfg.SessionSecret, cfg.AppEnv == "production")
+	csrfMiddleware := routes.SetupCSRFMiddleware(cfg.SessionSecret, cfg.AppEnv == "production")
 
 	// Setup mailer service (with DB-backed token storage)
 	appURL := routes.GetAppURL(cfg.AppPort, cfg.AppEnv)
