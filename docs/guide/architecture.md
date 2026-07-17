@@ -506,7 +506,7 @@ func main() {
         Upload: handlers.NewUploadHandler(sessionStore, userService),
     }
 
-    csrfMiddleware := routes.SetupCSRFMiddleware(sessionStore, cfg.SessionSecret, cfg.AppEnv == "production")
+    csrfMiddleware := routes.SetupCSRFMiddleware(cfg.SessionSecret, cfg.AppEnv == "production")
 
     appURL := routes.GetAppURL(cfg.AppPort, cfg.AppEnv)
     mailerService := routes.SetupMailerService(

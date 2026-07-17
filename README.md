@@ -30,7 +30,7 @@ Visit `http://localhost:8080` to see your application running.
 - **Email/Password** — Argon2id hashing, session management
 - **Google OAuth 2.0** — One-click social login
 - **Password Reset** — Email-based recovery with secure tokens
-- **CSRF Protection** — Built-in per-session token validation
+- **CSRF Protection** — Double-submit cookie pattern (stateless, no session I/O)
 - **Rate Limiting** — Configurable throttling for auth, API, upload endpoints
 - **Session Fixation Protection** — Session ID regenerated on privilege escalation
 
