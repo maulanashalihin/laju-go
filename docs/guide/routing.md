@@ -310,8 +310,6 @@ func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, password
     app.Get("/auth/google", authHandler.GoogleLogin)
     app.Get("/auth/google/callback", authHandler.GoogleCallback)
     app.Post("/logout", middlewares.AuthRequired(store), authHandler.Logout)
-    app.Get("/api/me", middlewares.AuthRequired(store), authHandler.Me)
-    app.Get("/api/avatar/:id", authHandler.GetAvatar)
     app.Get("/forgot-password", passwordResetHandler.ShowForgotPasswordForm)
     app.Post("/forgot-password", passwordResetHandler.SendResetLink, middlewares.PasswordResetRateLimit.Limit())
     app.Get("/reset-password/:token", passwordResetHandler.ShowResetPasswordForm)

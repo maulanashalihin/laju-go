@@ -113,11 +113,15 @@
 				onclick={() => (isDesktopUserMenuOpen = !isDesktopUserMenuOpen)}
 				class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
 			>
-				<div
-					class="w-8 h-8 rounded-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-neutral-300 dark:ring-neutral-700 shrink-0"
-				>
-					{user.name.charAt(0).toUpperCase()}
-				</div>
+				{#if user.avatar}
+					<img src={user.avatar} alt={user.name} class="w-8 h-8 rounded-full object-cover ring-2 ring-neutral-300 dark:ring-neutral-700 shrink-0" />
+				{:else}
+					<div
+						class="w-8 h-8 rounded-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-neutral-300 dark:ring-neutral-700 shrink-0"
+					>
+						{user.name.charAt(0).toUpperCase()}
+					</div>
+				{/if}
 				<span class="text-sm font-semibold text-neutral-900 dark:text-white">{user.name}</span>
 			</button>
 
@@ -212,11 +216,15 @@
 	{#if user && user.id}
 		<div class="p-3 border-t border-neutral-200/80 dark:border-white/[0.04] space-y-2">
 			<div class="flex items-center gap-2.5">
-				<div
-					class="w-7 h-7 rounded-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white font-bold text-xs ring-2 ring-neutral-300 dark:ring-neutral-700 shrink-0"
-				>
-					{user.name.charAt(0).toUpperCase()}
-				</div>
+				{#if user.avatar}
+					<img src={user.avatar} alt={user.name} class="w-7 h-7 rounded-full object-cover ring-2 ring-neutral-300 dark:ring-neutral-700 shrink-0" />
+				{:else}
+					<div
+						class="w-7 h-7 rounded-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white font-bold text-xs ring-2 ring-neutral-300 dark:ring-neutral-700 shrink-0"
+					>
+						{user.name.charAt(0).toUpperCase()}
+					</div>
+				{/if}
 				<div class="flex-1 min-w-0">
 					<p class="text-xs font-semibold text-neutral-900 dark:text-white truncate leading-normal">
 						{user.name}
@@ -255,9 +263,15 @@
 				<div class="relative" role="menu">
 					<button
 						onclick={() => (isUserMenuOpen = !isUserMenuOpen)}
-						class="w-9 h-9 rounded-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-neutral-300 dark:ring-neutral-700"
+						class="w-9 h-9 rounded-full ring-2 ring-neutral-300 dark:ring-neutral-700 overflow-hidden"
 					>
-						{user.name.charAt(0).toUpperCase()}
+						{#if user.avatar}
+							<img src={user.avatar} alt={user.name} class="w-full h-full object-cover" />
+						{:else}
+							<div class="w-full h-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white font-bold text-sm">
+								{user.name.charAt(0).toUpperCase()}
+							</div>
+						{/if}
 					</button>
 
 					{#if isUserMenuOpen}
@@ -389,11 +403,15 @@
 						class="bg-neutral-100/50 dark:bg-neutral-800/50 rounded-xl p-4 border border-neutral-200/80 dark:border-white/[0.06] mb-3"
 					>
 						<div class="flex items-center gap-3">
-							<div
-								class="w-10 h-10 rounded-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white font-bold text-sm"
-							>
-								{user.name.charAt(0).toUpperCase()}
-							</div>
+							{#if user.avatar}
+								<img src={user.avatar} alt={user.name} class="w-10 h-10 rounded-full object-cover" />
+							{:else}
+								<div
+									class="w-10 h-10 rounded-full bg-brand-600 dark:bg-brand-500 flex items-center justify-center text-white font-bold text-sm"
+								>
+									{user.name.charAt(0).toUpperCase()}
+								</div>
+							{/if}
 							<div class="flex-1 min-w-0">
 								<p
 									class="text-sm font-semibold text-neutral-900 dark:text-white truncate"

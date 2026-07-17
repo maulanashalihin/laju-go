@@ -72,7 +72,7 @@ Laju Go follows a **layered architecture** that separates concerns into distinct
 | `/login`, `/register` | `Guest` | `AuthHandler` |
 | `/auth/google` | None | `AuthHandler` |
 | `/logout` | `AuthRequired` | `AuthHandler` |
-| `/api/me`, `/api/avatar/:id` | `AuthRequired` | `AuthHandler` |
+
 | `/forgot-password`, `/reset-password/:token` | None | `PasswordResetHandler` |
 | `/app/*` | `AuthRequired` + `CSRF` | `AppHandler`, `UploadHandler` |
 | `/admin/*` | `AuthRequired` + `AdminRequired` | Inline |
@@ -157,7 +157,7 @@ func AuthRequired(store *session.Store) fiber.Handler {
 
 | File | Struct | Handlers |
 |------|--------|----------|
-| `auth.go` | `AuthHandler` | Login, Register, Logout, Google OAuth, Me, GetAvatar |
+| `auth.go` | `AuthHandler` | Login, Register, Logout, Google OAuth |
 | `app.go` | `AppHandler` | Dashboard, Profile, UpdateProfile, UpdatePassword |
 | `public.go` | `PublicHandler` | Index (landing page), About |
 | `upload.go` | `UploadHandler` | File upload |
@@ -606,14 +606,6 @@ return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
 
 ```go
 return templates.LandingPage("Welcome", viteURL, mainCSS).Render(c.Context(), c.Response().BodyWriter())
-```
-
-### API Endpoints (JSON)
-
-Some endpoints return raw JSON (`/api/me`, `/api/avatar/:id`):
-
-```go
-c.JSON(fiber.Map{"user": user.ToResponse()})
 ```
 
 ### Redirects (POST Handlers)

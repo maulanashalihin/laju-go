@@ -80,12 +80,6 @@ func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, password
 	// Logout (requires auth + CSRF protection)
 	app.Post("/logout", middlewares.AuthRequired(store), csrfMiddleware.Protect(), authHandler.Logout)
 
-	// API: Get current user
-	app.Get("/api/me", middlewares.AuthRequired(store), authHandler.Me)
-
-	// API: Get user avatar (proxied from external URL)
-	app.Get("/api/avatar/:id", authHandler.GetAvatar)
-
 	// Password reset routes
 	app.Get("/forgot-password", passwordResetHandler.ShowForgotPasswordForm)
 	app.Post("/forgot-password", passwordResetHandler.SendResetLink, middlewares.PasswordResetRateLimit.Limit())

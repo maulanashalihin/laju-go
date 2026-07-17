@@ -404,24 +404,6 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 }
 ```
 
-### Retrieving Session Data
-
-```go
-func (h *AuthHandler) Me(c *fiber.Ctx) error {
-    session, _ := h.store.Get(c)
-    
-    userID := session.Get("user_id").(int)
-    email := session.Get("email").(string)
-    role := session.Get("role").(string)
-    
-    return c.JSON(fiber.Map{
-        "id": userID,
-        "email": email,
-        "role": role,
-    })
-}
-```
-
 ### Destroying Session (Logout)
 
 ```go

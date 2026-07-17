@@ -35,9 +35,7 @@
     let isPasswordLoading = $state(false);
     let showPassword = $state(false);
 
-    let previewUrl = $derived(
-        user?.avatar ? `/api/avatar/${user.id}?v=${Date.now()}` : null
-    );
+    let previewUrl = $derived(user?.avatar ?? null);
 
     function handleAvatarChange(event: Event) {
         const target = event.target as HTMLInputElement;

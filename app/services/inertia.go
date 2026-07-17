@@ -18,6 +18,19 @@ type InertiaService struct {
 	*fiberinertia.Inertia // embedded — provides Render, Redirect, Location, Back
 }
 
+// Location overrides fiber-inertia's Location to handle direct browser navigations.
+// For Inertia XHR requests: returns 409 + X-Inertia-Location (triggers window.location).
+// For direct browser navigations: returns a proper 302 redirect.
+func (s *InertiaService) Location(c *fiber.Ctx, url string) error {
+	// Check if this is an Inertia XHR request
+	if c.Get("X-Inertia") != "true" {
+		// Direct browser navigation — use standard redirect
+		return c.Redirect(url, fiber.StatusFound)
+	}
+	// Inertia XHR — use the 409 + X-Inertia-Location pattern
+	return s.Inertia.Location(c, url)
+}
+
 // NewInertiaService creates an InertiaService backed by fiber-inertia.
 //
 // The library handles the core Inertia protocol (JSON vs HTML auto-detect,

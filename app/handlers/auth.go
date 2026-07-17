@@ -5,11 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -186,97 +182,6 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	slog.Info("session created", "handler", "Auth.GoogleCallback", "user_id", user.ID, "redirect", "/app")
 
 	return h.inertiaService.Redirect(c, "/app")
-}
-
-func (h *AuthHandler) Me(c *fiber.Ctx) error {
-	sess, _ := h.store.Get(c)
-	userID := sess.Get("user_id")
-
-	if userID == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Not authenticated",
-		})
-	}
-
-	user, err := h.authService.GetUserByID(userID.(int64))
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to get user",
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"user": user.ToResponse(),
-	})
-}
-
-func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
-	userIDParam := c.Params("id")
-	if userIDParam == "" {
-		return c.Status(400).JSON(fiber.Map{"error": "User ID required"})
-	}
-
-	// Convert userID to int64
-	userID, err := strconv.ParseInt(userIDParam, 10, 64)
-	if err != nil {
-		slog.Warn("invalid user ID", "user_id_param", userIDParam)
-		return c.Status(400).JSON(fiber.Map{"error": "Invalid user ID"})
-	}
-
-	slog.Debug("fetching user avatar", "handler", "GetAvatar", "user_id", userID)
-
-	// Get user from database
-	user, err := h.authService.GetUserByID(userID)
-	if err != nil {
-		slog.Warn("avatar user not found", "handler", "GetAvatar", "error", err)
-		return c.Status(404).JSON(fiber.Map{"error": "User not found"})
-	}
-
-	slog.Debug("user avatar URL", "handler", "GetAvatar", "avatar_url", user.Avatar)
-
-	// Check if user has avatar
-	if user.Avatar == "" {
-		slog.Debug("no avatar for user", "handler", "GetAvatar", "user_id", userID)
-		return c.Status(404).JSON(fiber.Map{"error": "No avatar"})
-	}
-
-	// Check if avatar is local file or external URL
-	if strings.HasPrefix(user.Avatar, "/storage/") {
-		// Local file - serve directly
-		localPath := "." + user.Avatar
-		slog.Debug("serving local avatar file", "handler", "GetAvatar", "path", localPath)
-
-		return c.SendFile(localPath)
-	}
-
-	// External URL - fetch and proxy
-	slog.Debug("fetching avatar from external URL", "handler", "GetAvatar", "url", user.Avatar)
-	resp, err := http.Get(user.Avatar)
-	if err != nil {
-		slog.Error("failed to fetch avatar", "handler", "GetAvatar", "error", err)
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch avatar"})
-	}
-	defer resp.Body.Close()
-
-	slog.Debug("avatar response", "handler", "GetAvatar", "status", resp.Status, "content_type", resp.Header.Get("Content-Type"))
-
-	// Set headers
-	contentType := resp.Header.Get("Content-Type")
-	if contentType == "" {
-		contentType = "image/jpeg"
-	}
-	c.Set("Content-Type", contentType)
-	c.Set("Cache-Control", "public, max-age=86400") // Cache for 24 hours
-
-	// Read and send response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		slog.Error("failed to read avatar body", "handler", "GetAvatar", "error", err)
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to read avatar"})
-	}
-
-	slog.Debug("sending avatar", "handler", "GetAvatar", "bytes", len(body))
-	return c.Send(body)
 }
 
 // generateState generates a random state string for OAuth

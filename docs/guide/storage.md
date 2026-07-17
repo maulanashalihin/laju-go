@@ -73,26 +73,28 @@ func (h *UploadHandler) Upload(c *fiber.Ctx) error {
 }
 ```
 
-### Avatar Proxy (Actual Implementation)
+### Avatar Download (Auth Service)
+
+Avatars from Google OAuth are downloaded directly in the auth service and saved to local storage. The `user.avatar` field contains the local path (`/storage/avatars/<googleID>.jpg`), which is served directly by Fiber's static file handler.
 
 ```go
-func (h *AuthHandler) GetAvatar(c *fiber.Ctx) error {
-    userID, _ := strconv.ParseInt(c.Params("id"), 10, 64)
-    user, _ := h.authService.GetUserByID(userID)
-
-    if strings.HasPrefix(user.Avatar, "/storage/") {
-        return c.SendFile("." + user.Avatar)  // Local file
-    }
-
-    // Proxy from external URL (Google)
-    resp, _ := http.Get(user.Avatar)
+// app/services/auth.go
+func (s *AuthService) downloadAndSaveAvatar(ctx context.Context, pictureURL, googleID string) (string, error) {
+    req, _ := http.NewRequestWithContext(ctx, http.MethodGet, pictureURL, nil)
+    resp, _ := http.DefaultClient.Do(req)
     defer resp.Body.Close()
-    body, _ := io.ReadAll(resp.Body)
-    c.Set("Content-Type", resp.Header.Get("Content-Type"))
-    c.Set("Cache-Control", "public, max-age=86400")
-    return c.Send(body)
+
+    filename := googleID + ".jpg"
+    os.MkdirAll("./storage/avatars", 0750)
+    f, _ := os.Create(filepath.Join("./storage/avatars", filename))
+    defer f.Close()
+    io.Copy(f, resp.Body)
+
+    return "/storage/avatars/" + filename, nil
 }
 ```
+
+The frontend uses `user.avatar` directly as an `<img src>` — no API proxy needed.
 
 ## Backups
 
