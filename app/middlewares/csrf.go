@@ -3,6 +3,7 @@ package middlewares
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -12,15 +13,15 @@ import (
 
 // CSRFConfig holds CSRF middleware configuration
 type CSRFConfig struct {
-	Secret       string        // Secret key for signing tokens
-	CookieName   string        // Name of the CSRF token cookie
-	HeaderName   string        // Name of the CSRF token header
-	TokenLength  int           // Length of the random token
-	Expiry       time.Duration // Token expiry duration
-	Secure       bool          // Secure cookie flag
-	SameSite     string        // SameSite cookie attribute
-	SkipPaths    []string      // Paths to skip CSRF check
-	SkipMethods  []string      // HTTP methods to skip CSRF check
+	Secret      string        // Secret key for signing tokens
+	CookieName  string        // Name of the CSRF token cookie
+	HeaderName  string        // Name of the CSRF token header
+	TokenLength int           // Length of the random token
+	Expiry      time.Duration // Token expiry duration
+	Secure      bool          // Secure cookie flag
+	SameSite    string        // SameSite cookie attribute
+	SkipPaths   []string      // Paths to skip CSRF check
+	SkipMethods []string      // HTTP methods to skip CSRF check
 }
 
 // CSRFMiddleware implements CSRF protection
@@ -94,7 +95,10 @@ func (csrf *CSRFMiddleware) setToken(c *fiber.Ctx) error {
 		}
 		sess.Set("csrf_token", token)
 		sess.Set("csrf_expiry", time.Now().Add(csrf.config.Expiry).Unix())
-		sess.Save()
+		if err := sess.Save(); err != nil {
+			slog.Error("csrf save error", "error", err)
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to save CSRF token")
+		}
 		needsCookie = true
 	} else if c.Cookies(csrf.config.CookieName) == "" {
 		// Token exists in session but browser lost the cookie (e.g. cleared, expired)

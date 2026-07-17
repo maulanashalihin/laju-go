@@ -100,6 +100,7 @@ func Guest(store *session.Store) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		sess, err := store.Get(c)
 		if err != nil {
+			slog.Error("guest session error", "error", err)
 			return c.Next()
 		}
 

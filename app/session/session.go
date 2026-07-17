@@ -115,7 +115,7 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 							"session_id", cookieValue,
 							"expected_ip", cached.IP, "got_ip", ClientIP(c))
 						s.sessionCache.Invalidate(cookieValue)
-						s.querier.DeleteSession(context.Background(), cookieValue)
+						s.deleteSession(context.Background(), cookieValue)
 						c.ClearCookie(s.sessionName)
 					}
 				} else if isPageRequest(c) && cached.UserAgent != "" && cached.UserAgent != c.Get("User-Agent") {
@@ -124,7 +124,7 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 						"session_id", cookieValue,
 						"expected_ua", cached.UserAgent, "got_ua", c.Get("User-Agent"))
 					s.sessionCache.Invalidate(cookieValue)
-					s.querier.DeleteSession(context.Background(), cookieValue)
+					s.deleteSession(context.Background(), cookieValue)
 					c.ClearCookie(s.sessionName)
 				} else {
 					// Capture fingerprint for existing sessions without one
@@ -160,7 +160,7 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 		if err == nil {
 			// Check if session is expired
 			if dbSession.ExpiresAt.Before(time.Now()) {
-				s.querier.DeleteSession(context.Background(), cookieValue)
+				s.deleteSession(context.Background(), cookieValue)
 				if s.sessionCache != nil {
 					s.sessionCache.Invalidate(cookieValue)
 				}
@@ -190,7 +190,7 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 							slog.Warn("session fingerprint mismatch (db) — invalidating",
 								"session_id", cookieValue,
 								"expected_ip", data.IP, "got_ip", ClientIP(c))
-							s.querier.DeleteSession(context.Background(), cookieValue)
+							s.deleteSession(context.Background(), cookieValue)
 							if s.sessionCache != nil {
 								s.sessionCache.Invalidate(cookieValue)
 							}
@@ -203,7 +203,7 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 						slog.Warn("session fingerprint mismatch (db) — invalidating",
 							"session_id", cookieValue,
 							"expected_ua", data.UserAgent, "got_ua", c.Get("User-Agent"))
-						s.querier.DeleteSession(context.Background(), cookieValue)
+						s.deleteSession(context.Background(), cookieValue)
 						if s.sessionCache != nil {
 							s.sessionCache.Invalidate(cookieValue)
 						}
@@ -439,7 +439,7 @@ func (s *Session) Save() error {
 // Destroy destroys the session
 func (s *Session) Destroy() error {
 	if s.id != "" {
-		s.store.querier.DeleteSession(context.Background(), s.id)
+		s.store.deleteSession(context.Background(), s.id)
 		if s.store.sessionCache != nil {
 			s.store.sessionCache.Invalidate(s.id)
 		}
@@ -525,7 +525,7 @@ func (s *Session) Regenerate() error {
 		return err
 	}
 
-	s.store.querier.DeleteSession(context.Background(), s.id)
+	s.store.deleteSession(context.Background(), s.id)
 	if s.store.sessionCache != nil {
 		s.store.sessionCache.Invalidate(s.id)
 		s.store.sessionCache.Set(newID, cache.CachedSessionData{
@@ -671,6 +671,13 @@ func (s *Store) setFingerprint(c *fiber.Ctx, sessionID string, cached *cache.Cac
 
 	slog.Debug("fingerprint captured for existing session",
 		"session_id", sessionID, "ip", ip, "ua", ua)
+}
+
+// deleteSession removes a session from the database and logs any error.
+func (s *Store) deleteSession(ctx context.Context, sessionID string) {
+	if err := s.querier.DeleteSession(ctx, sessionID); err != nil {
+		slog.Error("failed to delete session", "session_id", sessionID, "error", err)
+	}
 }
 
 // SetSecure sets the Secure flag on session cookies.
