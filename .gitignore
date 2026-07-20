@@ -42,6 +42,9 @@ logs/
 tmp/
 dist
 
+/laju-go
+/laju-go.exe
+
 
 
 # LLM Wiki (track wiki/ + raw/; ignore auto-generated meta + outputs)
