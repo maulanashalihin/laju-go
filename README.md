@@ -6,19 +6,17 @@ Build production-ready web applications faster with clean layered architecture t
 
 ## 🚀 Quick Start
 
-The fastest way to start a new project is via the published CLI:
+The fastest way to start a new project is via the published CLI — it scaffolds the project, installs Go + Node dependencies, and configures `.env` automatically:
 
 ```bash
 npx create-laju-go my-app
 cd my-app
-cp .env.example .env
-npm install
 npm run dev:all
 ```
 
-> `create-laju-go` clones the latest template from this repo, replaces placeholders (`laju-go` → `my-app`), and prepares the project for development. See <https://www.npmjs.com/package/create-laju-go>.
+> `create-laju-go` clones the latest template from this repo, replaces placeholders (`laju-go` → `my-app`), runs `go mod download` + package manager install, copies `.env.example` to `.env`, and generates `.deploy` from your service name. See <https://www.npmjs.com/package/create-laju-go>.
 
-Alternatively, clone directly:
+Alternatively, clone directly (manual setup):
 
 ```bash
 git clone https://github.com/maulanashalihin/laju-go.git
