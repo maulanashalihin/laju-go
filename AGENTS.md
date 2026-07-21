@@ -4,6 +4,18 @@ High-performance SaaS boilerplate: Go Fiber + Svelte 5 + Inertia.js + SQLite + t
 
 > 🔴 **NEVER run `npm run dev:all` or any dev server.** The user handles dev servers manually.
 
+## Scaffolding a New Project
+
+End users bootstrap a new project via the published `create-laju-go` CLI:
+
+```bash
+npx create-laju-go my-app
+cd my-app
+npm install
+```
+
+This clones the latest template from this repo, replaces placeholders (`laju-go` → `my-app`), and prepares the project for development. See <https://www.npmjs.com/package/create-laju-go>.
+
 ## Architecture
 
 Single-entry Go app at `cmd/laju-go/main.go`.
