@@ -9,7 +9,12 @@ ifeq ($(OS),Windows_NT)
 BINARY := $(APP_NAME).exe
 endif
 
-.PHONY: build build-go build-linux verify test lint generate templ clean docker version migrate db-generate db-refresh
+.PHONY: build build-go build-linux verify test lint generate templ clean docker version migrate db-generate db-refresh setup
+
+setup:
+	@test -f .env || cp .env.example .env
+	go mod download
+	npm install
 
 build: vite-build go-build
 
@@ -26,8 +31,6 @@ vite-build:
 
 verify:
 	npm run verify
-
-go test ./...
 
 test:
 	go test ./...

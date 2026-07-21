@@ -21,8 +21,7 @@ Alternatively, clone directly (manual setup):
 ```bash
 git clone https://github.com/maulanashalihin/laju-go.git
 cd laju-go
-cp .env.example .env
-go mod download && npm install
+make setup
 npm run dev:all
 ```
 
