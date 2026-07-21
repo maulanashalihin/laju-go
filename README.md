@@ -6,6 +6,20 @@ Build production-ready web applications faster with clean layered architecture t
 
 ## 🚀 Quick Start
 
+The fastest way to start a new project is via the published CLI:
+
+```bash
+npx create-laju-go my-app
+cd my-app
+cp .env.example .env
+npm install
+npm run dev:all
+```
+
+> `create-laju-go` clones the latest template from this repo, replaces placeholders (`laju-go` → `my-app`), and prepares the project for development. See <https://www.npmjs.com/package/create-laju-go>.
+
+Alternatively, clone directly:
+
 ```bash
 git clone https://github.com/maulanashalihin/laju-go.git
 cd laju-go
@@ -144,8 +158,8 @@ go test ./...                  # backend tests
 | Go unit/integration | Services, queries, handlers | `go test ./...` |
 | E2E / user flow | Visual regression, auth flows, form submission | `agent_browser` via pi |
 
-> **E2E testing** dilakukan manual dengan `agent_browser` (buka browser, klik, isi form, verify redirect).
-> Tidak perlu Cypress/Playwright — browser asli lebih realistik untuk project skala ini.
+> **E2E testing** is done manually with `agent_browser` (open browser, click, fill forms, verify redirects).
+> No Cypress/Playwright needed — a real browser is more realistic for a project of this scale.
 
 ## 🚀 Deployment (Your Workflow)
 
