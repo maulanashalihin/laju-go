@@ -8,13 +8,13 @@ updated: 2026-07-06
 relevance: high
 observed_at: 2026-07-06T01:45:02.433Z
 tags: ["docs", "audit", "laju-go", "cleanup"]
-source_context: "Review docs/ atas permintaan user setelah melihat hasil capture ke llm-wiki"
+source_context: "Review docs/ at user's request after seeing capture results to llm-wiki"
 ---
 # ⭐ Observation: Docs audit complete — 18 files reviewed, 10 fixed
-Audit docs/ terhadap actual codebase Laju Go. Temuan: docs/README.md referensi 20+ file tidak ada; docs/guide/email.md MailerService signature berbeda (tidak ada SendTemplate/SendWelcomeEmail, semua inline HTML); docs/guide/architecture.md & handlers.md punya constructor signatures outdated; docs/guide/templ.md LandingPage & InertiaPage signatures outdated; docs/guide/routing.md contoh route tidak match; docs/guide/storage.md upload handler code outdated; docs/guide/data-protection.md nyebut BackupService yang tidak ada; templates/index.templ bilang "zero CGO via modernc" tapi actual pakai mattn/go-sqlite3 (CGO). Semua sudah diperbaiki.
+Audit of docs/ against the actual Laju Go codebase. Findings: docs/README.md references 20+ files that don't exist; docs/guide/email.md MailerService signature differs (no SendTemplate/SendWelcomeEmail, all inline HTML); docs/guide/architecture.md & handlers.md have outdated constructor signatures; docs/guide/templ.md LandingPage & InertiaPage signatures outdated; docs/guide/routing.md route examples don't match; docs/guide/storage.md upload handler code outdated; docs/guide/data-protection.md mentions BackupService that doesn't exist; templates/index.templ says "zero CGO via modernc" but actually uses mattn/go-sqlite3 (CGO). All have been fixed.
 *Relevance: high*
 
-*Context: Review docs/ atas permintaan user setelah melihat hasil capture ke llm-wiki*
+*Context: Review docs/ at user's request after seeing capture results to llm-wiki*
 
 *Tags: docs audit laju-go cleanup*
 ---
