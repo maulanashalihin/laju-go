@@ -108,7 +108,7 @@ echo ""
 
 # Build on server
 echo -e "${BLUE}Building on server...${NC}"
-ssh "$SERVER_USER@$SERVER_HOST" "cd $SERVER_PATH && npm run build 2>&1 && go build -o $APP_NAME ./cmd/laju-go 2>&1 && chmod +x $APP_NAME"
+ssh "$SERVER_USER@$SERVER_HOST" "cd $SERVER_PATH && npm ci 2>&1 && npm run build 2>&1 && go build -o $APP_NAME ./cmd/laju-go 2>&1 && chmod +x $APP_NAME"
 echo -e "${GREEN}✓ Built on server${NC}"
 echo ""
 
