@@ -1,5 +1,6 @@
 # Go
-go.sum
+# Note: go.sum MUST be committed for applications (reproducible builds,
+# required by Dockerfile's `COPY go.mod go.sum ./`). Do NOT gitignore it.
 vendor/
 
 # Environment

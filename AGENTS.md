@@ -161,7 +161,7 @@ Before writing any frontend code (new pages, components, landing pages):
 - 🔴 **Edit only `.templ` files, never `*_templ.go`.** `*_templ.go` files are overwritten by `templ generate`.
 - `.vite-port` stale? `rm .vite-port && restart Vite`
 - `app/services/inertia.go` wraps `github.com/maulanashalihin/fiber-inertia` (published library) — all methods (Render, Redirect, Location, Back) are promoted via embedding
-- `go.sum` is gitignored — run `go mod tidy` if needed
+- `go.sum` is committed (required for reproducible builds + Dockerfile). Run `go mod tidy` after changing deps, then commit the updated `go.sum`
 - `dist/` is gitignored except for `.gitkeep`
 - Air does not watch `.templ` files — regenerate manually
 

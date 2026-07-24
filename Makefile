@@ -13,6 +13,7 @@ endif
 
 setup:
 	@test -f .env || cp .env.example .env
+	go mod tidy
 	go mod download
 	npm install
 
