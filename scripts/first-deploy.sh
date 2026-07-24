@@ -116,10 +116,10 @@ ssh "$SERVER_USER@$SERVER_HOST" "
 "
 echo -e "${GREEN}      ✓ Permissions set${NC}"
 
-# Step 6: Seed admin user (if seed_admin.go was uploaded)
+# Step 6: Seed admin user (seed_admin.go is already synced via rsync)
 echo -e "${YELLOW}[6/6] Seeding admin user...${NC}"
-if ssh "$SERVER_USER@$SERVER_HOST" "test -f $SERVER_PATH/seed_admin.go" 2>/dev/null; then
-    ssh "$SERVER_USER@$SERVER_HOST" "cd $SERVER_PATH && go run seed_admin.go -db ./data/app.db" 2>&1 || \
+if ssh "$SERVER_USER@$SERVER_HOST" "test -f $SERVER_PATH/scripts/seed_admin.go" 2>/dev/null; then
+    ssh "$SERVER_USER@$SERVER_HOST" "cd $SERVER_PATH && go run scripts/seed_admin.go -db ./data/app.db" 2>&1 || \
         echo -e "${YELLOW}      ! seed_admin.go failed (you can create admin manually later)${NC}"
 else
     echo -e "${YELLOW}      ! seed_admin.go not found, skipping${NC}"

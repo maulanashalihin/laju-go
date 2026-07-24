@@ -1,14 +1,15 @@
 #!/bin/bash
 
 # Laju Go - One-Click Deploy Script
-# Builds locally, uploads only required artifacts, deploys to server.
+# Rsyncs source code to server, builds on server, restarts service.
 # Uses systemd --user service (no root/sudo needed for the service itself).
 #
 # Requirements:
 #   - SSH key access to server
 #   - .deploy file configured (cp .deploy.example .deploy)
+#   - Server has: Go, Node/npm, sqlite3, rsync
 #   - Server user has passwordless sudo (only for `loginctl enable-linger`,
-#     which is run once during first-deploy)
+#     run once during first-deploy)
 
 set -e
 
@@ -69,28 +70,6 @@ fi
 echo -e "${GREEN}✓ SSH connection successful${NC}"
 echo ""
 
-# Build assets locally
-echo -e "${BLUE}Building assets locally...${NC}"
-
-# Build frontend
-echo -e "${YELLOW}Building frontend...${NC}"
-npm run build
-echo -e "${GREEN}✓ Frontend built${NC}"
-
-# Build Go binary for Linux (CGO-enabled SQLite via zig cross-compiler)
-echo -e "${YELLOW}Building Go binary (linux/amd64, CGO via zig)...${NC}"
-if ! command -v zig &>/dev/null; then
-    echo -e "${RED}Error: zig is not installed${NC}"
-    echo "Install zig: https://ziglang.org/download/"
-    echo "  brew install zig   (macOS)"
-    echo "  or download from https://ziglang.org/download/"
-    exit 1
-fi
-CC="zig cc -target x86_64-linux-musl" CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o "$APP_NAME" ./cmd/laju-go
-echo -e "${GREEN}✓ Binary built: $APP_NAME${NC}"
-
-echo ""
-
 # Detect first vs update deploy by checking if user service exists
 echo -e "${BLUE}Checking deployment status...${NC}"
 IS_FIRST=false
@@ -102,28 +81,35 @@ else
 fi
 echo ""
 
-# Upload artifacts — only what's needed at runtime
-echo -e "${BLUE}Uploading artifacts...${NC}"
+# Rsync source code to server (exclude build artifacts, data, env, etc.)
+echo -e "${BLUE}Syncing source code to server...${NC}"
+rsync -az --delete \
+    --exclude='.git' \
+    --exclude='node_modules' \
+    --exclude='data' \
+    --exclude='storage' \
+    --exclude='dist' \
+    --exclude='.env' \
+    --exclude='.deploy' \
+    --exclude='.vite-port' \
+    --exclude='*.db' \
+    --exclude='*.db-journal' \
+    --exclude='*.db-wal' \
+    --exclude='*.db-shm' \
+    --exclude="$APP_NAME" \
+    --exclude="$APP_NAME.exe" \
+    --exclude='.DS_Store' \
+    --exclude='.air.toml' \
+    --exclude='.zero' \
+    --exclude='.pi' \
+    "$PROJECT_ROOT/" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
+echo -e "${GREEN}✓ Source code synced${NC}"
+echo ""
 
-# Create remote directory if needed
-ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p $SERVER_PATH"
-
-# Upload binary, frontend assets, and migrations
-scp "$APP_NAME" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
-scp -r dist "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/dist"
-scp -r migrations "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/migrations"
-
-# Upload seed scripts if they exist (for first deploy)
-if [ -f "$PROJECT_ROOT/scripts/seed_admin.go" ]; then
-    scp "$PROJECT_ROOT/scripts/seed_admin.go" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
-fi
-if [ -f "$PROJECT_ROOT/scripts/seed_public.sql" ]; then
-    scp "$PROJECT_ROOT/scripts/seed_public.sql" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
-fi
-
-ssh "$SERVER_USER@$SERVER_HOST" "chmod +x $SERVER_PATH/$APP_NAME"
-echo -e "${GREEN}✓ Binary + assets uploaded${NC}"
-
+# Build on server
+echo -e "${BLUE}Building on server...${NC}"
+ssh "$SERVER_USER@$SERVER_HOST" "cd $SERVER_PATH && npm run build 2>&1 && go build -o $APP_NAME ./cmd/laju-go 2>&1 && chmod +x $APP_NAME"
+echo -e "${GREEN}✓ Built on server${NC}"
 echo ""
 
 # Run first-deploy or update-deploy
