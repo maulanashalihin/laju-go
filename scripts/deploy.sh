@@ -2,7 +2,13 @@
 
 # Laju Go - One-Click Deploy Script
 # Builds locally, uploads only required artifacts, deploys to server.
-# No build tools needed on the server — no Go, no Node, no npm.
+# Uses systemd --user service (no root/sudo needed for the service itself).
+#
+# Requirements:
+#   - SSH key access to server
+#   - .deploy file configured (cp .deploy.example .deploy)
+#   - Server user has passwordless sudo (only for `loginctl enable-linger`,
+#     which is run once during first-deploy)
 
 set -e
 
@@ -38,6 +44,7 @@ source "$PROJECT_ROOT/.deploy"
 # Set defaults
 APP_NAME=${APP_NAME:-laju-go}
 SERVICE_NAME=${SERVICE_NAME:-$APP_NAME}
+APP_PORT=${APP_PORT:-8080}
 
 # Validate required variables
 if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PATH" ]; then
@@ -49,6 +56,7 @@ fi
 echo -e "${GREEN}App:      ${YELLOW}$APP_NAME${NC}"
 echo -e "${GREEN}Server:   ${YELLOW}$SERVER_USER@$SERVER_HOST${NC}"
 echo -e "${GREEN}Path:     ${YELLOW}$SERVER_PATH${NC}"
+echo -e "${GREEN}Port:     ${YELLOW}$APP_PORT${NC}"
 echo ""
 
 # Test SSH connection
@@ -69,17 +77,17 @@ echo -e "${YELLOW}Building frontend...${NC}"
 npm run build
 echo -e "${GREEN}✓ Frontend built${NC}"
 
-# Build Go binary for Linux (pure Go SQLite = no CGO needed)
-echo -e "${YELLOW}Building Go binary (linux/amd64)...${NC}"
-GOOS=linux GOARCH=amd64 go build -o "$APP_NAME" .
+# Build Go binary for Linux (pure Go SQLite via modernc.org/sqlite = no CGO needed)
+echo -e "${YELLOW}Building Go binary (linux/amd64, CGO_ENABLED=0)...${NC}"
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o "$APP_NAME" ./cmd/laju-go
 echo -e "${GREEN}✓ Binary built: $APP_NAME${NC}"
 
 echo ""
 
-# Detect first vs update deploy by checking if service exists
+# Detect first vs update deploy by checking if user service exists
 echo -e "${BLUE}Checking deployment status...${NC}"
 IS_FIRST=false
-if ssh "$SERVER_USER@$SERVER_HOST" "systemctl is-active $SERVICE_NAME" > /dev/null 2>&1; then
+if ssh "$SERVER_USER@$SERVER_HOST" "systemctl --user is-active $SERVICE_NAME" > /dev/null 2>&1; then
     echo -e "${GREEN}→ Existing deployment detected${NC}"
 else
     echo -e "${YELLOW}→ No existing deployment found${NC}"
@@ -97,6 +105,15 @@ ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p $SERVER_PATH"
 scp "$APP_NAME" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
 scp -r dist "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/dist"
 scp -r migrations "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/migrations"
+
+# Upload seed scripts if they exist (for first deploy)
+if [ -f "$PROJECT_ROOT/scripts/seed_admin.go" ]; then
+    scp "$PROJECT_ROOT/scripts/seed_admin.go" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
+fi
+if [ -f "$PROJECT_ROOT/scripts/seed_public.sql" ]; then
+    scp "$PROJECT_ROOT/scripts/seed_public.sql" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
+fi
+
 ssh "$SERVER_USER@$SERVER_HOST" "chmod +x $SERVER_PATH/$APP_NAME"
 echo -e "${GREEN}✓ Binary + assets uploaded${NC}"
 
@@ -116,12 +133,12 @@ echo -e "${BLUE}║        Deployment Status             ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""
 
-if ssh "$SERVER_USER@$SERVER_HOST" "systemctl is-active $SERVICE_NAME" &>/dev/null; then
+if ssh "$SERVER_USER@$SERVER_HOST" "systemctl --user is-active $SERVICE_NAME" &>/dev/null; then
     echo -e "${GREEN}✓ Service $SERVICE_NAME is running${NC}"
 else
     echo -e "${RED}✗ Service $SERVICE_NAME is not running${NC}"
 fi
-if ssh "$SERVER_USER@$SERVER_HOST" "systemctl is-enabled $SERVICE_NAME" &>/dev/null; then
+if ssh "$SERVER_USER@$SERVER_HOST" "systemctl --user is-enabled $SERVICE_NAME" &>/dev/null; then
     echo -e "${GREEN}✓ Service enabled (auto-start on boot)${NC}"
 else
     echo -e "${YELLOW}! Service not enabled${NC}"
@@ -129,8 +146,8 @@ fi
 
 echo ""
 echo -e "${CYAN}Useful commands:${NC}"
-echo "  View logs:     ssh $SERVER_USER@$SERVER_HOST 'journalctl -u $SERVICE_NAME -f'"
-echo "  Check status:  ssh $SERVER_USER@$SERVER_HOST 'systemctl status $SERVICE_NAME'"
-echo "  Restart:       ssh $SERVER_USER@$SERVER_HOST 'systemctl restart $SERVICE_NAME'"
+echo "  View logs:     ssh $SERVER_USER@$SERVER_HOST 'journalctl --user -u $SERVICE_NAME -f'"
+echo "  Check status:  ssh $SERVER_USER@$SERVER_HOST 'systemctl --user status $SERVICE_NAME'"
+echo "  Restart:       ssh $SERVER_USER@$SERVER_HOST 'systemctl --user restart $SERVICE_NAME'"
 echo ""
 echo -e "${GREEN}Deployment complete!${NC}"

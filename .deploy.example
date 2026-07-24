@@ -1,18 +1,27 @@
 # Deployment Configuration
 # Copy this file to .deploy and fill in your server details
+#
+#   cp .deploy.example .deploy
+#
+# Then edit .deploy with your server info and run:
+#   ./scripts/deploy.sh
 
 # Application name (used for binary name, service name, and paths)
 APP_NAME=laju-go
 
 # SSH Credentials
-SERVER_USER=root
+SERVER_USER=youruser
 SERVER_HOST=your.server.com
 
 # Remote server path where the application will be deployed
-SERVER_PATH=/opt/$APP_NAME
+# Recommended: ~/projects/$APP_NAME (home dir — no sudo needed for files)
+SERVER_PATH=/home/youruser/projects/laju-go
 
 # Git repository URL (for first-time deployment reference)
 REPO_URL=https://github.com/yourusername/your-repo.git
 
 # Systemd service name (defaults to APP_NAME if not set)
 # SERVICE_NAME=
+
+# Application port (defaults to 8080 if not set)
+# APP_PORT=8080

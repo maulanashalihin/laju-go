@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/maulanashalihin/laju-go/app/queries"
@@ -16,7 +16,7 @@ import (
 func setupAuthTestDB(t *testing.T) *queries.Querier {
 	t.Helper()
 
-	db, err := sql.Open("sqlite3", ":memory:?_pragma=journal_mode(WAL)")
+	db, err := sql.Open("sqlite", ":memory:?_pragma=journal_mode(WAL)")
 	require.NoError(t, err)
 	t.Cleanup(func() { db.Close() })
 

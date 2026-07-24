@@ -1,8 +1,16 @@
 #!/bin/bash
 
 # Laju Go - First Deploy Script
-# Sets up the application and systemd service from scratch.
+# Sets up the application and systemd user service from scratch.
 # Run AFTER deploy.sh has uploaded artifacts to the server.
+#
+# Uses systemd --user (no root/sudo needed for the service itself).
+# Linger is enabled once (needs sudo) so the service survives logout.
+#
+# Prerequisites on server:
+#   - sqlite3 installed (for seed_public.sql)
+#   - Go installed (for seed_admin.go via `go run`)
+#   - User has passwordless sudo (for `loginctl enable-linger` only)
 
 set -e
 
@@ -21,14 +29,15 @@ source "$PROJECT_ROOT/.deploy"
 # Set defaults
 APP_NAME=${APP_NAME:-laju-go}
 SERVICE_NAME=${SERVICE_NAME:-$APP_NAME}
+APP_PORT=${APP_PORT:-8080}
 
 echo -e "${BLUE}═══ FIRST DEPLOY ═══${NC}"
 echo ""
 
 # Interactive prompts for environment configuration
-echo -e "${YELLOW}Application Port (default: 8080):${NC}"
+echo -e "${YELLOW}Application Port (default: $APP_PORT):${NC}"
 read -r APP_PORT_INPUT
-APP_PORT=${APP_PORT_INPUT:-8080}
+APP_PORT=${APP_PORT_INPUT:-$APP_PORT}
 
 echo -e "${YELLOW}Application URL (e.g., https://yourdomain.com):${NC}"
 read -r APP_URL
@@ -36,24 +45,22 @@ read -r APP_URL
 # Auto-generate SESSION_SECRET
 SESSION_SECRET=$(openssl rand -hex 32)
 
-# Step 1: Create remote directories
-echo -e "${YELLOW}[1/4] Creating remote directories...${NC}"
-ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p $SERVER_PATH/data $SERVER_PATH/storage $SERVER_PATH/backups"
+# Step 1: Create remote directories (in home dir — no sudo needed)
+echo -e "${YELLOW}[1/6] Creating remote directories...${NC}"
+ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p $SERVER_PATH/data $SERVER_PATH/storage $SERVER_PATH/backups ~/.config/systemd/user"
 echo -e "${GREEN}      ✓ Directories created${NC}"
 
 # Step 2: Setup .env file
-echo -e "${YELLOW}[2/4] Setting up environment file...${NC}"
-# Upload .env.example for reference
+echo -e "${YELLOW}[2/6] Setting up environment file...${NC}"
 scp "$PROJECT_ROOT/.env.example" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
 
-# Create .env from template
 ssh "$SERVER_USER@$SERVER_HOST" "
     if [ ! -f $SERVER_PATH/.env ]; then
         cp $SERVER_PATH/.env.example $SERVER_PATH/.env
         sed -i 's/APP_PORT=8080/APP_PORT=$APP_PORT/g' $SERVER_PATH/.env
         sed -i \"s|APP_URL=http://localhost:8080|APP_URL=$APP_URL|g\" $SERVER_PATH/.env
         sed -i 's/APP_ENV=development/APP_ENV=production/g' $SERVER_PATH/.env
-        sed -i 's/SESSION_SECRET=your-secret-key-change-this-in-production/SESSION_SECRET=$SESSION_SECRET/g' $SERVER_PATH/.env
+        sed -i 's/SESSION_SECRET=change-this-in-production/SESSION_SECRET=$SESSION_SECRET/g' $SERVER_PATH/.env
         sed -i \"s|DB_PATH=./data/app.db|DB_PATH=$SERVER_PATH/data/app.db|g\" $SERVER_PATH/.env
         echo '      Created .env from .env.example (production-ready)'
     else
@@ -62,66 +69,34 @@ ssh "$SERVER_USER@$SERVER_HOST" "
 "
 echo -e "${GREEN}      ✓ Environment configured${NC}"
 
-# Step 3: Upload systemd service file
-echo -e "${YELLOW}[3/4] Setting up systemd service...${NC}"
+# Step 3: Enable linger (needs sudo once — so user services survive logout)
+echo -e "${YELLOW}[3/6] Enabling linger (sudo needed once)...${NC}"
+ssh "$SERVER_USER@$SERVER_HOST" "sudo loginctl enable-linger $SERVER_USER"
+echo -e "${GREEN}      ✓ Linger enabled${NC}"
 
-# Check if systemd service file exists locally
+# Step 4: Upload systemd user service file (no sudo — it's in ~/.config)
+echo -e "${YELLOW}[4/6] Setting up systemd user service...${NC}"
+
 SERVICE_FILE="$PROJECT_ROOT/systemd/$APP_NAME.service"
-if [ ! -f "$SERVICE_FILE" ]; then
-    SERVICE_FILE="$PROJECT_ROOT/systemd/laju-go.service"
-fi
 
 if [ -f "$SERVICE_FILE" ]; then
-    # Upload and configure service file
-    scp "$SERVICE_FILE" "$SERVER_USER@$SERVER_HOST:/etc/systemd/system/$SERVICE_NAME.service"
-    ssh "$SERVER_USER@$SERVER_HOST" "
-        sed -i 's|/opt/APP_NAME|$SERVER_PATH|g' /etc/systemd/system/$SERVICE_NAME.service
-        sed -i 's|APP_NAME|$APP_NAME|g' /etc/systemd/system/$SERVICE_NAME.service
-        sed -i 's|SyslogIdentifier=laju-go|SyslogIdentifier=$SERVICE_NAME|g' /etc/systemd/system/$SERVICE_NAME.service
-    "
+    scp "$SERVICE_FILE" "$SERVER_USER@$SERVER_HOST:~/.config/systemd/user/$SERVICE_NAME.service"
 else
-    # Create service file directly on server
-    ssh "$SERVER_USER@$SERVER_HOST" "cat > /etc/systemd/system/$SERVICE_NAME.service << 'SERVICEEOF'
-[Unit]
-Description=$APP_NAME Application
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=$SERVER_PATH
-ExecStart=$SERVER_PATH/$APP_NAME
-Restart=always
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=$SERVICE_NAME
-
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=$SERVER_PATH/data $SERVER_PATH/storage $SERVER_PATH/backups
-
-EnvironmentFile=$SERVER_PATH/.env
-
-[Install]
-WantedBy=multi-user.target
-SERVICEEOF"
+    echo -e "${RED}Error: Service file not found at $SERVICE_FILE${NC}"
+    exit 1
 fi
 
-# Enable and start
 ssh "$SERVER_USER@$SERVER_HOST" "
-    systemctl daemon-reload
-    systemctl enable $SERVICE_NAME
-    systemctl start $SERVICE_NAME
+    systemctl --user daemon-reload
+    systemctl --user enable $SERVICE_NAME
+    systemctl --user start $SERVICE_NAME
 "
 
 sleep 2
 echo -e "${GREEN}      ✓ Service created and started${NC}"
 
-# Step 4: Set permissions for data directories
-echo -e "${YELLOW}[4/4] Setting up permissions...${NC}"
+# Step 5: Set permissions for data directories
+echo -e "${YELLOW}[5/6] Setting up permissions...${NC}"
 ssh "$SERVER_USER@$SERVER_HOST" "
     chmod 755 $SERVER_PATH/data
     chmod 770 $SERVER_PATH/storage
@@ -129,31 +104,38 @@ ssh "$SERVER_USER@$SERVER_HOST" "
 "
 echo -e "${GREEN}      ✓ Permissions set${NC}"
 
+# Step 6: Seed admin user (if seed_admin.go was uploaded)
+echo -e "${YELLOW}[6/6] Seeding admin user...${NC}"
+if ssh "$SERVER_USER@$SERVER_HOST" "test -f $SERVER_PATH/seed_admin.go" 2>/dev/null; then
+    ssh "$SERVER_USER@$SERVER_HOST" "cd $SERVER_PATH && go run seed_admin.go -db ./data/app.db" 2>&1 || \
+        echo -e "${YELLOW}      ! seed_admin.go failed (you can create admin manually later)${NC}"
+else
+    echo -e "${YELLOW}      ! seed_admin.go not found, skipping${NC}"
+fi
+echo -e "${GREEN}      ✓ Admin seed done${NC}"
+
 # Verify
 echo ""
 echo -e "${BLUE}Verifying service...${NC}"
-if ssh "$SERVER_USER@$SERVER_HOST" "systemctl is-active $SERVICE_NAME" > /dev/null 2>&1; then
+if ssh "$SERVER_USER@$SERVER_HOST" "systemctl --user is-active $SERVICE_NAME" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Service is running${NC}"
 else
     echo -e "${RED}Service failed to start. Check logs:${NC}"
-    ssh "$SERVER_USER@$SERVER_HOST" "journalctl -u $SERVICE_NAME -n 30 --no-pager"
+    ssh "$SERVER_USER@$SERVER_HOST" "journalctl --user -u $SERVICE_NAME -n 30 --no-pager"
     exit 1
 fi
 
 echo ""
 echo -e "${GREEN}═══ FIRST DEPLOY COMPLETE ═══${NC}"
 echo ""
-echo -e "${YELLOW}Next steps: Configure OAuth & SMTP for full functionality:${NC}"
-echo "  ssh $SERVER_USER@$SERVER_HOST 'nano $SERVER_PATH/.env'"
+echo -e "${YELLOW}Next steps:${NC}"
+echo "  1. Configure .env if needed:"
+echo "     ssh $SERVER_USER@$SERVER_HOST 'nano $SERVER_PATH/.env'"
 echo ""
-echo "  # Google OAuth (get from console.cloud.google.com)"
-echo "  GOOGLE_CLIENT_ID=your-client-id"
-echo "  GOOGLE_CLIENT_SECRET=your-secret"
-echo "  GOOGLE_REDIRECT_URL=$APP_URL/auth/google/callback"
+echo "  2. Seed public data (if you have seed_public.sql):"
+echo "     ssh $SERVER_USER@$SERVER_HOST 'sqlite3 $SERVER_PATH/data/app.db < $SERVER_PATH/seed_public.sql'"
 echo ""
-echo "  # SMTP (for password reset)"
-echo "  SMTP_HOST=smtp.gmail.com"
-echo "  SMTP_USER=your-email@gmail.com"
-echo "  SMTP_PASS=your-app-password"
-echo "  FROM_EMAIL=noreply@yourdomain.com"
+echo "  3. Default admin credentials (change password after first login):"
+echo "     email:    admin@laju-go.local"
+echo "     password: Admin123!"
 echo ""
