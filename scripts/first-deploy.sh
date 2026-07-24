@@ -39,6 +39,18 @@ echo -e "${YELLOW}Application Port (default: $APP_PORT):${NC}"
 read -r APP_PORT_INPUT
 APP_PORT=${APP_PORT_INPUT:-$APP_PORT}
 
+# Check if port is available on server; auto-increment if not
+echo -e "${BLUE}Checking port $APP_PORT on server...${NC}"
+while true; do
+    PORT_IN_USE=$(ssh "$SERVER_USER@$SERVER_HOST" "ss -tlnp 2>/dev/null | grep -q ':$APP_PORT\b' && echo yes || echo no")
+    if [ "$PORT_IN_USE" = "no" ]; then
+        echo -e "${GREEN}✓ Port $APP_PORT is available${NC}"
+        break
+    fi
+    echo -e "${YELLOW}Port $APP_PORT is in use, trying $((APP_PORT + 1))...${NC}"
+    APP_PORT=$((APP_PORT + 1))
+done
+
 echo -e "${YELLOW}Application URL (e.g., https://yourdomain.com):${NC}"
 read -r APP_URL
 
