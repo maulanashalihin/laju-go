@@ -77,9 +77,16 @@ echo -e "${YELLOW}Building frontend...${NC}"
 npm run build
 echo -e "${GREEN}✓ Frontend built${NC}"
 
-# Build Go binary for Linux (pure Go SQLite via modernc.org/sqlite = no CGO needed)
-echo -e "${YELLOW}Building Go binary (linux/amd64, CGO_ENABLED=0)...${NC}"
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o "$APP_NAME" ./cmd/laju-go
+# Build Go binary for Linux (CGO-enabled SQLite via zig cross-compiler)
+echo -e "${YELLOW}Building Go binary (linux/amd64, CGO via zig)...${NC}"
+if ! command -v zig &>/dev/null; then
+    echo -e "${RED}Error: zig is not installed${NC}"
+    echo "Install zig: https://ziglang.org/download/"
+    echo "  brew install zig   (macOS)"
+    echo "  or download from https://ziglang.org/download/"
+    exit 1
+fi
+CC="zig cc -target x86_64-linux-musl" CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o "$APP_NAME" ./cmd/laju-go
 echo -e "${GREEN}✓ Binary built: $APP_NAME${NC}"
 
 echo ""
