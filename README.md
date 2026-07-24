@@ -158,27 +158,48 @@ go test ./...                  # backend tests
 > **E2E testing** is done manually with `agent_browser` (open browser, click, fill forms, verify redirects).
 > No Cypress/Playwright needed — a real browser is more realistic for a project of this scale.
 
-## 🚀 Deployment (Your Workflow)
+## 🚀 Deployment
+
+One-click deploy: rsync source to server, build on server, restart systemd --user service.
 
 ```bash
-# 1. Pull latest
-git pull
+# 1. Configure (once)
+cp .deploy.example .deploy
+# edit .deploy: APP_NAME, SERVER_USER, SERVER_HOST, SERVER_PATH
 
-# 2. Build
-npm run build:all
-
-# 3. Restart service
-sudo systemctl restart laju-go
+# 2. Deploy
+./scripts/deploy.sh
 ```
 
-Only runtime artifacts needed on server:
+`deploy.sh` detects first vs update deploy automatically:
+- **First deploy**: creates `.env`, enables linger, installs systemd --user service, seeds admin, auto-finds available port
+- **Update deploy**: rsync source, rebuild, restart service
 
-- `laju-go` binary
-- `dist/` — frontend assets
-- `.env` — configuration
-- `migrations/` — auto-run on startup
+### Prerequisites (server)
 
-> **Note**: No Go, Node, or npm needed on the server — just the binary + assets.
+- Go 1.22+, Node 18+, npm, sqlite3, rsync
+- Passwordless sudo (only for `loginctl enable-linger`, run once during first deploy)
+- SSH key access from dev machine
+
+### OS Support (dev machine)
+
+| OS | Status | Notes |
+|----|--------|-------|
+| **macOS** | ✅ Full | Works out of the box |
+| **Linux** | ✅ Full | Works out of the box |
+| **Windows (WSL2)** | ✅ Full | Recommended — install WSL2 + Ubuntu, run scripts from WSL shell |
+| **Windows (Git Bash)** | ⚠️ Partial | rsync not included — install via MSYS2 or scoop: `scoop install rsync` |
+| **Windows (PowerShell)** | ❌ No | Bash scripts don't run — use WSL2 or Git Bash |
+
+> **Why build on server, not locally?** `mattn/go-sqlite3` uses CGO (C bindings). Cross-compiling from macOS/Windows to Linux requires a C cross-compiler (zig, musl-gcc, or Docker). Building on the server with native `gcc` is simpler — no extra toolchain on your dev machine.
+>
+> **Alternative: zig cross-compile** (build locally, no Go needed on server):
+> ```bash
+> brew install zig   # macOS
+> CC="zig cc -target x86_64-linux-musl" CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
+>   go build -o app ./cmd/laju-go
+> ```
+> Produces a static ELF binary. Works on Windows too (download zig from <https://ziglang.org/download/>).
 
 ## 🗄️ Database
 

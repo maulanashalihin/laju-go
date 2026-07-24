@@ -4,12 +4,15 @@
 # Rsyncs source code to server, builds on server, restarts service.
 # Uses systemd --user service (no root/sudo needed for the service itself).
 #
-# Requirements:
-#   - SSH key access to server
-#   - .deploy file configured (cp .deploy.example .deploy)
-#   - Server has: Go, Node/npm, sqlite3, rsync
-#   - Server user has passwordless sudo (only for `loginctl enable-linger`,
-#     run once during first-deploy)
+# Requirements (dev machine):
+#   - bash, ssh, rsync
+#   - macOS/Linux: works out of the box
+#   - Windows: use WSL2 (recommended) or Git Bash + `scoop install rsync`
+#
+# Requirements (server):
+#   - Go 1.22+, Node 18+, npm, sqlite3, rsync
+#   - SSH key access from dev machine
+#   - Passwordless sudo (only for `loginctl enable-linger`, run once)
 
 set -e
 
