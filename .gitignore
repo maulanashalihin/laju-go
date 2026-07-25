@@ -52,3 +52,8 @@ dist
 .llm-wiki/outputs/
 .llm-wiki/meta/
 /wiki
+
+# Graphify — derived knowledge graph artifact.
+# Regen after clone: `graphify . --code-only` (AST-only, no API key needed).
+# Commit only the skill (.devin/skills/graphify, .windsurf/rules/graphify.md).
+graphify-out/

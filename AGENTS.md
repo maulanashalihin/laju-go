@@ -165,6 +165,24 @@ Before writing any frontend code (new pages, components, landing pages):
 - `dist/` is gitignored except for `.gitkeep`
 - Air does not watch `.templ` files — regenerate manually
 
+## Graphify (Code Knowledge Graph)
+
+This repo ships a graphify skill (`.devin/skills/graphify/SKILL.md` + `.windsurf/rules/graphify.md`) but **not** the generated graph itself — `graphify-out/` is gitignored (derived artifact, regenerable).
+
+**One-time setup after clone:**
+```bash
+uv tool install graphifyy          # or: pipx install graphifyy
+graphify . --code-only             # build graph (AST-only, no API key, ~10s)
+```
+
+**Workflow:**
+- For codebase/architecture questions, run `graphify query "<q>"` (or `graphify path "<A>" "<B>"` / `graphify explain "<concept>"`) **before** grepping raw files. Returns a scoped subgraph.
+- After modifying code, refresh the graph: `graphify . --update` (AST-only, free).
+- For full semantic pass on docs/PDFs/images, set an API key (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, etc.) and run `graphify .` without `--code-only`.
+- Visualize: open `graphify-out/graph.html` in a browser.
+
+See `.devin/skills/graphify/SKILL.md` for the full command reference.
+
 ## Wiki (Further Details)
 
 Further details (deployment, design standards, HTTP conventions, migration conventions, etc.) are in `.llm-wiki/wiki/`. Use the native wiki tools: `wiki_search`, `wiki_recall`, `wiki_ensure_page`, `wiki_observe`, `wiki_retro`.
