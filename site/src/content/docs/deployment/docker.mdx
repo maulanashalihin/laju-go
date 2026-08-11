@@ -1,100 +1,48 @@
 ---
 title: Docker
-description: Multi-stage Dockerfile that builds frontend and backend separately into a minimal Alpine image.
+description: Multi-stage Dockerfile and docker-compose.
 ---
 
-Laju Go ships with a multi-stage `Dockerfile` that produces a small static binary inside an Alpine runtime image. The build runs entirely inside Docker — no local Go or Node toolchain required.
+Run Laju Go in a Docker container — one command to build and start,
+everything isolated from the host. The multi-stage image prebuilds
+the Svelte frontend, compiles the Go binary with CGO enabled, and
+ships a minimal Alpine runtime. You'll need a
+[reverse proxy](/deployment/reverse-proxy/) for HTTPS.
 
-## Build the Image
+## Prerequisites
 
-```bash
-make docker
-# or
-docker build -t laju-go .
-```
-
-## Run the Container
-
-```bash
-docker run -d \
-  --name laju-go \
-  -p 8080:8080 \
-  -v laju-data:/app/data \
-  -v laju-storage:/app/storage \
-  --env-file .env \
-  laju-go
-```
-
-The `data/` volume holds the SQLite database and must persist across container restarts. The `storage/` volume holds uploaded files (avatars, TUS uploads).
-
-## Dockerfile Breakdown
-
-The Dockerfile has three stages:
-
-### Stage 1: Frontend (Node)
-
-```dockerfile
-FROM node:22-alpine AS frontend
-WORKDIR /build
-COPY package*.json ./
-RUN npm ci
-COPY frontend/ frontend/
-COPY tsconfig*.json vite.config.* ./
-RUN npm run build
-```
-
-Installs npm dependencies, copies the frontend source and Vite config, runs `npm run build`. This produces `dist/` with the Vite manifest and hashed assets.
-
-### Stage 2: Backend (Go + CGO)
-
-```dockerfile
-FROM golang:1.26-alpine AS backend
-RUN apk add --no-cache gcc musl-dev sqlite-static
-WORKDIR /build
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-COPY --from=frontend /build/dist ./dist
-RUN CGO_ENABLED=1 go build -trimpath \
-    -ldflags="-s -w -static \
-      -X main.Version=$(git describe --tags --always --dirty 2>/dev/null || echo dev) \
-      -X main.Commit=$(git rev-parse --short HEAD 2>/dev/null || echo none)" \
-    -o laju-go ./cmd/laju-go
-```
-
-Installs `gcc`, `musl-dev`, and `sqlite-static` because `github.com/mattn/go-sqlite3` is CGO-based. Downloads Go modules, copies the full source, brings in `dist/` from the frontend stage, then builds a **static** binary with `CGO_ENABLED=1`.
-
-The `-ldflags` inject `main.Version` and `main.Commit` at build time (visible via `./laju-go --version`). `-trimpath` strips local paths from the binary; `-s -w` strip debug symbols for a smaller image.
-
-### Stage 3: Runtime (Alpine)
-
-```dockerfile
-FROM alpine:3.20
-RUN apk add --no-cache ca-certificates tzdata sqlite
-WORKDIR /app
-COPY --from=backend /build/laju-go .
-COPY --from=backend /build/migrations ./migrations
-COPY --from=backend /build/dist ./dist
-COPY --from=backend /build/public ./public
-EXPOSE 8080
-CMD ["./laju-go"]
-```
-
-Only the binary, migrations, frontend assets, and public files are copied. The runtime installs `ca-certificates` (for HTTPS/TLS), `tzdata` (for timezone-aware timestamps), and `sqlite` (for the `sqlite3` CLI if you need to inspect the database).
-
-## Image Size
-
-The final image is based on `alpine:3.20` (~7 MB) plus the static Go binary and asset files. The Go binary with `-s -w -static` is typically 15–25 MB. The total image is usually under 50 MB.
+- **Docker and Docker Compose** installed on your server
+  ([install guide](https://docs.docker.com/engine/install/)).
+- **SSH access** to the server.
+- **Your code on GitHub** — clone your app repo (replace `<your-repo-url>`
+  with your repo URL).
 
 ```bash
-docker images laju-go
-# REPOSITORY   TAG       IMAGE ID       CREATED         SIZE
-# laju-go      latest    abc123def456   1 minute ago    ~45MB
+git clone <your-repo-url>
+cd laju-go
 ```
 
-## Docker Compose
+The rest of this guide runs from inside the cloned repo directory.
 
-For local development or single-host production with a reverse proxy:
+## Quick start
+
+```bash
+docker compose up -d --build
+```
+
+- Multi-stage `Dockerfile` with three stages: `node:22-alpine` builds
+  the frontend, `golang:1.26-alpine` compiles the Go binary with CGO
+  enabled (`gcc musl-dev sqlite-static`), and `alpine:3.20` is the
+  minimal runtime.
+- `./data` and `./storage` volumes keep the SQLite database and
+  uploads across restarts; the healthcheck hits `/health`.
+- The container listens on port 8080 (`EXPOSE 8080`).
+
+## Environment variables
+
+Laju Go reads env from `.env` at startup — same file as bare-metal.
+Docker Compose injects it into the container via `env_file: .env` in
+`docker-compose.yml`:
 
 ```yaml
 services:
@@ -102,21 +50,115 @@ services:
     build: .
     ports:
       - "8080:8080"
+    env_file: .env
+    environment:
+      APP_ENV: production
+      APP_URL: ${APP_URL:-http://localhost:8080}
     volumes:
-      - laju-data:/app/data
-      - laju-storage:/app/storage
-    env_file:
-      - .env
+      - ./data:/app/data        # persistent SQLite database
+      - ./storage:/app/storage  # persistent uploads
     restart: unless-stopped
-
-volumes:
-  laju-data:
-  laju-storage:
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 ```
 
-## Notes
+### Step by step
 
-- The binary is **statically linked** (`-static` flag) so it runs on any Linux distro, not just Alpine.
-- `go.sum` is committed and copied into the build — this is required for reproducible Docker builds.
-- Migrations run automatically on container start. The first boot creates the database in `/app/data/app.db`.
-- The `EXPOSE 8080` matches the default `APP_PORT`. If you change the port in `.env`, update the port mapping accordingly.
+1. **Copy the example file** in the project root (on the host, not inside
+   the container):
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit `.env`** — set the values for your deployment. The minimum you
+   need to change:
+
+   ```env
+   APP_PORT=8080
+   APP_ENV=production
+   APP_URL=https://your-domain.com
+   DB_PATH=/app/data/app.db
+   SESSION_SECRET=<random 32-char string>
+   ```
+
+   `DB_PATH` must point inside the `./data` volume (`/app/data/...`)
+   so the SQLite file survives container restarts. See
+   [Configuration](/deployment/configuration/) for the full env table.
+
+3. **`.env` is never baked into the image.** `.dockerignore` excludes it —
+   the `.env` file stays on the host and is injected at runtime via
+   `env_file`. This means you can rebuild the image without leaking
+   secrets, and different environments (staging, production) just use
+   different `.env` files on the host.
+
+4. **`APP_ENV` and `APP_URL` are set in `docker-compose.yml`** under
+   `environment:`, not `.env`. Compose's `environment:` block overrides
+   `env_file` values, so these two are always correct for the container
+   even if your `.env` has different values for local dev. If you need
+   to override `APP_URL`, set it in `.env` or pass it at build time:
+
+   ```bash
+   APP_URL=https://your-domain.com docker compose up -d --build
+   ```
+
+5. **Build and start:**
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+   The first build takes ~60s (installs npm deps, builds Vite assets,
+   downloads Go modules, compiles with CGO). Subsequent builds are
+   faster thanks to Docker layer caching.
+
+6. **Check it's running:**
+
+   ```bash
+   docker compose ps          # should show "healthy"
+   docker compose logs -f     # tail logs
+   curl http://localhost:8080/health
+   ```
+
+### Changing env later
+
+Edit `.env` on the host, then restart the container (no rebuild needed —
+the image doesn't change, only the runtime env):
+
+```bash
+docker compose restart
+```
+
+If you changed `APP_URL` in `docker-compose.yml` itself, or changed the
+compose file structure, use `up` instead:
+
+```bash
+docker compose up -d
+```
+
+## Routine updates
+
+After you push code to GitHub, pull and rebuild on the server:
+
+```bash
+git pull
+docker compose up -d --build
+curl http://localhost:8080/health       # → {"status":"ok",...}
+```
+
+The `./data` and `./storage` volumes persist across rebuilds — your
+SQLite database and uploads are not affected.
+
+## Reverse proxy
+
+The container listens on port 8080 (already mapped in `docker-compose.yml`).
+For HTTPS, put a reverse proxy in front — same setup as bare-metal:
+
+→ **[Reverse proxy guide](/deployment/reverse-proxy/)**
+
+If your proxy runs on the same server (Caddy, Nginx, Cloudflare Tunnel),
+change the port mapping in `docker-compose.yml` to `"127.0.0.1:8080:8080"`
+so port 8080 is not exposed publicly.

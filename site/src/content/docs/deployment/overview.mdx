@@ -1,97 +1,75 @@
 ---
-title: Deployment Overview
-description: Three ways to deploy Laju Go to production — git pull, Docker, and systemd.
+title: Deployment
+description: Pick your deployment path — AI agent, Docker, or bare VPS with systemd.
 ---
 
-Laju Go is a single binary that serves both the Go backend and the compiled Svelte frontend. There is no separate API server or static file host to wire up. You build one artifact and run it.
+Laju Go ships as a single Go binary that serves both the backend and the
+compiled Svelte frontend. There is no separate API server or static file
+host to wire up. Pick **one** path:
 
-## Build Order
+## Deploy with an AI agent (easiest)
 
-The build has two stages and the order is fixed:
+Don't want to touch a terminal? Hand the deployment to an AI coding
+agent. Copy-paste a prompt, the agent SSHes in, installs everything,
+and starts the app. Works with omp.sh, Claude Code, Cursor, or any
+agent that can run shell commands.
 
-```bash
-vite build   # produces dist/.vite/manifest.json + dist/assets/*
-go build     # embeds manifest references, serves assets from dist/
-```
+→ **[AI agent deployment guide](/deployment/ai-agent/)**
 
-**`vite build` must run before `go build`.** The Go binary reads `dist/.vite/manifest.json` at startup to resolve hashed asset filenames. If you build Go first, the manifest is missing or stale and the app serves broken asset links.
+## Docker (recommended for most)
 
-The `make build` target encodes this order for you:
-
-```makefile
-build: vite-build go-build
-```
-
-Or with npm:
+One command, everything containerized:
 
 ```bash
-npm run build:all
+docker compose up -d --build
 ```
 
-Both run `vite build` then `go build` in sequence.
+Multi-stage image, persistent SQLite volume, healthcheck built in. If you
+have Docker on your server, start here.
 
-## Three Deployment Methods
+→ **[Docker guide](/deployment/docker/)**
 
-### 1. Git Pull (Simplest)
+## Bare VPS (no Docker)
 
-Clone the repo on the server, build in place, restart the service. No containers, no registries.
+Go + systemd + reverse proxy. More control, fewer moving parts, but
+~6 manual steps for first-time setup.
 
-```bash
-cd ~/projects/laju-go
-git pull
-make build
-sudo systemctl restart laju-go
-```
+→ **[Linux VPS guide](/deployment/vps/)**
 
-This is the fastest path for a single VPS. The server needs Go, Node.js, and npm installed. See [Linux VPS](./vps/) for the full setup including the systemd unit.
+## Docker vs. bare VPS — which one?
 
-### 2. Docker
+| | Docker | Bare VPS (systemd) |
+|---|---|---|
+| **First-time setup** | `docker compose up -d --build` (1 command after clone) | ~6 steps: install Go + Node, create user, clone, .env, systemd unit, start |
+| **Routine update** | `git pull && docker compose up -d --build` | `git pull && npm run build:all && systemctl --user restart laju-go` |
+| **Downtime on update** | ~2s (container swap) | ~1s (process restart) |
+| **Install on server** | [Docker](https://docs.docker.com/engine/install/) + Docker Compose | [Go](https://go.dev/doc/install) + [Node.js](https://nodejs.org/) (or cross-compile with Zig, no Go on server) |
+| **Isolation** | Containerized (filesystem, network, process) | Runs directly on host |
+| **Memory overhead** | ~120 MB (container runtime) | ~40 MB (single Go binary) |
+| **Best for** | Most users — simplest setup, reproducible environment | Users who want minimal overhead, already comfortable with Linux |
 
-A multi-stage `Dockerfile` builds the frontend and backend in separate stages, then copies only the runtime artifacts into a minimal Alpine image.
+Both paths serve the same app on port 8080 and need a
+[reverse proxy](#after-either-path-reverse-proxy) for HTTPS. For a
+single-process Go + SQLite app, systemd is faster and lighter —
+Docker's benefits (isolation, reproducibility) kick in when
+orchestrating multiple services.
 
-```bash
-make docker
-# or
-docker build -t laju-go .
-```
+---
 
-The image is self-contained — no Go or Node runtime inside. See [Docker](./docker/) for the full Dockerfile breakdown.
+## After either path: reverse proxy
 
-### 3. Systemd (One-Click Deploy Script)
+Your app is running on port 8080, but it speaks plain HTTP — no
+encryption. Before users can visit `https://your-domain.com` (with the
+lock icon), you need a reverse proxy in front to handle TLS
+(HTTPS certificates) and route traffic to port 8080. If your domain is
+on Cloudflare, that's the proxy — nothing to install. Otherwise, Caddy
+or Nginx both work.
 
-The `scripts/deploy.sh` script rsyncs source code to the server, builds on the server, and restarts a systemd **user** service. No root needed for the service itself (only `loginctl enable-linger` once).
+→ **[Reverse proxy guide](/deployment/reverse-proxy/)**
 
-```bash
-cp .deploy.example .deploy
-# edit .deploy with your server host + path
-./scripts/deploy.sh
-```
+## Configuration
 
-First run triggers `scripts/first-deploy.sh` (sets up `.env`, enables linger, creates the service). Subsequent runs trigger `scripts/update-deploy.sh` (stop → rebuild → start). See [Linux VPS](./vps/) for details.
+Env vars, the full `.env` reference table, and defaults from
+`app/config/config.go`.
 
-## Choosing a Method
-
-| Method | Best for | Server needs | Rollback |
-|--------|----------|-------------|----------|
-| Git pull | Solo dev, single VPS | Go + Node + npm | `git checkout <prev> && make build` |
-| Docker | Container orchestration, CI/CD | Docker daemon | Previous image tag |
-| Systemd script | Repeatable VPS deploys from local machine | Go + Node + npm + SSH | Re-run with old code |
-
-## What Gets Deployed
-
-Regardless of method, the runtime needs:
-
-- **`laju-go`** — the compiled binary
-- **`dist/`** — Vite-built frontend assets (CSS, JS, images)
-- **`public/`** — static files served directly (favicon, OG image)
-- **`migrations/`** — Goose SQL migration files (applied at startup)
-- **`.env`** — environment configuration
-- **`data/`** — SQLite database (created on first run, must persist across deploys)
-
-The binary runs migrations automatically on startup via Goose. No separate migration step is needed during deployment.
-
-## Next Steps
-
-- [Docker](./docker/) — multi-stage container build
-- [Linux VPS](./vps/) — systemd service + CGO cross-compilation
-- [Configuration](./configuration/) — environment variables and `.env`
+→ **[Configuration](/deployment/configuration/)**

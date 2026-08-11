@@ -100,8 +100,10 @@ export default defineConfig({
 					label: "Deployment",
 					items: [
 						{ label: "Overview", slug: "deployment/overview" },
+						{ label: "AI agent", slug: "deployment/ai-agent" },
 						{ label: "Docker", slug: "deployment/docker" },
 						{ label: "Linux VPS", slug: "deployment/vps" },
+						{ label: "Reverse proxy", slug: "deployment/reverse-proxy" },
 						{ label: "Configuration", slug: "deployment/configuration" },
 					],
 				},
