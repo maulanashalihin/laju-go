@@ -5,8 +5,13 @@ CLI tool to quickly create a new Laju Go project.
 ## Usage
 
 ```bash
-# Create new project
+# Create new project (interactive — prompts for framework)
 npx create-laju-go my-app
+
+# Create with a specific framework (skip prompt)
+npx create-laju-go my-app --template react
+npx create-laju-go my-app --template vue
+npx create-laju-go my-app --template svelte  # default
 
 # Navigate to project
 cd my-app
@@ -23,6 +28,7 @@ npx create-laju-go <project-name> [options]
 
 | Option | Description | Default |
 |--------|-------------|---------|
+| `--template` | Frontend framework: `svelte`, `react`, or `vue` | Interactive prompt |
 | `--package-manager` | Package manager to use (npm, yarn, bun) | Auto-detect |
 
 ## Prerequisites
@@ -38,7 +44,7 @@ Before using this installer, make sure you have:
 The created project includes:
 
 - **Go Fiber** - High-performance web framework (fasthttp)
-- **Svelte 5** - Reactive UI framework
+- **Svelte 5 / React 19 / Vue 3** - Choose your frontend framework
 - **Inertia.js** - Server-driven SPA without client-side routing
 - **TailwindCSS v4** - Utility-first CSS framework
 - **SQLite** - Lightweight database with sqlc (compile-time type-safe SQL)
@@ -65,8 +71,6 @@ npm run dev:all
 
 Visit `http://localhost:8080` to view the application.
 
-## Project Structure
-
 ```
 my-app/
 ├── cmd/laju-go/main.go       # Go entry point
@@ -85,7 +89,7 @@ my-app/
 │   ├── cache/                # In-memory session cache
 │   └── session/              # Session store (SQLite + cache)
 │
-├── frontend/                 # Svelte 5 frontend
+├── frontend/                 # Frontend (Svelte / React / Vue)
 │   └── src/
 │       ├── components/       # Reusable UI components
 │       ├── pages/            # Page components

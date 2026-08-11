@@ -1,15 +1,14 @@
 {
   "name": "create-laju-go",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "CLI tool to scaffold new Laju Go projects",
   "keywords": [
     "laju",
     "go",
     "golang",
     "fiber",
-    "svelte",
-    "tailwindcss",
-    "sqlite",
+    "react",
+    "vue",
     "boilerplate",
     "template",
     "generator",

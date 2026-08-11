@@ -35,6 +35,33 @@ const WIKI_CLEANUP = [
 	".llm-wiki/.obsidian", // Obsidian editor config (dev-only)
 ];
 
+/**
+ * Frontend framework templates.
+ * Each maps to a git branch in the laju-go repo.
+ * Svelte is the default (lives on main); React and Vue live on template/* branches.
+ */
+const FRAMEWORKS = [
+	{
+		id: "svelte",
+		label: "Svelte 5",
+		hint: "default",
+		ref: "main",
+	},
+	{
+		id: "react",
+		label: "React 19",
+		hint: "",
+		ref: "template/react-tailwind",
+	},
+	{
+		id: "vue",
+		label: "Vue 3",
+		hint: "",
+		ref: "template/vue-tailwind",
+	},
+];
+
+
 function detectAvailablePackageManagers() {
 	const packageManagers = ["bun", "yarn", "npm"];
 	const available = [];
@@ -136,11 +163,11 @@ const ASCII_ART = `
 program
 	.name("create-laju-go")
 	.description("CLI to create a new Laju Go project from template")
-	.version("1.2.0");
+	.version("1.4.0");
 
 program
 	.argument("[project-directory]", "Project directory name")
-	.option("--package-manager <pm>", "Package manager to use (npm, yarn, bun)")
+	.option("--template <name>", "Frontend framework: svelte, react, or vue (skip prompt)")
 	.action(async (projectDirectory, options) => {
 		try {
 			console.log("");
@@ -181,6 +208,33 @@ program
 			}
 			console.log("\x1b[36m  Using " + packageManager + "\x1b[0m");
 			console.log("");
+
+			// Select frontend framework
+			let framework;
+			if (options.template) {
+				framework = FRAMEWORKS.find((f) => f.id === options.template);
+				if (!framework) {
+					console.log(
+						"\x1b[1;31m✖\x1b[0m \x1b[1;91mError:\x1b[0m Invalid template. Use svelte, react, or vue.",
+					);
+					process.exit(1);
+				}
+			} else {
+				console.log("\x1b[36m  Select a frontend framework:\x1b[0m");
+				const fwResponse = await prompts({
+					type: "select",
+					name: "framework",
+					message: "",
+					choices: FRAMEWORKS.map((f) => ({
+						title: f.label + (f.hint ? ` (${f.hint})` : ""),
+						value: f.id,
+					})),
+				});
+				framework = FRAMEWORKS.find((f) => f.id === fwResponse.framework) || FRAMEWORKS[0];
+			}
+			console.log("\x1b[36m  Using " + framework.label + "\x1b[0m");
+			console.log("");
+
 
 			// If no project name, ask user
 			if (!projectDirectory) {
@@ -245,7 +299,7 @@ program
 			}
 
 			// Clone template from GitHub
-			const emitter = degit("maulanashalihin/laju-go");
+			const emitter = degit(`maulanashalihin/laju-go#${framework.ref}`);
 
 			await emitter.clone(targetPath);
 
