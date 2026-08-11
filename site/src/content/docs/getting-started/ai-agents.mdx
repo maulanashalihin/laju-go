@@ -1,226 +1,248 @@
 ---
 title: Building with AI agents
-description: The conventions in AGENTS.md that keep AI-generated Laju Go code correct — the three-tier rule, handler pattern, and LLM wiki.
+description: Build a Laju Go app with an AI coding agent — write the story of your needs, let the agent do the technical work, review the result.
 ---
 
-Laju Go is built to be developed alongside AI coding agents. The repo ships an `AGENTS.md` at the root that agents read automatically, plus an `.llm-wiki/` knowledge base they can query. This page is the human-readable summary of those conventions — follow them whether you are an agent or a person.
+Laju Go was designed for AI agents. `AGENTS.md` at the repo root tells the
+agent where everything lives, so it can build features without guessing
+the conventions. Your job is not to write code or remember syntax — it's
+to describe what you need and review what the agent produces.
 
-## Read AGENTS.md first
+<aside>
+**This workflow is opinionated.** It's what works for the Laju Go author,
+not a universal law. Treat this page as a starting point and feel free to
+develop your own workflow. The conventions in `AGENTS.md` are the
+hard rules; everything on this page is a suggestion.
+</aside>
 
-Every agent that touches this repo must start by reading `AGENTS.md`. It encodes the rules that keep generated code from rotting: the layer boundaries, the handler pattern, the Svelte 5 rules, the migration rules, and the gotchas.
+<aside>
+**Personally recommended: [omp.sh](https://omp.sh).** It reads
+`AGENTS.md` automatically, runs in your terminal, and can drive a real
+browser to verify UI changes. The workflow below works with omp.sh,
+Claude Code, Cursor, opencode, Windsurf, or any agent that can read
+files and run shell commands.
+</aside>
 
-The single most important line in that file:
+## The workflow at a glance
 
-> 🔴 **NEVER run `npm run dev:all` or any dev server.** The user handles dev servers manually.
-
-Agents do not start dev servers. They build, they test, they generate code — they do not run long-lived processes that the user is already running.
-
-## The three-tier rule
-
-This is the load-bearing rule of the entire codebase. **Handler → Service → Query → DB.** No layer may skip another.
-
-```mermaid
-flowchart TD
-    Handler[Handler\nparse request, call service, return response]
-    Service[Service\nbusiness logic, calls querier or cache]
-    Query[Query\nsqlc-generated, THE ONLY layer that runs SQL]
-    DB[(SQLite)]
-    Handler --> Service
-    Service --> Query
-    Query --> DB
+```
+1. Install         npm create laju-go@latest my-app — you do this first
+2. Plan            tell the story — the agent writes PLAN.md
+3. Design          all pages with dummy data — you review, until you love it
+4. Wire            backend + database — strict unit tests prove it works
+5. Loop            prompt → agent implements → tests pass → commit
+6. Ship            agent verifies everything is green
 ```
 
-| Layer | May | May not |
-|-------|-----|---------|
-| **Handler** | Parse request, call a Service, return a response | Call Queries, access the DB, contain business logic |
-| **Service** | Business logic, call `s.querier.*` or `s.cache.*` | `sql.Open`, `db.Exec`, raw SQL |
-| **Models** | Pure data structs (entities + DTOs), used as boundary types | Business logic, DB access, import `app/queries` |
-| **Cache** | In-memory session cache, called via Service | Direct access from a Handler |
-| **Queries** | **The only** layer that executes SQL | — |
+## Setup: install first, then bring in the agent
 
-The one exception: test files (`*_test.go`) may call queries directly.
-
-If you catch yourself writing `db.Exec` in a handler, or reaching for `s.querier.*` from a handler, stop. You are violating the rule. See [the three-tier rule](/architecture/three-tier/) for the full reasoning.
-
-## The handler pattern
-
-Every module gets its own handler file. Do not merge all routes into one giant `handler.go`.
-
-| ✅ Correct | ❌ Wrong |
-|----------|----------|
-| `app/handlers/auth.go` — login, register, OAuth | `app/handlers/handler.go` — 1000+ lines, every route |
-| `app/handlers/app.go` — dashboard, profile | |
-| `app/handlers/upload.go` — file upload | |
-| `app/handlers/public.go` — landing, public routes | |
-
-A handler struct holds its own dependencies — do not pile everything into one struct. Here is the real pattern from `app/handlers/app.go`:
-
-```go
-type AppHandler struct {
- userService    *services.UserService
- store          *session.Store
- inertiaService *services.InertiaService
-}
-
-func NewAppHandler(userService *services.UserService, store *session.Store, inertiaService *services.InertiaService) *AppHandler {
- return &AppHandler{userService: userService, store: store, inertiaService: inertiaService}
-}
-```
-
-### GET — render an Inertia page
-
-```go
-// Dashboard renders the main app dashboard using Inertia
-func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
- sess, _ := h.store.Get(c)
- user := sessionUser(sess)
-
- return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
-  "user": user,
- })
-}
-```
-
-### POST/PUT — parse with BodyParser, call service, respond
-
-```go
-func (h *AppHandler) UpdateProfile(c *fiber.Ctx) error {
- userID := c.Locals("user_id")
- if userID == nil {
-  return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Not authenticated"})
- }
-
- var req models.UpdateProfileRequest
- if err := c.BodyParser(&req); err != nil {
-  return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
- }
-
- user, err := h.userService.UpdateProfile(userID.(int64), req)
- if err != nil {
-  return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update profile"})
- }
-
- return h.inertiaService.Render(c, "app/Profile", fiber.Map{
-  "user":    user,
-  "success": "Profile updated successfully",
- })
-}
-```
-
-### Response decision table
-
-| Scenario | Use | Example |
-|----------|-----|---------|
-| Show an Inertia page (GET) | `h.inertiaService.Render(c, "component", fiber.Map{...})` | Dashboard, profile, edit form |
-| After POST/PUT success | `h.inertiaService.Redirect(c, "/path")` | 303 See Other, Inertia-aware |
-| API endpoint for `fetch()` | `c.JSON(fiber.Map{...})` | Avatar upload response, AJAX |
-| External redirect (OAuth) | `h.inertiaService.Location(c, url)` | 409 + `X-Inertia-Location` |
-
-### Always
-
-- Parse requests with `c.BodyParser(&req)` using a model from `app/models/` — never manual `c.Body()` or `c.Get("field")`.
-- Define request DTOs in `app/models/dto.go` (or `dto_<module>.go` if bloated) with `json` tags.
-- Register routes in `routes/web.go` — add the handler to the `Handlers` struct, wire it in `SetupRoutes`.
-
-## The service layer
-
-Services hold business logic and call `s.querier.*` or `s.cache.*` — nothing else. From `app/services/user.go`:
-
-```go
-type UserService struct {
- querier *queries.Querier
-}
-
-func NewUserService(querier *queries.Querier) *UserService {
- return &UserService{querier: querier}
-}
-
-func (s *UserService) UpdateAvatar(userID int64, avatarURL string) error {
- return s.querier.UpdateUserAvatar(context.Background(), userID, avatarURL)
-}
-```
-
-Services never open database connections or write raw SQL. If you need a new query, write it in `queries/*.sql` and run `sqlc generate` — then call it through the service.
-
-## The query layer (sqlc)
-
-`app/queries/` is **generated**. Never edit it by hand. You write plain SQL in `queries/`:
-
-```sql title="queries/user.sql"
--- name: GetUserByEmail :one
-SELECT id, email, name, password, avatar, role, google_id, email_verified, created_at, updated_at
-FROM users
-WHERE email = ?;
-
--- name: UpdateUserAvatar :execrows
-UPDATE users
-SET avatar = ?, updated_at = ?
-WHERE id = ?;
-```
-
-Then regenerate:
+The agent works inside an already-installed project — you scaffold and
+install before it ever starts:
 
 ```bash
-npm run db:generate   # or: make db-generate
+npm create laju-go@latest my-app
+cd my-app
+npm run dev:all
 ```
 
-sqlc produces fully typed Go functions. The `:one` annotation returns a single struct, `:execrows` returns the rows affected. See [sqlc](/database/sqlc/) for the full guide.
+(Full walkthrough — prerequisites and scripts — is in
+[Installation](/getting-started/installation/).)
 
-## Migrations
+Once the app runs, open the project in your agent (omp.sh, Claude Code,
+Cursor, opencode, Windsurf) and confirm it read the project rules:
 
-Goose migrations live in `migrations/` and run **automatically on startup**. Two rules:
+> What are the hard rules in AGENTS.md? Summarize them.
 
-1. **Never edit a deployed migration.** Goose skips already-applied migrations — editing an old file has no effect in production. Create a new file instead.
-2. **One table per migration file.** See [schema & migrations](/database/schema-migrations/).
+You should hear back the core conventions — Handler → Service → Query,
+one handler file per feature, sqlc for type-safe SQL, `useForm` + `<form>`
+for Inertia submissions, `use:inertia` for internal links. If the agent
+can't answer, tell it to read `AGENTS.md` before proceeding. This is your
+first checkpoint.
 
-Create a new migration:
+## Plan: tell the story — the agent writes PLAN.md
 
-```bash
-npm run db:migrate:create add_orders
+Describe what you need in plain language, like you're explaining to a
+friend. No structure, no technical detail — just the story:
+
+> I want a bookmark manager where users save links and organize them
+> with tags. Only logged-in users, no public pages. Write PLAN.md —
+> what it is, who uses it, what it does. Ask me if anything's unclear.
+
+The agent turns your story into a `PLAN.md` in the project root — the
+full plan: pages, data model, routes, validation, edge cases, and an
+implementation order. You never mention pages, routes, database tables,
+or code — the agent figures out all of that itself. It knows the
+conventions from `AGENTS.md`; your job is to describe the need, not the
+implementation.
+
+A real result looks something like this (abridged):
+
+```markdown
+# PLAN — Bookmark Manager
+
+> **Clarifying questions (non-blocking):** per-user or global tags?
+> Allow duplicate URLs? (Assumptions noted — you can veto them.)
+
+## What it is
+A private bookmark manager inside the app. Logged-in users save URLs
+with a title, note, and tags. No public pages, no sharing.
+
+## Pages
+- `/app/bookmarks` — paginated list + search + tag filter
+- `/app/bookmarks/new` — create form
+- `/app/bookmarks/:id/edit` — edit form (owner only)
+
+## Data model
+`migrations/0005_bookmarks.sql` — bookmarks, tags, bookmark_tags
+(user-scoped, FK cascade, indexes on user_id).
+
+## Routes & endpoints
+All in `app/handlers/bookmarks.go`:
+- GET /app/bookmarks — AuthRequired middleware, Inertia render Bookmarks/Index
+- POST /app/bookmarks — BodyParser validation, tag normalization, flash + redirect
+- POST /app/bookmarks/:id/delete — ownership check → delete → orphan tag cleanup
+
+## Edge cases
+- Ownership enforced in handlers (foreign bookmarks get 404, not 403)
+- Tags trimmed / lowercased / deduplicated server-side
+- Empty state when a user has zero bookmarks
+
+## Acceptance criteria
+- [ ] Auth-only, strictly user-scoped (no cross-user access)
+- [ ] Search + tag filter combine correctly
+- [ ] `go test ./...` passes
+
+## Implementation order
+1. Migration → 2. sqlc queries → 3. service → 4. handler → 5. Svelte pages → 6. tests
 ```
 
-## Frontend rules for agents
+Real plans are longer — this is the shape. The agent lists the
+assumptions it made and asks questions wherever your story was
+ambiguous.
 
-Before generating any frontend code (pages, components, landing pages):
+### Include a design in your prompt
 
-1. **`wiki_recall` `design-principles`** — read the brief, set the three dials, apply the anti-slop rules.
-2. **Pick a vibe** — minimalist, premium-consumer, playful, dark-tech, or brutalist. Refer to the vibe pages in `.llm-wiki/`.
-3. **Check `frontend/src/app.css`** — use existing color tokens (`brand-*`, `secondary-*`, `neutral-*`). Do not redefine them.
-4. **Apply `@theme` tokens** — all colors, shadows, and fonts live in `@theme`. Do not hardcode hex values.
+If you have a visual design — a mockup from ChatGPT, a Figma export, a
+hand-drawn sketch — put it in the project and mention it in the same
+prompt. The design carries what words can't: colors, spacing, layout.
+Without one, the agent plans without it; it never invents a design
+reference on its own.
 
-### Svelte 5 specifics
+Two ways to provide it:
 
-- Use `$derived()` for derived state, **not** `$effect`. `$effect` is only for side effects (`document.title`, `localStorage`).
-- Internal links **must** use `use:inertia` from `@inertiajs/svelte` — without it, a full page reload occurs.
-- Every `fetch()` to `/app/*` or `/admin/*` **must** include the `X-XSRF-TOKEN` header from `getCSRFToken()` (`lib/utils/csrf.ts`). Inertia's `router.*` handles this automatically.
-- OAuth links (`/auth/google`, `/auth/github`) use plain `<a>` without `use:inertia`.
+- **Image** (`design/mockup.png`) — the agent reads it and matches the
+  design. Requires the agent's model to support image input.
+- **HTML mockup** (`design/mockup.html`) — a single static page with
+  real markup and CSS, generated in ChatGPT or Gemini Canvas. Works even
+  when the agent can't read images, because the structure is in the
+  markup itself.
 
-## The LLM wiki
+Either way, reference it in your prompt:
 
-The repo includes an `.llm-wiki/` directory — a persistent knowledge graph of the codebase's concepts, entities, and design decisions. Agents query it with `wiki_search` or `wiki_recall` before grepping raw files.
+> I want a bookmark manager where users save links and organize them
+> with tags. Only logged-in users, no public pages. Design reference:
+> `design/bookmarks-mockup.html` — match its structure, spacing, and
+> colors. Write PLAN.md — what it is, who uses it, what it does. Ask me
+> if anything's unclear.
 
-- **concepts/** — how things work (tus upload mechanism, inertia form patterns, single-table migration)
-- **entities/** — what things are (Go Fiber, Goose, sqlc, the Inertia service)
-- **vibes/** — design direction references for frontend work
+The agent reflects the design in the plan — layout, components, pages —
+and builds against it.
 
-When you learn something non-obvious about the repo, record it with `wiki_observe` (a timestamped note) or `wiki_retro` (a durable insight). Future agents — including your future self — will find it.
+### Review the plan
 
-## Gotchas
+Read back what the agent wrote. Does it describe what you need? Would a
+non-technical friend understand it? If it reads like code, it's too
+technical — tell the agent to rewrite it in plain language. Check the
+assumptions it listed and veto anything wrong. Once it reads like a
+story, the agent can start building.
 
-- **Edit `.templ` files, never `*_templ.go`.** The generated files are overwritten by `templ generate`.
-- **Air does not watch `.templ` files** — regenerate manually after editing templates.
-- **`go.sum` is committed.** Run `go mod tidy` after changing deps, then commit the updated `go.sum`.
-- **`dist/` is gitignored** except for `.gitkeep` — it is a build artifact.
-- **`.vite-port` stale?** `rm .vite-port && restart Vite`.
+## Design the pages (your review)
 
-## Summary
+Before touching the database, have the agent build **all the pages with
+dummy data**. Every page, every state — filled with fake content that
+looks real. Tell the agent:
 
-| Rule | One-liner |
-|------|-----------|
-| Three-tier | Handler → Service → Query → DB. Never skip. |
-| Handlers | One file per module. Parse with `BodyParser`, return via Inertia. |
-| Services | Business logic only. Call `querier` or `cache`. No raw SQL. |
-| Queries | Generated by sqlc. Never edit `app/queries/` by hand. |
-| Migrations | One table per file. Never edit a deployed migration. |
-| Frontend | `use:inertia` for links, `X-XSRF-TOKEN` for `fetch`, `$derived` not `$effect`. |
-| Wiki | `wiki_recall` before you grep. `wiki_observe` when you learn. |
+> Build all the pages from PLAN.md with dummy data — no backend, no
+> database. Use realistic sample content so I can judge the design.
+> Show me every page.
+
+Then judge the design on real pages instead of sketches:
+
+- Do the pages look like the mockup?
+- Do the empty, loading, and filled states all exist?
+- Is the flow between pages natural?
+
+Iterate until **you are personally satisfied with every single page** —
+this is the cheapest time to change things. There's no schema, no
+migration, no route logic to rework when you move a button or rename a
+field. Don't wire the backend until every page feels right to you.
+
+Design is the only thing that needs your judgment — it's subjective.
+There's no right or wrong layout, only one you like. So this phase is
+the only one where you review manually.
+
+<aside type="tip">
+Before generating frontend code, the agent should read the
+[design principles](/frontend/svelte-inertia/) and check
+`frontend/src/app.css` for existing color tokens (`brand-*`,
+`secondary-*`, `neutral-*`). The repo also ships vibe references in
+`.llm-wiki/wiki/concepts/` — minimalist, premium-consumer, dark-tech,
+playful, brutalist.
+</aside>
+
+## Wire the backend (automated tests)
+
+Only when the design is final, wire the pages to the backend:
+
+> The design is done. Now replace the dummy data with real data — add
+> the database schema, migrations, and routes so the pages read and
+> write for real.
+
+The wiring phase needs **no manual review** — unlike design, backend
+logic is objectively right or wrong, and that's exactly what automated
+verification is for. The agent writes strict unit tests for the wiring
+(schema, routes, validation, data flow) and runs them until they pass:
+
+> Make the unit tests strict — cover the schema, every route, and
+> validation. The wiring isn't done until the tests pass.
+
+The agent follows the three-tier rule (Handler → Service → Query),
+writes SQL in `queries/*.sql`, regenerates with `npm run db:generate`,
+and calls queries through services — never from handlers. Same pages,
+same design — the agent just swaps the dummy data for real queries, and
+the tests prove it works. Manual review for the subjective part
+(design), automated tests for the objective part (wiring).
+
+## Work in slices, then ship
+
+Build one slice at a time — not the whole app in one prompt:
+
+> Read PLAN.md and build the next slice. When it works, commit it.
+
+After each verified slice, the agent commits — a checkpoint you can
+roll back to. A plan with several slices produces several commits.
+
+When the slices are done, the agent verifies everything is green —
+`go test ./...`, `vite build`, browser console — and the app is ready
+to ship:
+
+> Run the full checks and confirm everything passes.
+
+## The plan evolves
+
+As you build, you'll realize the plan missed something — a field, a
+behavior, a page. Tell the agent what changed, and it updates `PLAN.md`:
+
+> Bookmarks should also show the domain. Update PLAN.md and continue
+> from where you left off.
+
+The plan stays the source of truth. When it changes, the agent follows
+the update.
+
+## What's next
+
+- [Architecture overview](/architecture/overview/) — how the codebase
+  is structured.
+- [Three-tier rule](/architecture/three-tier/) — the load-bearing
+  convention.
+- [Testing](/testing/) — the test suite the agent runs.
