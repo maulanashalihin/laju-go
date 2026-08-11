@@ -3,7 +3,7 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-
+	"strings"
 	"github.com/gofiber/fiber/v2"
 	fiberinertia "github.com/maulanashalihin/fiber-inertia"
 	"github.com/maulanashalihin/laju-go/app/session"
@@ -94,6 +94,20 @@ func renderInertiaHTML(c *fiber.Ctx, page *fiberinertia.Page, assetService *Asse
 	mainJS := assetService.GetMainJS()
 	mainCSS := assetService.GetMainCSS()
 
+	// React Fast Refresh preamble — required by @vitejs/plugin-react in dev.
+	// Only injected when entry point is a .tsx file (React template).
+	reactPreamble := ""
+	if strings.HasSuffix(assetService.GetEntryPoint(), ".tsx") {
+		reactPreamble = fmt.Sprintf(`<script type="module">
+import RefreshRuntime from "%s/@react-refresh"
+RefreshRuntime.injectIntoGlobalHook(window, {
+  $RefreshReg$: () => {},
+  $RefreshSig$: () => {},
+})
+</script>
+`, viteURL)
+	}
+
 	var html string
 	if isDev {
 		html = fmt.Sprintf(`<!DOCTYPE html>
@@ -109,11 +123,11 @@ func renderInertiaHTML(c *fiber.Ctx, page *fiberinertia.Page, assetService *Asse
 <body class="bg-gray-50 text-gray-900">
     <div id="app"></div>
     <script data-page="app" type="application/json">%s</script>
-    <script type="module" src="%s/@vite/client"></script>
+    %s<script type="module" src="%s/@vite/client"></script>
     <link rel="stylesheet" href="%s/src/app.css">
     <script type="module" src="%s/%s"></script>
 </body>
-`, title, csrfToken, pageJSON, viteURL, viteURL, viteURL, assetService.GetEntryPoint())
+</html>`, title, csrfToken, pageJSON, reactPreamble, viteURL, viteURL, viteURL, assetService.GetEntryPoint())
 	} else {
 		html = fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
