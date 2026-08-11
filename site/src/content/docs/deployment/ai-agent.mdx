@@ -1,11 +1,11 @@
 ---
 title: Deploy with an AI agent
-description: Hand the deployment to an AI agent — copy-paste a prompt, done.
+description: Hand the deployment to an AI agent — edit the prompt files in the repo, paste to your agent, done.
 ---
 
 Don't want to SSH in and run commands manually? Hand the deployment
-to an AI coding agent. Copy-paste a prompt below, the agent SSHes in,
-installs everything, builds the Go binary, and starts the app.
+to an AI coding agent. The repo ships with ready-to-use prompt files
+in `prompts/` — edit the placeholders, paste to your agent, done.
 
 <aside>
 **Works with any agent that can run shell commands** — omp.sh, Claude
@@ -23,156 +23,57 @@ server and your permission to run commands remotely.
 
 ## First deploy
 
-Pick one path — **systemd** (bare VPS, faster and lighter) or
-**Docker** (containerized, reproducible). Copy the prompt, replace the
-four placeholders, paste to your agent.
+The repo includes prompt files for both deployment paths:
+
+| File | Path | What to edit |
+|---|---|---|
+| `prompts/deploy-systemd.txt` | systemd (bare VPS) | 4 placeholders: SSH, repo, domain, install path |
+| `prompts/deploy-docker.txt` | Docker | 4 placeholders: SSH, repo, domain, install path |
 
 <aside>
 If you don't have a preference, pick **systemd** — it's faster and
-lighter for a single-process Go + SQLite app.
+lighter. See the comparison on the
+[deployment overview](/deployment/overview/).
 </aside>
 
-### Path 1 — systemd (bare VPS)
+### Steps
 
-Copy this prompt, replace the placeholders, paste to your agent:
+1. Open the prompt file for your chosen path (e.g.
+   `prompts/deploy-systemd.txt`).
+2. Replace the four placeholders at the top:
+   - `USER@SERVER_IP` → your SSH login (e.g. `root@203.0.113.5`)
+   - `YOUR_USER/YOUR_REPO` → your GitHub repo
+   - `your-domain.com` → your domain (or `none`)
+   - `/opt/laju-go` → install path on the server (or keep as-is)
+3. Paste the entire file content to your AI agent.
 
-```text
-Deploy my Laju Go app to a Linux VPS via systemd. Here are the details:
-
-- SSH login: USER@SERVER_IP
-- GitHub repo: YOUR_USER/YOUR_REPO
-- Domain: your-domain.com (or "none" if no domain yet)
-- Install path: /opt/laju-go
-
-Steps to perform:
-
-1. SSH into the server.
-2. Install Go 1.22+ and Node.js 20+ if not already installed.
-3. Create a dedicated user (or use root) and clone the repo to
-   /opt/laju-go.
-4. Copy .env.example to .env and set:
-   - APP_ENV=production
-   - APP_URL=https://your-domain.com (or http://SERVER_IP:8080)
-   - SESSION_SECRET=<generate a random 32-char string>
-5. Run "npm ci && npm run build:all" (vite build then go build).
-6. Install the systemd user service from systemd/laju-go.service:
-   - mkdir -p ~/.config/systemd/user
-   - cp systemd/laju-go.service ~/.config/systemd/user/
-   - sudo loginctl enable-linger <user>
-   - systemctl --user daemon-reload
-   - systemctl --user enable --now laju-go
-7. Verify: curl http://127.0.0.1:8080/health should return
-   {"status":"ok",...}
-8. Save a deploy.env file in my local project root with SSH login,
-   repo, domain, and install path so future updates don't need
-   retyping. Add deploy.env to .gitignore.
-
-Report back when the app is live and /health returns 200.
-```
-
-### Path 2 — Docker
-
-Copy this prompt, replace the placeholders, paste to your agent:
-
-```text
-Deploy my Laju Go app to a Linux VPS via Docker. Here are the details:
-
-- SSH login: USER@SERVER_IP
-- GitHub repo: YOUR_USER/YOUR_REPO
-- Domain: your-domain.com (or "none" if no domain yet)
-- Install path: /opt/laju-go
-
-Steps to perform:
-
-1. SSH into the server.
-2. Install Docker and Docker Compose if not already installed.
-3. Clone the repo to /opt/laju-go.
-4. Copy .env.example to .env and set:
-   - APP_ENV=production
-   - APP_URL=https://your-domain.com (or http://SERVER_IP:8080)
-   - SESSION_SECRET=<generate a random 32-char string>
-   - DB_PATH=/app/data/app.db
-5. Run "docker compose up -d --build".
-6. Verify: curl http://127.0.0.1:8080/health should return
-   {"status":"ok",...}
-7. Save a deploy.env file in my local project root with SSH login,
-   repo, domain, and install path so future updates don't need
-   retyping. Add deploy.env to .gitignore.
-
-Report back when the app is live and /health returns 200.
-```
-
-The agent SSHes in, installs Go + Node (or Docker), clones the repo,
-builds the binary, creates `.env`, starts the service, and verifies
-`/health`. It also saves a `deploy.env` file in your local project root
-(added to `.gitignore`) so routine updates don't need retyping.
+The agent SSHes in, installs Go + Node.js (or Docker), clones the repo,
+builds the Go binary (`npm run build:all` — vite build then go build),
+creates `.env`, starts the service, and verifies `/health` on port 8080.
+It also saves a `deploy.env` file in your local project root (added
+to `.gitignore`) so routine updates don't need retyping.
 
 ### After first deploy: HTTPS
 
 Your app is live on port 8080 (plain HTTP). For HTTPS, pick one:
 
-**Cloudflare (recommended)** — the agent creates the DNS record, sets
-SSL to Flexible, creates an Origin Rule (so CSRF and OAuth work), and
+| File | Path | What you need |
+|---|---|---|
+| `prompts/setup-cloudflare.txt` | Cloudflare (recommended) | Cloudflare API token + domain on Cloudflare |
+| `prompts/setup-caddy.txt` | Caddy (no Cloudflare) | Just a domain pointing to your server |
+
+**Cloudflare** — the agent creates the DNS record, sets SSL to
+Flexible, creates an Origin Rule (so CSRF and OAuth work), and
 configures the firewall to only allow Cloudflare IPs. You need a
 [Cloudflare API token](https://dash.cloudflare.com/profile/api-tokens)
 with Zone → DNS → Edit and Zone → Read permissions.
 
-Copy this prompt, replace the placeholders, paste to your agent:
+**Caddy** — the agent installs Caddy, creates a Caddyfile with
+automatic TLS via Let's Encrypt, and starts it. No Cloudflare
+account needed.
 
-```text
-Set up HTTPS for my Laju Go app using Cloudflare. Details:
-
-- SSH login: (read from deploy.env or USER@SERVER_IP)
-- Domain: your-domain.com
-- Cloudflare API token: YOUR_CF_API_TOKEN
-- App port: 8080
-
-Steps to perform:
-
-1. SSH into the server.
-2. Create an A record in Cloudflare for your-domain.com pointing to
-   the server IP, proxy status Proxied (orange cloud).
-3. Set SSL/TLS mode to Flexible.
-4. Create an Origin Rule: if hostname equals your-domain.com, rewrite
-   the Host header to your-domain.com. This ensures CSRF and OAuth
-   work correctly behind Cloudflare.
-5. Configure UFW to only allow Cloudflare IPs on port 8080, plus
-   OpenSSH. Fetch live ranges from
-   https://api.cloudflare.com/client/v4/ips
-6. Verify: curl -I https://your-domain.com/health should return 200.
-
-Report back when HTTPS is working.
-```
-
-**Caddy (no Cloudflare)** — the agent installs Caddy, creates a
-Caddyfile with automatic TLS via Let's Encrypt, and starts it. No
-Cloudflare account needed.
-
-Copy this prompt, replace the placeholders, paste to your agent:
-
-```text
-Set up HTTPS for my Laju Go app using Caddy. Details:
-
-- SSH login: (read from deploy.env or USER@SERVER_IP)
-- Domain: your-domain.com
-- App port: 8080
-
-Steps to perform:
-
-1. SSH into the server.
-2. Install Caddy.
-3. Create /etc/caddy/Caddyfile with:
-   your-domain.com {
-     reverse_proxy 127.0.0.1:8080
-   }
-4. Enable and start Caddy: sudo systemctl enable --now caddy
-5. Open ports 80 and 443 in UFW. Do NOT expose port 8080 publicly.
-6. Verify: curl -I https://your-domain.com/health should return 200.
-
-Report back when HTTPS is working.
-```
-
-For the full manual walkthrough (including Nginx + Certbot), see the
+Edit the placeholders in the prompt file, paste to your agent. For
+the full manual walkthrough (including Nginx + Certbot), see the
 [reverse proxy guide](/deployment/reverse-proxy/).
 
 ---
@@ -183,36 +84,13 @@ When you push new code to GitHub, paste the matching update prompt.
 No editing needed — the agent reads `deploy.env` (created during
 first deploy) to reconnect.
 
-### systemd update
+| File | Path |
+|---|---|
+| `prompts/update-systemd.txt` | systemd |
+| `prompts/update-docker.txt` | Docker |
 
-```text
-Update my Laju Go app on the VPS. Read deploy.env for SSH login and
-install path. Steps:
-
-1. SSH into the server.
-2. cd to the install path (from deploy.env).
-3. git pull
-4. npm ci && npm run build:all
-5. systemctl --user restart laju-go
-6. Verify: curl http://127.0.0.1:8080/health should return 200.
-
-Report back when the update is live.
-```
-
-### Docker update
-
-```text
-Update my Laju Go app on the VPS. Read deploy.env for SSH login and
-install path. Steps:
-
-1. SSH into the server.
-2. cd to the install path (from deploy.env).
-3. git pull
-4. docker compose up -d --build
-5. Verify: curl http://127.0.0.1:8080/health should return 200.
-
-Report back when the update is live.
-```
+Just paste the file content to your agent. It SSHes in, pulls the
+latest code, rebuilds, restarts, and verifies `/health`.
 
 ---
 
@@ -224,9 +102,9 @@ it. Common issues:
 ### "laju-go: not found" in systemd logs
 
 ```text
-The systemd service can't find the laju-go binary. Check that the
-binary exists at the ExecStart path and that WorkingDirectory in the
-service file matches your install path.
+The systemd service can't find the laju-go binary. Check that
+npm run build:all succeeded and the binary exists in the install
+path. Update the ExecStart path in the systemd unit file if needed.
 ```
 
 ### "EADDRINUSE: Port 8080"
@@ -239,7 +117,7 @@ and either kill it or change APP_PORT in .env to 8081.
 ### Docker container keeps restarting
 
 ```text
-The Docker container is restarting. Check "docker compose logs"
+The Docker container is restarting. Check `docker compose logs`
 and fix whatever error is causing the crash.
 ```
 
@@ -251,12 +129,13 @@ service logs (journalctl --user -u laju-go or docker compose logs)
 and fix the issue.
 ```
 
-### CGO build errors on server
+### CGO build failure
 
 ```text
-The Go build fails with CGO errors. Install gcc and SQLite dev
-headers: sudo apt install -y gcc libsqlite3-dev. Laju Go uses
-mattn/go-sqlite3 which requires CGO.
+The Go build fails with a CGO error. go-sqlite3 requires a C
+compiler. Install build-essential (apt install build-essential)
+on the server, or use the Docker path which includes CGO in the
+build stage.
 ```
 
 The agent will diagnose and fix — you don't need to know the commands

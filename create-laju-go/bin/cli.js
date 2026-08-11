@@ -20,6 +20,7 @@ const CLEANUP = [
 	"AGENTS.md", // agent instructions (dev-only)
 	".mcp.json", // MCP server config (dev-only)
 	"site", // Astro docs/landing — repo-only, not part of a scaffold
+	"prompts", // AI agent deploy prompts — repo-only, not part of a scaffold
 ];
 
 /**
