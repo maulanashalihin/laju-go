@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { svelte } from "@sveltejs/vite-plugin-svelte";
+import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 import inertia from "@inertiajs/vite";
 import "dotenv/config";
@@ -25,7 +25,7 @@ export default defineConfig({
 	},
 	plugins: [
 		tailwindcss(),
-		svelte(),
+		vue(),
 		inertia(),
 		{
 			name: "write-port",
