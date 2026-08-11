@@ -6,4 +6,4 @@
 
 Read deploy.env, then update the Laju Go Docker deployment: SSH in,
 cd to the deploy path, git pull, docker compose up -d --build,
-and verify /health on port 8080.
+and verify /health (read APP_PORT from .env for the correct port).
