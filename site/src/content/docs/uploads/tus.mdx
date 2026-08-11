@@ -1,0 +1,295 @@
+---
+title: TUS Resumable Uploads
+description: TUS protocol via tusdfiber for chunked resumable uploads, storage layout, and post-processing
+---
+
+Laju Go uses [tusdfiber](https://github.com/maulanashalihin/tusdfiber) for resumable file uploads via the [TUS protocol](https://tus.io/). This handles large files (up to 1GB) with chunked uploads, automatic retry, and pause/resume support.
+
+## Architecture
+
+```
+Browser (tus-js-client)         Go Fiber Server
+        │                             │
+        │  POST /tus/files            │
+        │  Upload-Length: <size>      │
+        ├────────────────────────────►│ tusdfiber.PostFile()
+        │  201 Created                │ filestore.NewUpload()
+        │  Location: /tus/files/<id>  │
+        │◄────────────────────────────┤
+        │                             │
+        │  PATCH /tus/files/<id>      │
+        │  Upload-Offset: 0           │
+        │  [chunk data]               │
+        ├────────────────────────────►│ tusdfiber.PatchFile()
+        │  204 No Content             │ filestore.WriteChunk()
+        │  Upload-Offset: <offset>    │
+        │◄────────────────────────────┤
+        │  (repeat PATCH for chunks)  │
+        │                             │
+        │  (on final chunk)           ├──► processCompletedUploads()
+        │                                 │ copy to storage/completed/<name>
+        │                                 ▼
+        │                          /storage/completed/<file>
+```
+
+## Handler Setup
+
+The `UploadHandler` is created in `cmd/laju-go/main.go`:
+
+```go
+uploadHandler := handlers.NewUploadHandler(sessionStore, userService, "storage/uploads")
+```
+
+The constructor sets up the TUS handler with a file store, file locker, and store composer:
+
+```go
+// app/handlers/upload.go
+func NewUploadHandler(store *session.Store, userService *services.UserService, uploadDir string) *UploadHandler {
+ fs := filestore.New(uploadDir)
+ fl := filelocker.New(uploadDir)
+
+ composer := tusdfiber.NewStoreComposer()
+ fs.UseIn(composer.StoreComposer)
+ fl.UseIn(composer.StoreComposer)
+
+ completedDir := "storage/completed"
+ os.MkdirAll(completedDir, 0755)
+
+ handler, err := tusdfiber.NewHandler(tusdfiber.Config{
+  StoreComposer:           composer,
+  BasePath:                "/tus/files/",
+  MaxSize:                 1024 * 1024 * 1024, // 1GB
+  DisableDownload:         false,
+  DisableTermination:      false,
+  DisableConcatenation:    true,
+  NotifyCompleteUploads:   true,
+  NotifyTerminatedUploads: false,
+  NotifyCreatedUploads:    false,
+ })
+
+ h := &UploadHandler{
+  store:        store,
+  userService:  userService,
+  TusHandler:   handler,
+  TUSBasePath:  "/tus/files/",
+  completedDir: completedDir,
+ }
+
+ // Drain CompleteUploads channel and copy files to completed dir
+ go h.processCompletedUploads()
+
+ return h
+}
+```
+
+### Key Configuration
+
+| Config | Value | Purpose |
+|--------|-------|---------|
+| `BasePath` | `/tus/files/` | Must include full prefix when registering directly on `app` (not a group) so `Location` URLs are correct |
+| `MaxSize` | 1GB | Maximum upload size |
+| `NotifyCompleteUploads` | `true` | Sends events to `CompleteUploads` channel when uploads finish |
+| `NotifyCreatedUploads` | `false` | No channel for creation events (avoids needing to drain it) |
+| `DisableConcatenation` | `true` | TUS concatenation extension disabled |
+
+## Route Registration
+
+TUS routes are registered directly on the `app` (not a group), with auth middleware applied to the `/tus` prefix:
+
+```go
+// app/handlers/upload.go
+func (h *UploadHandler) RegisterTUSRoutes(app *fiber.App, authMiddleware fiber.Handler) {
+ app.Use("/tus", authMiddleware)
+ for _, mw := range tusdfiber.DefaultMiddlewareStack(nil) {
+  app.Use("/tus", mw)
+ }
+ h.TusHandler.Register(app)
+}
+```
+
+```go
+// routes/web.go
+authMiddleware := middlewares.AuthRequired(store)
+uploadHandler.RegisterTUSRoutes(app, authMiddleware)
+```
+
+TUS routes do **not** use CSRF — the TUS protocol has its own request structure that doesn't fit the double-submit cookie pattern. Authentication is enforced via `AuthRequired` on the `/tus` prefix.
+
+## TUS Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/tus/files` | POST | Create upload (specify `Upload-Length`) |
+| `/tus/files` | OPTIONS | Protocol discovery |
+| `/tus/files/:id` | HEAD | Get upload offset and metadata |
+| `/tus/files/:id` | PATCH | Upload chunk (with `Upload-Offset` and body) |
+| `/tus/files/:id` | GET | Download file |
+| `/tus/files/:id` | DELETE | Terminate upload |
+
+## Storage Layout
+
+```
+storage/
+├── uploads/              ← tusd filestore (internal format)
+│   ├── <upload-id>       ← raw file data
+│   └── <upload-id>.info  ← metadata (size, filename, etc.)
+├── completed/            ← post-processed files (original names)
+│   └── <original-name>   ← accessible via /storage/completed/<name>
+└── avatars/              ← legacy avatar uploads (multipart)
+    └── <user>_<ts>.<ext>
+```
+
+The `uploads/` directory uses tusd's internal format — files are stored by upload ID, with a companion `.info` file containing metadata. These are not directly accessible via HTTP.
+
+The `completed/` directory contains files copied after upload completion, using their original filenames. These are served publicly via `app.Static`.
+
+## Post-Processing
+
+When an upload completes, tusdfiber sends an event to the `CompleteUploads` channel. A goroutine drains this channel and copies the file to `storage/completed/`:
+
+```go
+// app/handlers/upload.go
+func (h *UploadHandler) processCompletedUploads() {
+ for event := range h.TusHandler.CompleteUploads {
+  h.handleCompletedUpload(event)
+ }
+}
+
+func (h *UploadHandler) handleCompletedUpload(event tusdfiber.HookEvent) {
+ info := event.Upload
+
+ // Get original filename from metadata (base64-decoded by tusdfiber)
+ filename := info.MetaData["filename"]
+ if filename == "" {
+  filename = info.ID
+ }
+
+ // Get the filestore path from .info Storage.Path
+ storePath := info.Storage["Path"]
+ if storePath == "" {
+  slog.Warn("completed upload: missing storage path", "id", info.ID)
+  return
+ }
+
+ destPath := filepath.Join(h.completedDir, filename)
+
+ // Copy file (overwrite if exists)
+ srcFile, _ := os.Open(storePath)
+ defer srcFile.Close()
+
+ os.Remove(destPath) // remove existing file with same name
+ dstFile, _ := os.Create(destPath)
+ defer dstFile.Close()
+
+ written, err := io.Copy(dstFile, srcFile)
+ if err != nil {
+  slog.Error("completed upload: copy failed", "id", info.ID, "error", err)
+  return
+ }
+
+ slog.Info("upload completed and saved",
+  "id", info.ID,
+  "filename", filename,
+  "size", written,
+  "url", "/storage/completed/"+filename,
+ )
+}
+```
+
+### Why Copy to `completed/`?
+
+The copy step gives you a clean URL using the original filename (`/storage/completed/report.pdf`) instead of the TUS upload ID (`/tus/files/<uuid>`). The `completed/` directory is served publicly without authentication:
+
+```go
+// routes/web.go
+app.Static("/storage", "./storage", fiber.Static{
+ CacheDuration: 24 * time.Hour,
+ MaxAge:        86400,
+})
+```
+
+For production with sensitive files, you can remove the copy step and handle downloads via the TUS GET endpoint (`/tus/files/:id`), which requires authentication.
+
+### Alternative: Direct Processing
+
+For files that need processing before download (video transcoding, image thumbnails, ZIP extraction), skip the copy and process directly from `storage/uploads/<id>`:
+
+```
+storage/uploads/<id>  →  FFmpeg / ImageMagick  →  storage/hls/<id>/
+```
+
+This saves IO — no need to copy the file before processing it.
+
+## Frontend Integration
+
+The upload test page uses [tus-js-client](https://github.com/tus/tus-js-client) with drag-and-drop:
+
+```svelte
+// frontend/src/pages/app/UploadTest.svelte
+import * as tus from "tus-js-client";
+
+const TUS_ENDPOINT = "/tus/files";
+
+function startUpload(entryId: string, file: globalThis.File) {
+ const upload = new tus.Upload(file, {
+  endpoint: TUS_ENDPOINT,
+  retryDelays: [0, 1000, 3000, 5000],
+  chunkSize: 5 * 1024 * 1024, // 5MB chunks for responsive progress
+  metadata: {
+   filename: file.name,
+   filetype: file.type,
+  },
+  onError: (err) => {
+   setEntry(entryId, { status: "error", error: err.message });
+  },
+  onProgress: (bytesSent, bytesTotal) => {
+   const progress = bytesTotal > 0 ? (bytesSent / bytesTotal) * 100 : 0;
+   setEntry(entryId, { progress });
+  },
+  onSuccess: () => {
+   setEntry(entryId, {
+    status: "done",
+    progress: 100,
+    url: upload.url ?? undefined,
+   });
+  },
+  onShouldRetry: (_err, retryAttempt, _options) => {
+   return true; // auto-retry on failure
+  },
+ });
+
+ upload.start();
+}
+```
+
+### Chunk Size
+
+The client uses 5MB chunks (`chunkSize: 5 * 1024 * 1024`). This provides responsive progress updates — the UI updates after each 5MB chunk is uploaded. Smaller chunks mean more HTTP requests but smoother progress bars; larger chunks mean fewer requests but coarser updates.
+
+### Retry
+
+`retryDelays: [0, 1000, 3000, 5000]` — the client retries failed chunks with increasing delays (immediate, 1s, 3s, 5s). This handles temporary network failures without user intervention.
+
+### Pause / Resume
+
+The client supports pausing via `upload.abort()` and resuming via `upload.start()` — the TUS protocol tracks the upload offset, so only the remaining chunks need to be sent.
+
+## Configuration Requirements
+
+1. **`StreamRequestBody: true`** — Must be set in `fiber.Config` for streaming large upload bodies efficiently.
+
+2. **Channel draining** — `NotifyCompleteUploads: true` requires the `CompleteUploads` channel to be drained. The `processCompletedUploads()` goroutine handles this. If the channel is not drained, uploads will block on completion because the channel is unbuffered.
+
+3. **BasePath** — When registering TUS routes directly on `app` (not a Fiber group), `BasePath` must include the full prefix (`/tus/files/`) so the `Location` header in the POST response generates correct URLs.
+
+## TUS vs Multipart Decision
+
+| Factor | TUS | Multipart |
+|--------|-----|-----------|
+| File size | Large (&gt;5MB) | Small (&lt;5MB) |
+| Resumable | Yes | No |
+| DB update needed | No | Yes (avatar URL) |
+| CSRF | No | Yes |
+| Requests per upload | 3+ (POST, HEAD, PATCH...) | 1 (POST) |
+
+Use TUS when you need resumability for large files. Use multipart when the file is small and you need to update the database with the result.

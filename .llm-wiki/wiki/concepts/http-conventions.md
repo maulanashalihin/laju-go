@@ -16,7 +16,7 @@ Inertia does not follow 302 correctly for form submissions — 303 is required t
 ## PUT/PATCH Response
 
 - **For `fetch()` calls**: Return JSON
-- **For `router.put()` calls**: Redirect with 303
+- **For `form.put()` calls**: Redirect with 303
 
 ## Response Types
 

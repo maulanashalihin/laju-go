@@ -58,21 +58,61 @@ routes/web.go → app/handlers/ → app/services/ → app/queries/ → SQLite
 |----------|----------|
 | `app/handlers/auth.go` — login, register, OAuth | `app/handlers/handler.go` — 1000+ lines, all routes |
 | `app/handlers/app.go` — dashboard, profile | |
-| `app/handlers/password-reset.go` — forgot/reset password | |
 | `app/handlers/upload.go` — file upload | |
 | `app/handlers/public.go` — landing page, public routes | |
 
-**Handler method pattern per feature**:
+Each handler struct has its own dependencies — do not pile everything into one giant struct.
+
+## Handler Pattern (Copy This)
 
 ```go
 // app/handlers/orders.go — example
-func (h *OrderHandler) List(c *fiber.Ctx) error { ... }
-func (h *OrderHandler) Create(c *fiber.Ctx) error { ... }
-func (h *OrderHandler) Show(c *fiber.Ctx) error { ... }
-func (h *OrderHandler) Cancel(c *fiber.Ctx) error { ... }
+type OrderHandler struct {
+	orderService    *services.OrderService
+	store           *session.Store
+	inertiaService  *services.InertiaService
+}
+
+func NewOrderHandler(os *services.OrderService, store *session.Store, is *services.InertiaService) *OrderHandler {
+	return &OrderHandler{orderService: os, store: store, inertiaService: is}
+}
+
+// GET — render page via Inertia
+func (h *OrderHandler) Show(c *fiber.Ctx) error {
+	order, err := h.orderService.GetByID(c.Params("id"))
+	if err != nil {
+		return h.inertiaService.Redirect(c, "/orders")
+	}
+	return h.inertiaService.Render(c, "app/OrderDetail", fiber.Map{"order": order})
+}
+
+// POST/PUT — parse with BodyParser, call service, redirect
+func (h *OrderHandler) Create(c *fiber.Ctx) error {
+	var req models.CreateOrderRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+	order, err := h.orderService.Create(req)
+	if err != nil {
+		return h.inertiaService.Redirect(c, "/orders/new")
+	}
+	return h.inertiaService.Redirect(c, "/orders/"+strconv.FormatInt(order.ID, 10))
+}
 ```
 
-Each handler struct has its own dependencies — do not pile everything into one giant struct.
+**Response decision table:**
+
+| Scenario | Use | Example |
+|----------|-----|---------|
+| Show Inertia page (GET) | `h.inertiaService.Render(c, "component", fiber.Map{...})` | Dashboard, profile, edit form |
+| After POST/PUT success | `h.inertiaService.Redirect(c, "/path")` | 303 See Other, Inertia-aware |
+| API endpoint for `fetch()` | `c.JSON(fiber.Map{...})` | Avatar upload response, AJAX |
+| External redirect (OAuth) | `h.inertiaService.Location(c, url)` | 409 + X-Inertia-Location |
+
+**Always:**
+- Parse request with `c.BodyParser(&req)` using a model from `app/models/` — never manual `c.Body()` or `c.Get("field")`
+- Define request DTO in `app/models/dto.go` (or `dto_<module>.go`) with `json` tags
+- Register routes in `routes/web.go` — add handler to `Handlers` struct, wire in `SetupRoutes`
 
 ## Models Structure Rule
 
@@ -85,36 +125,12 @@ Each handler struct has its own dependencies — do not pile everything into one
 | `<entity>.go` | Domain struct + `TableName()` + const enums (e.g. `user.go`, `session.go`) |
 | `dto.go` | Cumulative request/response DTOs + `ToResponse()` helper |
 
-**Pattern for a new entity**:
-
-```go
-// app/models/order.go — example
-type OrderStatus string
-
-const (
-	OrderPending   OrderStatus = "pending"
-	OrderCompleted OrderStatus = "completed"
-)
-
-type Order struct {
-	ID         int64      `json:"id"`
-	UserID     int64      `json:"user_id"`
-	Status     OrderStatus `json:"status"`
-	Total      int64      `json:"total"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
-}
-
-func (Order) TableName() string { return "orders" }
-```
-
 **Rules**:
 
-- ✅ One file per entity (`user.go`, `order.go`, `product.go`)
-- ✅ DTOs may be split per module if `dto.go` becomes bloated: `dto_auth.go`, `dto_orders.go`
-- ✅ Add `ToResponse()` helper in the DTO file for entity → response transformation
+- ✅ One file per entity (`user.go`, `order.go`) — domain struct + `TableName()` + const enums
+- ✅ DTOs in `dto.go` (split per module if bloated: `dto_auth.go`, `dto_orders.go`) + `ToResponse()` helper
 - ❌ Do not import `app/queries` — models must not know about the query layer
-- ❌ Do not put methods with business logic (validation, calculations, etc.) — that belongs in the Service
+- ❌ No business logic (validation, calculations) — that belongs in the Service
 
 ## Design Principles (Required Reading Before Generating Frontend)
 
@@ -133,8 +149,8 @@ Before writing any frontend code (new pages, components, landing pages):
 - ✅ `$effect` is only for side effects: `document.title`, `localStorage`
 - ✅ Internal links MUST use `use:inertia` from `@inertiajs/svelte` — without it, a full page reload occurs
 - 🔴 **fetch() CSRF header**: every `fetch()` to `/app/*` or `/admin/*` MUST include `X-XSRF-TOKEN` from `getCSRFToken()` (`lib/utils/csrf.ts`). Inertia's `router.*` handles this automatically.
-- Form submissions use `router.post()`/`router.put()`, not plain `<form>`
-- File uploads via `fetch() + FormData`, persist the resulting URL via `router.put()`
+- ✅ **Form submissions**: use `useForm` + `<form onsubmit={submit}>` when you need pre-submit validation, `fetch()` integration, or `bind:value` reactive binding. Use `<Form>` component for simple forms (just `name` attributes + submit). See wiki: [Inertia Form Patterns](.llm-wiki/wiki/concepts/concept-inertia-form-patterns.md)
+- File uploads via `fetch() + FormData`, persist the resulting URL via `form.put()`
 - OAuth links (`/auth/google`, `/auth/github`) use plain `<a>` without `use:inertia`
 
 ## HTTP Conventions
@@ -142,13 +158,12 @@ Before writing any frontend code (new pages, components, landing pages):
 - POST/PUT redirect: `h.inertiaService.Redirect(c, path)` — automatically 303 See Other, Inertia-aware
 - External redirect (OAuth, logout to external): `h.inertiaService.Location(c, url)` — 409 Conflict + `X-Inertia-Location` → triggers `window.location`
 - Back navigation: `h.inertiaService.Back(c)` or `h.inertiaService.Back(c, "/fallback")`
-- PUT/PATCH: return JSON for `fetch()`, 303 redirect for `router.put()`
+- PUT/PATCH: return JSON for `fetch()`, 303 redirect for `form.put()`
 - `fiber.Map` for adhoc response data. Typed structs for service boundaries.
 
 ## Testing
 
 - `go test ./...` — unit/integration (in-memory SQLite, no mocks)
-- **agent_browser E2E**: inject session directly via SQL to skip login. Details in wiki: [Agent Browser Testing](.llm-wiki/wiki/concepts/agent-browser-testing.md)
 
 ## Migration Rules
 
@@ -165,26 +180,10 @@ Before writing any frontend code (new pages, components, landing pages):
 - `dist/` is gitignored except for `.gitkeep`
 - Air does not watch `.templ` files — regenerate manually
 
-## Graphify (Code Knowledge Graph)
+## Graphify
 
-This repo ships a graphify skill (`.devin/skills/graphify/SKILL.md` + `.windsurf/rules/graphify.md`) but **not** the generated graph itself — `graphify-out/` is gitignored (derived artifact, regenerable).
+Code knowledge graph skill at `.devin/skills/graphify/SKILL.md`. Setup: `uv tool install graphifyy && graphify . --code-only`. Use `graphify query "<q>"` before grepping raw files.
 
-**One-time setup after clone:**
-```bash
-uv tool install graphifyy          # or: pipx install graphifyy
-graphify . --code-only             # build graph (AST-only, no API key, ~10s)
-```
+## Wiki
 
-**Workflow:**
-- For codebase/architecture questions, run `graphify query "<q>"` (or `graphify path "<A>" "<B>"` / `graphify explain "<concept>"`) **before** grepping raw files. Returns a scoped subgraph.
-- After modifying code, refresh the graph: `graphify . --update` (AST-only, free).
-- For full semantic pass on docs/PDFs/images, set an API key (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, etc.) and run `graphify .` without `--code-only`.
-- Visualize: open `graphify-out/graph.html` in a browser.
-
-See `.devin/skills/graphify/SKILL.md` for the full command reference.
-
-## Wiki (Further Details)
-
-Further details (deployment, design standards, HTTP conventions, migration conventions, etc.) are in `.llm-wiki/wiki/`. Use the native wiki tools: `wiki_search`, `wiki_recall`, `wiki_ensure_page`, `wiki_observe`, `wiki_retro`.
-
-Or directly: `read_file`, `grep`, `glob` on the `.llm-wiki/` path.
+Further details (deployment, design, HTTP conventions, etc.) in `.llm-wiki/wiki/`. Use `wiki_search`, `wiki_recall`, or `read`/`grep`/`glob` on the `.llm-wiki/` path.

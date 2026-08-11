@@ -1,0 +1,89 @@
+---
+const reasons = [
+  {
+    title: "Go means fast",
+    blurb: "Single binary, compiled, concurrent by default. Fiber on fasthttp serves 300K+ req/s — no Node event loop, no GC pauses, no runtime overhead. Your starter is already production-speed.",
+    icon: "M13 3L4 14h7l-1 7 9-11h-7l1-7z",
+  },
+  {
+    title: "Type-safe SQL, no ORM",
+    blurb: "sqlc generates Go from your SQL queries — compile-time type safety, zero runtime reflection. Write SQL, get structs. The AI generates correct, optimized queries on demand.",
+    icon: "M4 7h16M4 12h16M4 17h10M9 4v6M15 14v6",
+  },
+  {
+    title: "Built for AI agents",
+    blurb: "Conventions codified in AGENTS.md, strict three-tier rule, handler pattern templates, LLM wiki knowledge base. A codebase an agent can extend without inventing conventions stays coherent.",
+    icon: "M12 2a4 4 0 014 4v1h1a3 3 0 013 3v3a5 5 0 01-5 5h-6a5 5 0 01-5-5V10a3 3 0 013-3h1V6a4 4 0 014-4z",
+  },
+];
+---
+
+<section class="lj-why">
+  <h2 class="lj-section-title">Why Laju Go <span class="lj-accent">exists</span></h2>
+  <p class="lj-section-sub">Because your first week should be business logic, not infrastructure.</p>
+  <div class="lj-why-grid">
+    {reasons.map((r) => (
+      <div class="lj-why-card">
+        <div class="lj-why-head">
+          <span class="lj-why-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={r.icon} />
+            </svg>
+          </span>
+          <h3>{r.title}</h3>
+        </div>
+        <p>{r.blurb}</p>
+      </div>
+    ))}
+  </div>
+  <p class="lj-why-link">For the full reasoning, read the <a href="/philosophy/">philosophy page</a>.</p>
+</section>
+
+<style>
+  .lj-why { max-width: 960px; margin: 0 auto 4.5rem; padding: 0 1.5rem; }
+  .lj-why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .lj-why-card {
+    border: 1px solid #1e293b;
+    border-radius: 0.6rem;
+    padding: 1.4rem;
+    background: #0b111f;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .lj-why-card:hover {
+    border-color: #22d3ee;
+    transform: translateY(-2px);
+  }
+  .lj-why-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+  }
+  .lj-why-head h3 { margin: 0; font-size: 1.05rem; }
+  .lj-why-icon {
+    display: inline-flex;
+    padding: 0.5rem;
+    border-radius: 0.4rem;
+    background: rgba(34, 211, 238, 0.1);
+    color: #22d3ee;
+    flex-shrink: 0;
+  }
+  .lj-why-card p { margin: 0; font-size: 0.88rem; line-height: 1.55; color: #64748b; }
+  .lj-why-link {
+    text-align: center;
+    margin: 2rem 0 0;
+    color: #475569;
+    font-size: 0.9rem;
+  }
+  .lj-why-link a {
+    color: #22d3ee;
+    text-decoration: none;
+  }
+  .lj-why-link a:hover {
+    text-decoration: underline;
+  }
+</style>

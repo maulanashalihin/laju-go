@@ -1,0 +1,240 @@
+---
+title: Troubleshooting
+description: Common issues and fixes — Go not found, stale .vite-port, database errors, CGO cross-compilation.
+---
+
+## Go Not Found
+
+**Symptom:** `make: go: No such file or directory` or `bash: go: command not found`
+
+The Go binary is not on your `PATH`. This usually happens after installing Go via the official tarball instead of a package manager.
+
+**Fix:**
+
+Add Go to your shell profile (`~/.bashrc`, `~/.zshrc`):
+
+```bash
+export PATH=$PATH:/usr/local/go/bin
+export PATH=$PATH:$(go env GOPATH)/bin
+```
+
+Then reload:
+
+```bash
+source ~/.zshrc  # or ~/.bashrc
+```
+
+Verify:
+
+```bash
+go version
+```
+
+If Go is installed via Homebrew on macOS:
+
+```bash
+brew install go
+```
+
+Homebrew symlinks Go automatically — no `PATH` edits needed.
+
+## Stale .vite-port File
+
+**Symptom:** Vite dev server starts on a different port than expected, or the Go backend cannot connect to the frontend.
+
+Vite writes the port it is listening on to `.vite-port` so the Go backend can proxy to it. If Vite crashes or is killed, the file stays behind with a stale port number.
+
+**Fix:**
+
+```bash
+rm .vite-port
+```
+
+Then restart the Vite dev server. It will write a fresh `.vite-port` file with the correct port.
+
+This is listed in `AGENTS.md` as a known gotcha:
+
+> `.vite-port` stale? `rm .vite-port && restart Vite`
+
+## Database Issues
+
+### Database Is Locked
+
+**Symptom:** `database is locked` errors under concurrent load.
+
+SQLite uses file-level locking. In WAL mode (which Laju Go uses), readers do not block writers, but concurrent writers still serialize.
+
+**Fixes:**
+
+- Ensure `DB_PATH` points to a directory on a fast filesystem (local disk, not NFS).
+- Check that the `data/` directory has write permissions:
+
+  ```bash
+  ls -la data/
+  chmod 755 data/
+  ```
+
+- If the database is corrupted, reset it (destroys all data):
+
+  ```bash
+  make db-refresh
+  ```
+
+  This removes `data/app.db`, `data/app.db-shm`, `data/app.db-wal`, and `data/cache/`.
+
+### Migration Fails at Startup
+
+**Symptom:** The binary exits with a Goose migration error.
+
+Goose runs migrations automatically on startup. If a migration file is malformed or was edited after deployment, it can fail.
+
+**Fixes:**
+
+- Never edit a migration that has already been applied in production. Create a new migration file instead. Goose tracks applied migrations by filename — editing an old file has no effect in production but can break local dev.
+- Check the migration status:
+
+  ```bash
+  go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 ./data/app.db status
+  ```
+
+- Roll back the last migration (dev only):
+
+  ```bash
+  go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 ./data/app.db down
+  ```
+
+### Database File Missing
+
+**Symptom:** `unable to open database file` on startup.
+
+The `DB_PATH` directory does not exist. Laju Go does not create parent directories automatically.
+
+**Fix:**
+
+```bash
+mkdir -p data/
+```
+
+Or set `DB_PATH` to an existing directory in `.env`.
+
+## CGO Cross-Compilation Errors
+
+**Symptom:** Building for Linux from macOS fails with:
+
+```
+# github.com/mattn/go-sqlite3
+cgo: C compiler "gcc" not found: exec: "gcc": executable file not found in $PATH
+```
+
+Or:
+
+```
+go build: cannot cross-compile CGO-enabled packages
+```
+
+Laju Go uses `github.com/mattn/go-sqlite3`, which requires CGO. A plain `GOOS=linux go build` fails because there is no C cross-compiler.
+
+**Fix: Use Zig as a cross-compiler.**
+
+```bash
+brew install zig
+make build-linux
+```
+
+Zig bundles its own libc and acts as a drop-in C cross-compiler. The Go toolchain detects `zig cc` and uses it for CGO compilation.
+
+If you still get errors:
+
+- Verify Zig is installed: `zig version`
+- Ensure Zig is on your `PATH`: `which zig`
+- For non-amd64 targets, set the target explicitly:
+
+  ```bash
+  GOOS=linux GOARCH=arm64 go build -trimpath -o laju-go ./cmd/laju-go
+  ```
+
+## Build Order Errors
+
+**Symptom:** The app runs but serves broken CSS/JS links, or `dist/.vite/manifest.json` not found.
+
+You ran `go build` before `vite build`. The Go binary reads `dist/.vite/manifest.json` to resolve hashed asset filenames — if it is missing, assets do not load.
+
+**Fix:**
+
+Always build in order:
+
+```bash
+make build    # runs vite-build then go-build
+```
+
+Or manually:
+
+```bash
+npm run build          # vite build → dist/
+go build -o laju-go ./cmd/laju-go
+```
+
+## templ Generated Code Out of Sync
+
+**Symptom:** Build fails with type errors in `*_templ.go` files, or rendered HTML does not match your `.templ` edits.
+
+You edited a `.templ` file but did not regenerate. The `*_templ.go` files are generated from `.templ` sources.
+
+**Fix:**
+
+```bash
+make templ
+# or
+templ generate
+```
+
+**Never edit `*_templ.go` directly** — `templ generate` overwrites it. Edit only `.templ` files.
+
+Note: Air (the Go live-reload tool) does not watch `.templ` files. If you are running `air` and edit a template, run `templ generate` manually.
+
+## sqlc Generated Code Out of Sync
+
+**Symptom:** Build fails with errors in `app/queries/`, or a query you added in `queries/*.sql` is not available.
+
+You edited a `.sql` file in `queries/` but did not regenerate the Go code.
+
+**Fix:**
+
+```bash
+make db-generate
+# or
+sqlc generate
+```
+
+**Never edit `app/queries/` manually** — it is generated by sqlc. Edit the SQL in `queries/*.sql` and regenerate.
+
+## go.sum Mismatch
+
+**Symptom:** `go build` fails with `missing go.sum entry` or checksum errors.
+
+A dependency was added or updated without running `go mod tidy`.
+
+**Fix:**
+
+```bash
+go mod tidy
+```
+
+Then commit the updated `go.mod` and `go.sum`. The `go.sum` file is committed and required for reproducible builds (including Docker).
+
+## Port Already in Use
+
+**Symptom:** `listen tcp :8080: bind: address already in use`
+
+Another process is using port 8080.
+
+**Fix:**
+
+Find and kill the process:
+
+```bash
+lsof -i :8080
+kill -9 <PID>
+```
+
+Or change `APP_PORT` in `.env` to a different port.

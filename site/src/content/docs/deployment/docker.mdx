@@ -1,0 +1,122 @@
+---
+title: Docker
+description: Multi-stage Dockerfile that builds frontend and backend separately into a minimal Alpine image.
+---
+
+Laju Go ships with a multi-stage `Dockerfile` that produces a small static binary inside an Alpine runtime image. The build runs entirely inside Docker — no local Go or Node toolchain required.
+
+## Build the Image
+
+```bash
+make docker
+# or
+docker build -t laju-go .
+```
+
+## Run the Container
+
+```bash
+docker run -d \
+  --name laju-go \
+  -p 8080:8080 \
+  -v laju-data:/app/data \
+  -v laju-storage:/app/storage \
+  --env-file .env \
+  laju-go
+```
+
+The `data/` volume holds the SQLite database and must persist across container restarts. The `storage/` volume holds uploaded files (avatars, TUS uploads).
+
+## Dockerfile Breakdown
+
+The Dockerfile has three stages:
+
+### Stage 1: Frontend (Node)
+
+```dockerfile
+FROM node:22-alpine AS frontend
+WORKDIR /build
+COPY package*.json ./
+RUN npm ci
+COPY frontend/ frontend/
+COPY tsconfig*.json vite.config.* ./
+RUN npm run build
+```
+
+Installs npm dependencies, copies the frontend source and Vite config, runs `npm run build`. This produces `dist/` with the Vite manifest and hashed assets.
+
+### Stage 2: Backend (Go + CGO)
+
+```dockerfile
+FROM golang:1.26-alpine AS backend
+RUN apk add --no-cache gcc musl-dev sqlite-static
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+COPY --from=frontend /build/dist ./dist
+RUN CGO_ENABLED=1 go build -trimpath \
+    -ldflags="-s -w -static \
+      -X main.Version=$(git describe --tags --always --dirty 2>/dev/null || echo dev) \
+      -X main.Commit=$(git rev-parse --short HEAD 2>/dev/null || echo none)" \
+    -o laju-go ./cmd/laju-go
+```
+
+Installs `gcc`, `musl-dev`, and `sqlite-static` because `github.com/mattn/go-sqlite3` is CGO-based. Downloads Go modules, copies the full source, brings in `dist/` from the frontend stage, then builds a **static** binary with `CGO_ENABLED=1`.
+
+The `-ldflags` inject `main.Version` and `main.Commit` at build time (visible via `./laju-go --version`). `-trimpath` strips local paths from the binary; `-s -w` strip debug symbols for a smaller image.
+
+### Stage 3: Runtime (Alpine)
+
+```dockerfile
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates tzdata sqlite
+WORKDIR /app
+COPY --from=backend /build/laju-go .
+COPY --from=backend /build/migrations ./migrations
+COPY --from=backend /build/dist ./dist
+COPY --from=backend /build/public ./public
+EXPOSE 8080
+CMD ["./laju-go"]
+```
+
+Only the binary, migrations, frontend assets, and public files are copied. The runtime installs `ca-certificates` (for HTTPS/TLS), `tzdata` (for timezone-aware timestamps), and `sqlite` (for the `sqlite3` CLI if you need to inspect the database).
+
+## Image Size
+
+The final image is based on `alpine:3.20` (~7 MB) plus the static Go binary and asset files. The Go binary with `-s -w -static` is typically 15–25 MB. The total image is usually under 50 MB.
+
+```bash
+docker images laju-go
+# REPOSITORY   TAG       IMAGE ID       CREATED         SIZE
+# laju-go      latest    abc123def456   1 minute ago    ~45MB
+```
+
+## Docker Compose
+
+For local development or single-host production with a reverse proxy:
+
+```yaml
+services:
+  laju-go:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - laju-data:/app/data
+      - laju-storage:/app/storage
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  laju-data:
+  laju-storage:
+```
+
+## Notes
+
+- The binary is **statically linked** (`-static` flag) so it runs on any Linux distro, not just Alpine.
+- `go.sum` is committed and copied into the build — this is required for reproducible Docker builds.
+- Migrations run automatically on container start. The first boot creates the database in `/app/data/app.db`.
+- The `EXPOSE 8080` matches the default `APP_PORT`. If you change the port in `.env`, update the port mapping accordingly.

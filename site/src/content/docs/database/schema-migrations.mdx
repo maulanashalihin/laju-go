@@ -1,0 +1,194 @@
+---
+title: Schema Migrations
+description: Goose migrations with one-table-per-file convention, applied at startup and via CLI
+---
+
+Laju Go uses [Goose](https://github.com/pressly/goose) for database migrations. Migrations are SQL files in `migrations/`, applied automatically at startup and manually via `make migrate`.
+
+## Convention: One Table Per File
+
+Each migration file creates or modifies exactly **one table**. This keeps migrations focused, makes rollback predictable, and simplifies code review.
+
+```
+migrations/
+├── 0001_create_users_table.sql
+├── 0002_create_sessions_table.sql
+└── 0003_create_password_resets_table.sql
+```
+
+The numbering is sequential (`0001_`, `0002_`, ...). Goose tracks applied migrations in a `goose_db_version` table, so it skips files that have already run.
+
+## File Format
+
+Every migration file uses `-- +goose Up` and `-- +goose Down` markers. Multi-statement SQL is wrapped in `-- +goose StatementBegin` / `-- +goose StatementEnd`:
+
+```sql
+-- migrations/0001_create_users_table.sql
+-- +goose Up
+-- +goose StatementBegin
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    password TEXT,
+    avatar TEXT DEFAULT '',
+    role TEXT NOT NULL DEFAULT 'user',
+    google_id TEXT UNIQUE,
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_google_id ON users(google_id);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP INDEX IF EXISTS idx_users_google_id;
+DROP INDEX IF EXISTS idx_users_email;
+DROP TABLE IF EXISTS users;
+-- +goose StatementEnd
+```
+
+The `sessions` table migration follows the same pattern:
+
+```sql
+-- migrations/0002_create_sessions_table.sql
+-- +goose Up
+-- +goose StatementBegin
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    data TEXT NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP INDEX IF EXISTS idx_sessions_expires_at;
+DROP INDEX IF EXISTS idx_sessions_user_id;
+DROP TABLE IF EXISTS sessions;
+-- +goose StatementEnd
+```
+
+## Running Migrations
+
+### Automatic at Startup
+
+Migrations run automatically when the application starts. The `runMigrations` function in `cmd/laju-go/main.go` calls `goose.Up()`:
+
+```go
+// cmd/laju-go/main.go
+func runMigrations(db *sql.DB, migrationsDir string) error {
+ goose.SetBaseFS(nil)
+ if err := goose.SetDialect("sqlite3"); err != nil {
+  return err
+ }
+ if err := goose.Up(db, migrationsDir); err != nil {
+  return err
+ }
+ return nil
+}
+```
+
+This means deploying a new version with new migration files is sufficient — the app applies them on boot. No separate migration step is needed in normal deployments.
+
+### Manual via CLI
+
+For development, use `make migrate` or the npm script. **Always use `go run`, never the `goose` binary** — this ensures you're using the same Goose version as the application:
+
+```bash
+# Via Make
+make migrate
+
+# Via npm
+npm run db:migrate
+```
+
+Both run:
+
+```bash
+go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 ./data/app.db up
+```
+
+### Other Migration Commands
+
+```bash
+# Check migration status
+npm run db:migrate:status
+
+# Roll back the last migration
+npm run db:migrate:down
+
+# Create a new migration file
+npm run db:migrate:create -- add_orders_table
+```
+
+The `db:migrate:create` command generates a new file with the next sequential number and the `-- +goose Up` / `-- +goose Down` scaffolding.
+
+### Reset the Database
+
+To wipe the database and start fresh (development only):
+
+```bash
+make db-refresh
+# or
+npm run db:refresh
+```
+
+This deletes `./data/app.db` and all WAL files, then the next startup re-runs all migrations from scratch.
+
+## Creating a New Migration
+
+1. Create a new file in `migrations/` with the next sequential number:
+
+```bash
+npm run db:migrate:create -- create_orders_table
+# Generates: migrations/0004_create_orders_table.sql
+```
+
+1. Write the `Up` and `Down` sections:
+
+```sql
+-- migrations/0004_create_orders_table.sql
+-- +goose Up
+-- +goose StatementBegin
+CREATE TABLE IF NOT EXISTS orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    total INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP INDEX IF EXISTS idx_orders_user_id;
+DROP TABLE IF EXISTS orders;
+-- +goose StatementEnd
+```
+
+1. Run `sqlc generate` to generate the Go query code (if you've also added queries to `queries/*.sql`).
+
+2. Restart the app — migrations apply automatically.
+
+## Rules
+
+- **Never edit a deployed migration.** Goose skips already-applied migrations, so editing an old file has no effect in production. Create a new migration file instead.
+- **One table per file.** If a change affects multiple tables, create separate migration files for each.
+- **Always include a `Down` section.** Every `Up` must have a reversible `Down`.
+- **Use `IF NOT EXISTS` / `IF EXISTS`** in `CREATE` / `DROP` statements to make migrations idempotent.
+- **Wrap multi-statement SQL** in `-- +goose StatementBegin` / `-- +goose StatementEnd` so Goose sends them as a single batch.

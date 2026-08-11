@@ -1,0 +1,216 @@
+---
+title: Linux VPS
+description: Deploy Laju Go to a Linux VPS with a systemd user service and CGO cross-compilation via Zig.
+---
+
+Laju Go runs well on a minimal Linux VPS. The app is a single binary backed by SQLite, so there is no database server to install or manage. This guide covers two paths: building on the server, and cross-compiling from macOS with Zig.
+
+## Prerequisites
+
+### Server
+
+- Ubuntu 20.04+ or Debian 11+ (any Linux with systemd works)
+- 512 MB RAM minimum (1 GB recommended)
+- 10 GB storage
+- SSH key access from your dev machine
+
+### Server Software (if building on server)
+
+- Go 1.22+
+- Node.js 18+ and npm
+- `sqlite3` CLI (for seeding/inspection)
+- `rsync` (for the deploy script)
+
+## Method A: Build on the Server
+
+The simplest approach — clone the repo, build, run under systemd.
+
+```bash
+# On the server
+cd ~/projects/laju-go
+git pull origin main
+make build              # vite build → go build
+./laju-go --version     # verify the binary
+```
+
+`make build` runs `vite build` first (produces `dist/.vite/manifest.json`), then `go build`. The order matters — see [Overview](./overview/#build-order).
+
+## Method B: Cross-Compile from macOS with Zig
+
+If your dev machine is macOS and your server is Linux x86_64, you need CGO cross-compilation. Laju Go uses `github.com/mattn/go-sqlite3`, which is CGO-based — a plain `GOOS=linux go build` fails because it cannot find a C cross-compiler.
+
+The project solves this with **Zig** as a drop-in C cross-compiler.
+
+### Install Zig
+
+```bash
+brew install zig
+```
+
+### Build for Linux
+
+```bash
+make build-linux
+```
+
+This runs:
+
+```makefile
+build-linux:
+ GOOS=linux GOARCH=amd64 go build -trimpath $(LDFLAGS) -o $(BINARY) ./cmd/laju-go
+```
+
+Under the hood, the Go toolchain invokes `zig cc` as the C compiler. Zig bundles its own libc and handles the cross-compilation target transparently — no separate `musl-gcc` or sysroot setup needed.
+
+The output is a single `laju-go` binary targeting `linux/amd64`. Upload it to the server along with `dist/`, `migrations/`, and `public/`:
+
+```bash
+scp laju-go user@your-server:~/projects/laju-go/
+scp -r dist migrations public user@your-server:~/projects/laju-go/
+```
+
+### Other Targets
+
+Zig makes other targets easy. For ARM64 (e.g., Graviton, Raspberry Pi):
+
+```bash
+GOOS=linux GOARCH=arm64 go build -trimpath -o laju-go ./cmd/laju-go
+```
+
+## Systemd User Service
+
+Laju Go ships with a systemd **user** service file at `systemd/laju-go.service`:
+
+```ini
+[Unit]
+Description=Laju Go Application
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/projects/laju-go
+ExecStart=%h/projects/laju-go/laju-go
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=laju-go
+
+# Environment
+EnvironmentFile=%h/projects/laju-go/.env
+
+[Install]
+WantedBy=default.target
+```
+
+Key points:
+
+- **`%h`** expands to the user's home directory — no hardcoded paths.
+- **User service** (`systemctl --user`), not a system service. No root needed to manage it.
+- **`EnvironmentFile`** loads `.env` from the project directory.
+- **`Restart=always`** with `RestartSec=5` auto-recovers from crashes.
+
+### Enable Linger (Once)
+
+User services only run while the user is logged in. To keep the service alive after you log out, enable linger once (requires sudo):
+
+```bash
+sudo loginctl enable-linger youruser
+```
+
+### Install the Service
+
+```bash
+# Copy the service file
+mkdir -p ~/.config/systemd/user
+cp systemd/laju-go.service ~/.config/systemd/user/
+
+# Reload systemd, enable and start
+systemctl --user daemon-reload
+systemctl --user enable laju-go
+systemctl --user start laju-go
+```
+
+### Manage the Service
+
+```bash
+systemctl --user status laju-go
+systemctl --user restart laju-go
+journalctl --user -u laju-go -f          # follow logs
+journalctl --user -u laju-go -n 50       # last 50 lines
+journalctl --user -u laju-go -p err      # errors only
+```
+
+## One-Click Deploy Script
+
+The `scripts/deploy.sh` script automates the full flow from your local machine:
+
+```bash
+cp .deploy.example .deploy
+# Edit .deploy:
+#   SERVER_USER=youruser
+#   SERVER_HOST=your.server.com
+#   SERVER_PATH=/home/youruser/projects/laju-go
+```
+
+Then run:
+
+```bash
+./scripts/deploy.sh
+```
+
+What it does:
+
+1. Tests SSH connection
+2. `rsync` source code to the server (excludes `.git`, `node_modules`, `data`, `dist`, `.env`)
+3. Builds on the server: `npm ci && npm run build && go build`
+4. First run → `first-deploy.sh` (creates `.env`, enables linger, installs service, seeds admin)
+5. Subsequent runs → `update-deploy.sh` (stops service, rebuilds, starts service)
+
+The `.deploy` file is gitignored — it contains your server credentials.
+
+## Nginx Reverse Proxy
+
+Put Nginx in front for TLS termination and domain routing:
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Add TLS with certbot:
+
+```bash
+sudo certbot --nginx -d yourdomain.com
+```
+
+## Updating
+
+To push a new version:
+
+```bash
+# On the server
+cd ~/projects/laju-go
+git pull
+make build
+systemctl --user restart laju-go
+```
+
+Or from your local machine with the deploy script:
+
+```bash
+./scripts/deploy.sh
+```
+
+The SQLite database in `data/` persists across updates. Goose migrations run automatically on startup — new migration files are applied, old ones are skipped.

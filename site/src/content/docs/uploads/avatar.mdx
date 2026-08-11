@@ -1,0 +1,197 @@
+---
+title: Avatar Uploads
+description: Multipart POST for small files with CSRF header, type validation, and avatar URL persistence
+---
+
+Laju Go uses a simple multipart POST for avatar uploads. This is deliberately separate from the TUS protocol — avatars are small (max 5MB), don't benefit from resumable uploads, and need to update the database and session immediately.
+
+## Why Multipart, Not TUS
+
+| Upload | Mechanism | Max Size | Endpoint | Resumable | CSRF |
+|--------|-----------|----------|----------|-----------|------|
+| **Avatar** (Profile) | Multipart POST | 5MB | `POST /app/upload` | No | Yes |
+| **Large file** (UploadTest) | TUS chunked | 1GB | `POST /tus/files` | Yes | No |
+
+TUS requires 3 requests (POST create, HEAD offset, PATCH chunk) even for a 100KB file. Multipart needs only 1 POST. For avatars, the simplicity is worth it — a failed 100KB upload can just be re-uploaded.
+
+## Route
+
+```go
+// routes/web.go
+protected := app.Group("/app", middlewares.AuthRequired(store))
+protected.Use(csrfMiddleware.Protect())
+protected.Post("/upload", uploadHandler.AvatarUpload)
+```
+
+The route is behind both `AuthRequired` and CSRF middleware. The CSRF header is mandatory.
+
+## Handler
+
+The `AvatarUpload` handler in `app/handlers/upload.go` validates the file, saves it to disk, updates the user's avatar URL in the database, and syncs the session:
+
+```go
+// app/handlers/upload.go
+func (h *UploadHandler) AvatarUpload(c *fiber.Ctx) error {
+ sess, _ := h.store.Get(c)
+ userID := sess.Get("user_id")
+
+ if userID == nil {
+  return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Not authenticated"})
+ }
+
+ form, err := c.MultipartForm()
+ if err != nil {
+  return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to parse form"})
+ }
+
+ files := form.File["file"]
+ if len(files) == 0 {
+  return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
+ }
+
+ file := files[0]
+
+ // Validate content type
+ allowedTypes := []string{"image/jpeg", "image/png", "image/gif", "image/webp"}
+ contentType := file.Header.Get("Content-Type")
+ isAllowed := false
+ for _, allowed := range allowedTypes {
+  if contentType == allowed {
+   isAllowed = true
+   break
+  }
+ }
+ if !isAllowed {
+  return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+   "error": "Invalid file type. Allowed: JPEG, PNG, GIF, WEBP",
+  })
+ }
+
+ // Validate file size (5MB max)
+ if file.Size > 5*1024*1024 {
+  return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+   "error": "File too large. Max size: 5MB",
+  })
+ }
+
+ // Generate filename: <userID>_<timestamp>.<ext>
+ ext := filepath.Ext(file.Filename)
+ filename := fmt.Sprintf("%d_%d%s", userID.(int64), time.Now().UnixNano(), ext)
+ uploadPath := filepath.Join("storage", "avatars", filename)
+
+ if err := c.SaveFile(file, uploadPath); err != nil {
+  return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file"})
+ }
+
+ avatarURL := "/storage/avatars/" + filename
+
+ // Update avatar in database
+ if err := h.userService.UpdateAvatar(userID.(int64), avatarURL); err != nil {
+  return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update avatar"})
+ }
+
+ // Sync session so the UI updates immediately
+ sess.Set("avatar", avatarURL)
+ sess.Save()
+
+ return c.JSON(fiber.Map{
+  "success": true,
+  "url":     avatarURL,
+  "message": "File uploaded successfully",
+ })
+}
+```
+
+## Validation
+
+Three checks happen before the file is saved:
+
+1. **Authentication** — `user_id` must be present in the session.
+2. **Content type** — only `image/jpeg`, `image/png`, `image/gif`, `image/webp` are allowed.
+3. **File size** — maximum 5MB (`5 * 1024 * 1024` bytes).
+
+## Storage Layout
+
+Avatars are saved to `storage/avatars/` with the naming convention `<userID>_<unixNano>.<extension>`:
+
+```
+storage/
+└── avatars/
+    └── 1_1723392000000000000.png
+```
+
+The URL returned is `/storage/avatars/<filename>`, which is served as a static file:
+
+```go
+// routes/web.go
+app.Static("/storage", "./storage", fiber.Static{
+ CacheDuration: 24 * time.Hour,
+ MaxAge:        86400,
+})
+```
+
+## Frontend Integration
+
+The Profile page uses `fetch()` with `FormData` to upload the avatar, then persists the URL via an Inertia form:
+
+```svelte
+// frontend/src/pages/app/Profile.svelte
+import { getCSRFToken } from "@lib/utils/csrf";
+
+function handleAvatarChange(event: Event) {
+ const target = event.target as HTMLInputElement;
+ const file = target.files?.[0];
+ if (file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  fetch("/app/upload", {
+   method: "POST",
+   headers: {
+    "X-XSRF-TOKEN": getCSRFToken(),
+   },
+   body: formData,
+  })
+   .then((response) => response.json())
+   .then((data) => {
+    if (data.success && data.url) {
+     // Save avatar URL via Inertia form
+     profileForm.avatar = data.url;
+     profileForm.put("/app/profile", {
+      onError: () => {
+       Toast("Failed to save avatar", "error");
+      },
+     });
+    } else {
+     Toast(data.error || "Failed to upload avatar", "error");
+    }
+   });
+ }
+}
+```
+
+### CSRF Header Is Required
+
+This is a `fetch()` call to `/app/upload`, which is under CSRF protection. The `X-XSRF-TOKEN` header must be included — without it, the request is rejected with 400 "CSRF token missing".
+
+The `getCSRFToken()` helper reads the token from the `XSRF-TOKEN` cookie:
+
+```typescript
+// frontend/src/lib/utils/csrf.ts
+export function getCSRFToken(): string {
+ const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+ return match ? decodeURIComponent(match[1]) : "";
+}
+```
+
+Inertia's `router.*` and `useForm` calls handle CSRF automatically — only manual `fetch()` needs the header.
+
+## Two-Step Persistence
+
+Avatar upload is a two-step process:
+
+1. **`POST /app/upload`** — Upload the file, get back the avatar URL, save it to the session.
+2. **`PUT /app/profile`** — Persist the avatar URL to the user profile via Inertia form submission.
+
+The session is updated in step 1 so the UI reflects the new avatar immediately. The database update for the user profile happens in step 2 via `profileForm.put("/app/profile")`.
+
+The `UpdateAvatar` call in the handler also writes to the database directly, so the avatar URL is persisted even if step 2 never happens.

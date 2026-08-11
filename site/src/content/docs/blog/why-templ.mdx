@@ -1,0 +1,86 @@
+---
+title: Why templ — not HTML templates
+description: Type-safe HTML in Go, compile-time checking, no string interpolation, SVG handling
+date: 2026-08-11T00:00:00Z
+author: maulana
+tags: [templ, frontend, architecture]
+---
+
+Go's standard `html/template` package is fine for a blog. For a SaaS landing page with SVG logos, conditional classes, component composition, and a design system, it becomes a liability: string interpolation, runtime errors, no type checking on the data you pass in. Laju Go uses [templ](https://templ.ph) for its server-rendered HTML — the landing page, the Inertia shell — and the difference is structural.
+
+## Type-safe HTML in Go
+
+templ is a typed template language that compiles to Go. You write `.templ` files; `templ generate` produces `*_templ.go` files that render to an `io.Writer`. The parameters are typed Go function arguments, not `interface{}` passed through a map.
+
+Here's the signature of Laju Go's landing page:
+
+```go
+// templates/index.templ
+
+templ LandingPage(title string, isDev bool, viteURL string, mainCSS string) {
+    {{
+        productLinks := FooterLinks{
+            {FLabel: "Features", FURL: "#features"},
+            {FLabel: "How it works", FURL: "#how-it-works"},
+        }
+    }}
+    <!doctype html>
+    <html lang="en" class="dark">
+        <head>
+            <meta charset="UTF-8"/>
+            <title>{ title } - Laju Go</title>
+            // ...
+        </head>
+        <body>
+            // ...
+        </body>
+    </html>
+}
+```
+
+`title` is a `string`. `isDev` is a `bool`. If you pass the wrong type, the Go compiler tells you at build time. There is no `template.Execute(w, data)` that panics at runtime because a field was missing or the wrong type.
+
+## Compile-time checking
+
+`templ generate` runs before `go build`. If a template references an undefined variable, has a syntax error, or calls a component with the wrong arguments, generation fails. The error is at build time, not at the first request that hits the route. This is the same guarantee sqlc gives you for SQL — the bad code never reaches production.
+
+The generated file is `index_templ.go`, and the rule in `AGENTS.md` is explicit: **edit only `.templ` files, never `*_templ.go`**. The generated file is overwritten on every `templ generate`. This keeps the source of truth in the `.templ` file and prevents hand-edits from being silently destroyed.
+
+## No string interpolation
+
+`html/template` escapes by default, but you're still building strings. templ renders directly to a `Buffer` / `Writer` with proper context-aware escaping built into the compiler. There is no `fmt.Sprintf("<div class='%s'>", class)` — that's a string, not HTML, and it's how XSS happens. In templ:
+
+```templ
+<div class={ "px-6 py-3 rounded-lg bg-brand-400 " + extraClass }>
+    { user.Name }
+</div>
+```
+
+The `{ }` expressions are type-checked and escaped by context. `{ user.Name }` in an HTML text node is HTML-escaped. The same expression in an attribute context is attribute-escaped. You don't think about it, and you can't get it wrong.
+
+## SVG and component composition
+
+The landing page has inline SVG logos, gradient definitions, and path data. In `html/template`, inline SVG is a wall of raw strings or `template.HTML` escapes that bypass safety. In templ, SVG is just markup — you write it directly, the compiler parses it, and it renders as-is:
+
+```templ
+<svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#22d3ee"/>
+            <stop offset="100%" stop-color="#a855f7"/>
+        </linearGradient>
+    </defs>
+    <rect width="32" height="32" rx="8" fill="url(#logoGrad)"/>
+    <path d="M19 7L10 17h5l-1 8 9-10h-5l1-8Z" fill="white"/>
+</svg>
+```
+
+Components are Go functions. `@FeatureCardLarge("auth", "Authentication", "...", "brand")` is a call to another templ component, type-checked at compile time. You compose pages from components the same way you compose Svelte components — except the output is server-rendered HTML with zero client-side JS.
+
+## Where templ fits in Laju Go
+
+templ renders two things: the public landing page (standalone HTML, no Inertia) and the Inertia root shell (the `<head>`, asset tags, and `<div data-page>` that Inertia hydrates into). The Svelte app handles everything inside the authenticated app. This split is deliberate — the marketing page should be fast, crawlable HTML with no JS bundle, and templ makes that type-safe. The app UI is interactive and uses Svelte. Each tool does what it's best at.
+
+## The tradeoff
+
+templ requires a build step (`templ generate`) and a CGO-free Go toolchain. The syntax is not Go — it's templ's own DSL — so there's a small learning curve, and editor support is good but not universal. If you're rendering a single simple page, `html/template` is less machinery. For a SaaS with a real landing page, a design system, and SVG assets, templ's compile-time safety and component model are worth the build step. You get type-checked HTML, no string interpolation, and errors at build time instead of in production.

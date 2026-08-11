@@ -1,0 +1,205 @@
+---
+title: Conventions
+description: File-per-feature handlers, pure-data models, DTO patterns, and naming rules that keep the codebase legible.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The three-tier rule says *what* each layer does. These conventions say *how* files are organized within each layer so a new contributor can find anything by path.
+
+## One handler file per feature
+
+<Aside type="caution" title="Do not merge routes into one handler">
+Each module or feature gets its own handler file. A single `handler.go` with every route is the most common way this codebase rots.
+</Aside>
+
+| ✅ Correct | ❌ Wrong |
+|----------|----------|
+| `app/handlers/auth.go` — login, register, OAuth | `app/handlers/handler.go` — 1000+ lines, all routes |
+| `app/handlers/app.go` — dashboard, profile, password | |
+| `app/handlers/upload.go` — avatar + TUS uploads | |
+| `app/handlers/public.go` — landing page, public routes | |
+
+Each handler struct carries only the dependencies its feature needs — do not pile everything into one giant struct.
+
+### Handler struct shape
+
+Every handler follows the same shape: a struct of dependencies, a `New*Handler` constructor, and one method per route.
+
+```go
+// app/handlers/auth.go
+type AuthHandler struct {
+    authService    *services.AuthService
+    store          *session.Store
+    inertiaService *services.InertiaService
+}
+
+func NewAuthHandler(authService *services.AuthService, store *session.Store, inertiaService *services.InertiaService) *AuthHandler {
+    return &AuthHandler{
+        authService:    authService,
+        store:          store,
+        inertiaService: inertiaService,
+    }
+}
+```
+
+### Response decision table
+
+A Handler's only real choice is *which response shape to use*. Pick from this table — do not improvise.
+
+| Scenario | Use | Example |
+|----------|-----|---------|
+| Show an Inertia page (GET) | `h.inertiaService.Render(c, "component", fiber.Map{...})` | Dashboard, profile, edit form |
+| After POST/PUT success | `h.inertiaService.Redirect(c, "/path")` | 303 See Other, Inertia-aware |
+| API endpoint for `fetch()` | `c.JSON(fiber.Map{...})` | Avatar upload response, AJAX |
+| External redirect (OAuth) | `h.inertiaService.Location(c, url)` | 409 + `X-Inertia-Location` |
+
+### Always
+
+- Parse request bodies with `c.BodyParser(&req)` using a struct from `app/models/` — never manual `c.Body()` or field-by-field `c.Get("field")`.
+- Define the request DTO in `app/models/dto.go` (or `dto_<module>.go`) with `json` tags.
+- Register routes in `routes/web.go` — add the handler to the `Handlers` struct, wire it in `SetupRoutes`.
+
+### Real example: register
+
+```go
+// app/handlers/auth.go
+func (h *AuthHandler) Register(c *fiber.Ctx) error {
+    var req models.RegisterRequest
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+    }
+
+    if req.Name == "" || req.Email == "" || req.Password == "" {
+        h.store.Flash(c, "error", "All fields are required")
+        return h.inertiaService.Redirect(c, "/register")
+    }
+
+    user, err := h.authService.Register(req.Name, req.Email, req.Password)
+    if err != nil {
+        if errors.Is(err, services.ErrUserAlreadyExists) {
+            h.store.Flash(c, "error", "Email already registered")
+            return h.inertiaService.Redirect(c, "/register")
+        }
+        h.store.Flash(c, "error", "Failed to register user. Please try again.")
+        return h.inertiaService.Redirect(c, "/register")
+    }
+
+    if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Name, user.Email, user.Avatar, string(user.Role), user.EmailVerified); err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create session"})
+    }
+
+    if sess, err := h.store.Get(c); err == nil {
+        sess.Regenerate() // prevent session fixation
+    }
+
+    return h.inertiaService.Redirect(c, "/app")
+}
+```
+
+Note what the Handler does *not* do: it never hashes a password, never runs SQL, never inspects the DB. It validates input shape, calls `h.authService.Register`, maps known errors to flash messages, creates a session, and redirects.
+
+## Models: pure data, no logic
+
+`app/models/` holds **pure data structs** — domain entities and DTOs. No business logic. No DB access. No imports of `app/queries`.
+
+### File convention
+
+| File | Content |
+|------|---------|
+| `&lt;entity&gt;.go` | Domain struct + `TableName()` + const enums (e.g. `user.go`, `session.go`) |
+| `dto.go` | Cumulative request/response DTOs + `ToResponse()` helper |
+
+When `dto.go` gets large, split per module: `dto_auth.go`, `dto_orders.go`. One entity per file — `user.go` holds the `User` struct, its `TableName()`, and its `UserRole` enum.
+
+### Entity struct
+
+```go
+// app/models/user.go
+type UserRole string
+
+const (
+    RoleUser  UserRole = "user"
+    RoleAdmin UserRole = "admin"
+)
+
+type User struct {
+    ID            int64          `json:"id"`
+    Email         string         `json:"email"`
+    Name          string         `json:"name"`
+    Avatar        string         `json:"avatar"`
+    Password      sql.NullString `json:"-"` // Hashed password, never serialized (NULL for OAuth users)
+    Role          UserRole       `json:"role"`
+    GoogleID      sql.NullString `json:"-"` // OAuth provider ID (NULL for email/password users)
+    EmailVerified bool           `json:"email_verified"`
+    CreatedAt     time.Time      `json:"created_at"`
+    UpdatedAt     time.Time      `json:"updated_at"`
+}
+
+func (User) TableName() string { return "users" }
+```
+
+Sensitive fields use `json:"-"` so they never leak through Inertia props or `c.JSON`.
+
+### DTO pattern
+
+Request and response DTOs are separate structs from the entity, with a `ToResponse()` helper that projects the entity into its safe shape:
+
+```go
+// app/models/dto.go
+type RegisterRequest struct {
+    Name     string `json:"name"`
+    Email    string `json:"email"`
+    Password string `json:"password"`
+}
+
+type UpdateProfileRequest struct {
+    Name   string `json:"name"`
+    Avatar string `json:"avatar"`
+}
+
+type UserResponse struct {
+    ID            int64    `json:"id"`
+    Email         string   `json:"email"`
+    Name          string   `json:"name"`
+    Avatar        string   `json:"avatar"`
+    Role          UserRole `json:"role"`
+    EmailVerified bool     `json:"email_verified"`
+}
+
+func (u *User) ToResponse() UserResponse {
+    return UserResponse{
+        ID:            u.ID,
+        Email:         u.Email,
+        Name:          u.Name,
+        Avatar:        u.Avatar,
+        Role:          u.Role,
+        EmailVerified: u.EmailVerified,
+    }
+}
+```
+
+The Handler receives a `*Request` DTO from `BodyParser` and passes it to the Service. The Service returns a `*Response` DTO (or the entity, which the Handler projects via `ToResponse()`). The entity itself never crosses out to Inertia props — always the response DTO.
+
+### Rules
+
+- ✅ One file per entity (`user.go`, `order.go`) — domain struct + `TableName()` + const enums.
+- ✅ DTOs in `dto.go`, split per module if bloated, plus `ToResponse()` helpers.
+- ❌ Do not import `app/queries` — models must not know about the query layer.
+- ❌ No business logic (validation, calculations) — that belongs in the Service.
+
+## File naming
+
+| Pattern | Meaning |
+|---------|---------|
+| `app/handlers/&lt;feature&gt;.go` | One handler file per feature |
+| `app/services/&lt;domain&gt;.go` | One service file per domain |
+| `app/models/&lt;entity&gt;.go` | One entity per file |
+| `app/models/dto.go` / `dto_&lt;module&gt;.go` | Request/response DTOs |
+| `queries/&lt;domain&gt;.sql` | sqlc input — one file per domain |
+| `app/queries/&lt;domain&gt;.sql.go` | sqlc output — generated, never edit |
+| `migrations/&lt;timestamp&gt;_&lt;table&gt;.sql` | One table per migration file |
+| `templates/&lt;name&gt;.templ` | templ source — edit these |
+| `templates/&lt;name&gt;_templ.go` | templ output — generated, never edit |
+
+Generated files (`*_templ.go`, `app/queries/*.sql.go`) are off-limits. Edit the source (`.templ`, `queries/*.sql`) and regenerate.

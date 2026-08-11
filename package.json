@@ -20,7 +20,7 @@
     "db:migrate:down": "go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 ./data/app.db down",
     "db:migrate:create": "go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 create",
     "db:generate": "sqlc generate",
-    "verify": "templ generate && vite build && go build -o /dev/null ./cmd/laju-go && go vet ./..."
+    "verify": "templ generate && vite build && go build -o /dev/null ./cmd/laju-go && go vet ./... && go test ./..."
   },
   "author": "Maulana Shalihin",
   "license": "MIT",

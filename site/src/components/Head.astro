@@ -1,0 +1,27 @@
+---
+const { head } = Astro.locals.starlightRoute;
+
+const entrySlug = Astro.locals.starlightRoute.id;
+const ogImageUrl = new URL(`/og/${entrySlug}.png`, Astro.site).href;
+
+const headWithOG = [
+  ...head,
+  { tag: "meta", attrs: { property: "og:image", content: ogImageUrl } },
+  { tag: "meta", attrs: { name: "twitter:image", content: ogImageUrl } },
+  { tag: "meta", attrs: { property: "og:image:width", content: "1200" } },
+  { tag: "meta", attrs: { property: "og:image:height", content: "630" } },
+];
+---
+
+{headWithOG.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
+
+<style is:global>
+  /* Left sidebar active link — keep accent background, dark text instead of inverted */
+  .sidebar a[aria-current='page'] {
+    color: var(--sl-color-accent-contrast) !important;
+  }
+  .sidebar a[aria-current='page']:hover,
+  .sidebar a[aria-current='page']:focus {
+    color: var(--sl-color-accent-contrast) !important;
+  }
+</style>

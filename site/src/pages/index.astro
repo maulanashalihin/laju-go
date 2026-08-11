@@ -1,0 +1,74 @@
+---
+import "../styles/landing.css";
+import Hero from "../components/Hero.astro";
+import StatsStrip from "../components/StatsStrip.astro";
+import FeatureGrid from "../components/FeatureGrid.astro";
+import WhyLaju from "../components/WhyLaju.astro";
+import Faq from "../components/Faq.astro";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Laju Go — High-performance Go SaaS boilerplate</title>
+    <meta property="og:title" content="Laju Go — High-performance Go SaaS boilerplate" />
+    <meta property="og:description" content="Go Fiber + Svelte 5 + Inertia.js + SQLite + templ. Auth, uploads, migrations, tests, Docker — wired end to end." />
+    <meta name="twitter:title" content="Laju Go — High-performance Go SaaS boilerplate" />
+    <meta name="twitter:description" content="Go Fiber + Svelte 5 + Inertia.js + SQLite + templ. Auth, uploads, migrations, tests, Docker — wired end to end." />
+    <meta name="description" content="High-performance SaaS boilerplate — Go Fiber + Svelte 5 + Inertia.js + SQLite + templ." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body>
+    <header class="lj-nav">
+      <a class="lj-nav-brand" href="/">
+        <img src="/favicon.svg" alt="" width="24" height="24" />
+        <span>Laju Go</span>
+      </a>
+      <nav class="lj-nav-links">
+        <a href="/getting-started/introduction/">Docs</a>
+        <a href="/blog/">Blog</a>
+        <a href="https://github.com/maulanashalihin/laju-go" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <Hero />
+      <StatsStrip />
+      <FeatureGrid />
+      <WhyLaju />
+      <Faq />
+    </main>
+
+    <footer class="lj-footer">
+      <div class="lj-footer-grid">
+        <div class="lj-footer-brand">
+          <div class="lj-footer-logo">
+            <img src="/favicon.svg" alt="" width="20" height="20" />
+            <span>Laju Go</span>
+          </div>
+          <p>High-performance SaaS boilerplate. Go Fiber, Svelte 5, Inertia, SQLite, templ — one binary, wired end to end.</p>
+        </div>
+        <div class="lj-footer-col">
+          <h4>Docs</h4>
+          <a href="/getting-started/introduction/">Getting Started</a>
+          <a href="/architecture/overview/">Architecture</a>
+          <a href="/deployment/overview/">Deployment</a>
+          <a href="/database/schema-migrations/">Database</a>
+        </div>
+        <div class="lj-footer-col">
+          <h4>More</h4>
+          <a href="/philosophy/">Philosophy</a>
+          <a href="/blog/">Blog</a>
+          <a href="https://github.com/maulanashalihin/laju-go" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+      </div>
+      <div class="lj-footer-bottom">
+        <span>Laju — the Indonesian/Malay word for <em>speed</em>.</span>
+        <span>MIT License</span>
+      </div>
+    </footer>
+  </body>
+</html>

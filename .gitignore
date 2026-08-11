@@ -48,12 +48,22 @@ dist
 
 
 
-# LLM Wiki (track wiki/ + raw/; ignore auto-generated meta + outputs)
+# LLM Wiki — track only concepts/ + entities/ + config + schema.
+# Ignore session logs, raw captures, editor config, and auto-generated metadata.
 .llm-wiki/outputs/
 .llm-wiki/meta/
+.llm-wiki/raw/
+.llm-wiki/wiki/sources/
+.llm-wiki/.discoveries/
+.llm-wiki/.obsidian/
 /wiki
 
 # Graphify — derived knowledge graph artifact.
 # Regen after clone: `graphify . --code-only` (AST-only, no API key needed).
 # Commit only the skill (.devin/skills/graphify, .windsurf/rules/graphify.md).
 graphify-out/
+
+# Site — Astro docs/landing (regenerable, node_modules not tracked)
+site/node_modules/
+site/dist/
+site/.astro/

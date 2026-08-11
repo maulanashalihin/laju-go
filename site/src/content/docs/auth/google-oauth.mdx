@@ -1,0 +1,248 @@
+---
+title: Google OAuth
+description: OAuth 2.0 flow with state validation, callback handling, and automatic user creation
+---
+
+Laju Go supports Google OAuth login via `golang.org/x/oauth2`. The flow uses a state parameter for CSRF protection, exchanges the authorization code for a token, fetches user info from Google's API, and creates or links the user account automatically.
+
+## Configuration
+
+Google OAuth requires three environment variables. Without them, the OAuth routes still exist but authentication will fail:
+
+```bash
+# .env
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URL=http://localhost:8080/auth/google/callback
+```
+
+The redirect URL must match exactly what is configured in the Google Cloud Console, including the scheme and port.
+
+The `AuthService` is initialized with these values in `cmd/laju-go/main.go`:
+
+```go
+authService := services.NewAuthService(querier, services.AuthServiceConfig{
+ SessionSecret:      cfg.SessionSecret,
+ GoogleClientID:     cfg.GoogleClientID,
+ GoogleClientSecret: cfg.GoogleClientSecret,
+ GoogleRedirectURL:  cfg.GoogleRedirectURL,
+})
+```
+
+The OAuth config requests `email` and `profile` scopes and uses Google's endpoint:
+
+```go
+// app/services/auth.go
+func NewAuthService(querier *queries.Querier, cfg AuthServiceConfig) *AuthService {
+ return &AuthService{
+  querier: querier,
+  oauthConfig: &oauth2.Config{
+   ClientID:     cfg.GoogleClientID,
+   ClientSecret: cfg.GoogleClientSecret,
+   RedirectURL:  cfg.GoogleRedirectURL,
+   Scopes:       []string{"email", "profile"},
+   Endpoint:     google.Endpoint,
+  },
+ }
+}
+```
+
+## OAuth Flow
+
+### 1. Initiate Login (`GET /auth/google`)
+
+The handler generates a random state string, stores it in a short-lived cookie (5 minutes), and redirects the user to Google's consent page:
+
+```go
+// app/handlers/auth.go
+func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
+ state := generateState()
+ c.Cookie(&fiber.Cookie{
+  Name:     "oauth_state",
+  Value:    state,
+  MaxAge:   300, // 5 minutes
+  HTTPOnly: true,
+  SameSite: "Lax",
+ })
+
+ url := h.authService.GetOAuthURL(state)
+ // Use Location() so Inertia triggers a full window.location navigation
+ // to Google's OAuth page (not an XHR follow).
+ return h.inertiaService.Location(c, url)
+}
+```
+
+`inertiaService.Location()` returns a 409 Conflict with an `X-Inertia-Location` header, which tells the Inertia client to perform a full `window.location` navigation. Without this, Inertia would try to follow the redirect as an XHR request.
+
+### State Generation
+
+The state is 16 random bytes hex-encoded (32 characters). If `crypto/rand` fails, it falls back to a timestamp-based value:
+
+```go
+func generateState() string {
+ b := make([]byte, 16)
+ if _, err := rand.Read(b); err != nil {
+  return fmt.Sprintf("state_%d", time.Now().UnixNano())
+ }
+ return hex.EncodeToString(b)
+}
+```
+
+The state serves two purposes:
+
+- **CSRF protection** — ensures the callback originated from this server's redirect, not a forged link.
+- **Session binding** — the cookie ties the state to the user's browser session.
+
+### 2. Google Callback (`GET /auth/google/callback`)
+
+Google redirects back with `state` and `code` query parameters. The handler validates the state, exchanges the code for a token, fetches user info, and creates a session:
+
+```go
+func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
+ state := c.Query("state")
+ code := c.Query("code")
+
+ // Validate state against the cookie
+ storedState := c.Cookies("oauth_state")
+ if state != storedState {
+  slog.Warn("oauth state mismatch", "got", state, "expected", storedState)
+  return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+   "error": "Invalid OAuth state",
+  })
+ }
+
+ c.ClearCookie("oauth_state")
+
+ // Exchange code for token and get user info
+ user, err := h.authService.ProcessGoogleToken(c.Context(), code)
+ if err != nil {
+  return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+   "error": "Failed to authenticate with Google: " + err.Error(),
+  })
+ }
+
+ // Create session
+ if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Name, user.Email, user.Avatar, string(user.Role), user.EmailVerified); err != nil {
+  return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+   "error": "Failed to create session",
+  })
+ }
+
+ // Regenerate session ID to prevent session fixation
+ if sess, err := h.store.Get(c); err == nil {
+  sess.Regenerate()
+ }
+
+ return h.inertiaService.Redirect(c, "/app")
+}
+```
+
+### 3. Token Exchange & User Resolution (`ProcessGoogleToken`)
+
+The service exchanges the authorization code for an access token, then calls Google's userinfo endpoint:
+
+```go
+// app/services/auth.go
+func (s *AuthService) ProcessGoogleToken(ctx context.Context, code string) (*models.User, error) {
+ token, err := s.oauthConfig.Exchange(ctx, code)
+ if err != nil {
+  return nil, ErrInvalidToken
+ }
+
+ oauthClient := s.oauthConfig.Client(ctx, token)
+ resp, err := oauthClient.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+ // ...
+ var googleUser struct {
+  ID       string `json:"id"`
+  Email    string `json:"email"`
+  Name     string `json:"name"`
+  Picture  string `json:"picture"`
+  Verified bool   `json:"verified_email"`
+ }
+ json.NewDecoder(resp.Body).Decode(&googleUser)
+```
+
+The service then resolves the user through three lookup paths:
+
+1. **Existing Google user** — Look up by `google_id`. If found, migrate the avatar to local storage if it's still an external URL, and return the user.
+
+2. **Existing email user** — Look up by `email`. If found, link the Google ID to the existing account (`user.GoogleID = sql.NullString{...}`), migrate the avatar, and update the user.
+
+3. **New user** — Download the Google avatar to local storage, create a new user with `CreateUserWithGoogleID`, set `EmailVerified` from Google's `verified_email` field, and assign `RoleUser`.
+
+```go
+// Check if user exists by Google ID
+user, err := s.querier.GetUserByGoogleID(ctx, googleUser.ID)
+if err == nil {
+ // Migrate external avatar to local if needed
+ if user.Avatar != "" && !strings.HasPrefix(user.Avatar, "/storage/") {
+  if localPath, dlErr := s.downloadAndSaveAvatar(ctx, user.Avatar, googleUser.ID); dlErr == nil {
+   s.querier.UpdateUserAvatar(ctx, user.ID, localPath)
+   user.Avatar = localPath
+  }
+ }
+ return user, nil
+}
+
+// Check if user exists by email — link Google ID
+user, err = s.querier.GetUserByEmail(ctx, googleUser.Email)
+if err == nil {
+ user.GoogleID = sql.NullString{String: googleUser.ID, Valid: true}
+ s.querier.UpdateUser(ctx, user)
+ return user, nil
+}
+
+// Create new user
+newUser := &models.User{
+ Email: googleUser.Email,
+ Name:  googleUser.Name,
+ GoogleID: sql.NullString{String: googleUser.ID, Valid: true},
+ Avatar:        localAvatar,
+ EmailVerified: googleUser.Verified,
+ Role:          models.RoleUser,
+}
+s.querier.CreateUserWithGoogleID(ctx, newUser)
+return newUser, nil
+```
+
+### Avatar Download
+
+Google profile pictures are external URLs. The service downloads them to `storage/avatars/` so they're served locally and don't depend on Google's CDN:
+
+```go
+func (s *AuthService) downloadAndSaveAvatar(ctx context.Context, pictureURL, googleID string) (string, error) {
+ // Download image, determine extension from Content-Type,
+ // save to storage/avatars/<googleID>.<ext>
+ // Returns "/storage/avatars/<googleID>.<ext>"
+}
+```
+
+## Route Registration
+
+```go
+// routes/web.go
+app.Get("/auth/google", authHandler.GoogleLogin)
+app.Get("/auth/google/callback", authHandler.GoogleCallback)
+```
+
+These routes are **not** behind `Guest` middleware — an authenticated user clicking the Google login link will simply get a new session created (the old one is replaced by `Regenerate`).
+
+## Frontend Integration
+
+OAuth links must use plain `<a>` tags without `use:inertia`, because the navigation goes to an external URL (Google's domain), not an Inertia page:
+
+```svelte
+<!-- Correct: plain anchor tag -->
+<a href="/auth/google">Sign in with Google</a>
+
+<!-- Wrong: use:inertia would try to fetch it as an XHR -->
+<a href="/auth/google" use:inertia>Sign in with Google</a>
+```
+
+## Security Notes
+
+- The `oauth_state` cookie is `HTTPOnly` and `SameSite: Lax` — JavaScript cannot read it, and it's not sent on cross-site POST requests.
+- State mismatch returns 401 without revealing which value was wrong.
+- The state cookie is cleared immediately after validation, preventing replay.
+- Session ID is regenerated after successful OAuth login to prevent session fixation.
+- Password is not set for OAuth-only users (`users.password` is `NULL`), so they cannot log in via the password form.

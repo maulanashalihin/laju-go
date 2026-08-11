@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { router, inertia } from "@inertiajs/svelte";
+    import { inertia, useForm, router } from "@inertiajs/svelte";
     import { fly } from "svelte/transition";
     import AppLayout from "@layouts/AppLayout.svelte";
     import { Toast } from "@lib/notifications/toast";
@@ -15,24 +15,20 @@
 
     let { user, success, error }: Props = $props();
 
-    // Intentionally capture initial prop values for form — not reactive
-    function getInitialForm() {
-        return {
-            name: user?.name ?? "",
-            email: user?.email ?? "",
-            avatar: user?.avatar ?? "",
-        };
-    }
-    let profileForm = $state(getInitialForm());
+    // Profile form — initialized from server props
+    const profileForm = useForm("EditProfile", {
+        name: user?.name ?? "",
+        email: user?.email ?? "",
+        avatar: user?.avatar ?? "",
+    });
 
-    let passwordForm = $state({
+    // Password form — always starts empty
+    const passwordForm = useForm("EditPassword", {
         current_password: "",
         new_password: "",
         confirm_password: "",
     });
 
-    let isProfileLoading = $state(false);
-    let isPasswordLoading = $state(false);
     let showPassword = $state(false);
 
     let previewUrl = $derived(user?.avatar ?? null);
@@ -43,7 +39,6 @@
         if (file) {
             const formData = new FormData();
             formData.append("file", file);
-            isProfileLoading = true;
             fetch("/app/upload", {
                 method: "POST",
                 headers: {
@@ -54,43 +49,26 @@
                 .then((response) => response.json())
                 .then((data) => {
                     if (data.success && data.url) {
-                        // Auto-save avatar URL to database via router
-                        router.put("/app/profile", {
-                            avatar: data.url,
-                        }, {
-                            onError: (error) => {
-                                isProfileLoading = false;
-                                Toast("Failed to save avatar: " + (error as any).message, "error");
-                            },
-                            onFinish: () => {
-                                isProfileLoading = false;
+                        // Save avatar URL via Inertia form
+                        profileForm.avatar = data.url;
+                        profileForm.put("/app/profile", {
+                            onError: () => {
+                                Toast("Failed to save avatar", "error");
                             },
                         });
                     } else {
-                        isProfileLoading = false;
                         Toast(data.error || "Failed to upload avatar", "error");
                     }
                 })
-                .catch((error) => {
-                    isProfileLoading = false;
+                .catch(() => {
                     Toast("Failed to upload avatar", "error");
-                    console.error("Upload error:", error);
                 });
         }
     }
 
     function handleProfileSubmit(e: Event) {
         e.preventDefault();
-        isProfileLoading = true;
-        router.put("/app/profile", profileForm, {
-            onError: (err) => {
-                const msg = (err as any)?.response?.data?.error || (err as any)?.message || "Gagal menyimpan perubahan";
-                Toast(msg, "error");
-            },
-            onFinish: () => {
-                isProfileLoading = false;
-            },
-        });
+        profileForm.put("/app/profile");
     }
 
     function handlePasswordSubmit(e: Event) {
@@ -111,18 +89,8 @@
             return;
         }
 
-        isPasswordLoading = true;
-        router.put("/app/profile/password", passwordForm, {
-            onError: (err) => {
-                const msg = (err as any)?.response?.data?.error || (err as any)?.message || "Gagal mengubah password";
-                Toast(msg, "error");
-            },
-            onFinish: () => {
-                isPasswordLoading = false;
-                passwordForm.current_password = "";
-                passwordForm.new_password = "";
-                passwordForm.confirm_password = "";
-            },
+        passwordForm.put("/app/profile/password", {
+            onSuccess: () => passwordForm.reset(),
         });
     }
 </script>
@@ -281,10 +249,10 @@
                     <div class="pt-4">
                         <button
                             type="submit"
-                            disabled={isProfileLoading}
+                            disabled={profileForm.processing}
                             class="w-full px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition-all dark:bg-brand-500 dark:hover:bg-brand-400 shadow-lg shadow-brand-600/25 hover:shadow-brand-600/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {#if isProfileLoading}
+                            {#if profileForm.processing}
                                 <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -381,10 +349,10 @@
                     <div class="pt-4">
                         <button
                             type="submit"
-                            disabled={isPasswordLoading}
+                            disabled={passwordForm.processing}
                             class="w-full px-6 py-3 rounded-xl bg-linear-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold transition-all shadow-lg shadow-red-500/25 hover:shadow-red-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {#if isPasswordLoading}
+                            {#if passwordForm.processing}
                                 <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

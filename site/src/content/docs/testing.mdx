@@ -1,0 +1,181 @@
+---
+title: Testing
+description: Run Go tests with in-memory SQLite — no mocks, no external services.
+---
+
+Laju Go tests business logic with real databases, not mocks. Every test spins up an in-memory SQLite instance, runs the actual schema, and exercises real query code. This catches SQL bugs that mocks hide.
+
+## Running Tests
+
+```bash
+go test ./...
+```
+
+Or via Make:
+
+```bash
+make test
+```
+
+With coverage:
+
+```bash
+go test -cover ./...
+```
+
+Run a specific package:
+
+```bash
+go test ./app/services/...
+go test ./app/queries/...
+```
+
+Verbose output for a single test:
+
+```bash
+go test -v ./app/services/ -run TestRegister
+```
+
+## In-Memory SQLite, No Mocks
+
+Tests use `:memory:` SQLite databases — no file I/O, no external services, no Docker. Each test gets a fresh database that is discarded on cleanup.
+
+The standard setup pattern from `app/services/auth_test.go`:
+
+```go
+func setupAuthTestDB(t *testing.T) *queries.Querier {
+ t.Helper()
+
+ db, err := sql.Open("sqlite3", ":memory:?_pragma=journal_mode(WAL)")
+ require.NoError(t, err)
+ t.Cleanup(func() { db.Close() })
+
+ _, err = db.Exec(`
+ CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL, password TEXT, avatar TEXT DEFAULT '',
+  role TEXT NOT NULL DEFAULT 'user', google_id TEXT UNIQUE,
+  email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+ );
+ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+ CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);`)
+ require.NoError(t, err)
+
+ return queries.NewQuerier(db)
+}
+```
+
+Key points:
+
+- **`:memory:`** — the database lives in RAM, not on disk. Fast and isolated.
+- **`t.Cleanup(func() { db.Close() })`** — ensures the database is closed when the test ends, even on failure.
+- **`queries.NewQuerier(db)`** — wraps the real `*sql.DB` with the real sqlc-generated querier. No interface mocking.
+- **WAL journal mode** — matches production configuration for consistent behavior.
+
+## Test Files May Call Queries Directly
+
+The three-tier rule (Handler → Service → Query → DB) is strict in production code. But test files (`*_test.go`) are explicitly exempted:
+
+> ⚠️ Exception: Test files (`*_test.go`) MAY call queries directly.
+
+This means a test can insert seed data by calling `querier.CreateUser(...)` directly instead of going through a service. This keeps test setup minimal and focused on the behavior under test.
+
+Example from `app/queries/querier_test.go`:
+
+```go
+func setupTestDB(t *testing.T) *sql.DB {
+ t.Helper()
+
+ db, err := sql.Open("sqlite3", ":memory:?_pragma=journal_mode(WAL)")
+ require.NoError(t, err)
+ t.Cleanup(func() { db.Close() })
+
+ schema := `
+ CREATE TABLE IF NOT EXISTS users ( ... );
+ CREATE TABLE IF NOT EXISTS sessions ( ... );
+ `
+ _, err = db.Exec(schema)
+ require.NoError(t, err)
+
+ return db
+}
+```
+
+## What Gets Tested
+
+| Layer | Test scope | Example file |
+|-------|-----------|--------------|
+| **Services** | Business logic, auth flows, password hashing | `app/services/auth_test.go` |
+| **Queries** | sqlc-generated SQL against real SQLite | `app/queries/querier_test.go` |
+| **Handlers** | HTTP request parsing, response shapes | `app/handlers/auth_handler_test.go` |
+| **Cache** | In-memory session cache concurrency | `app/cache/session_cache_test.go`, `benchmark_test.go` |
+
+## Test Helpers
+
+Tests use `testify` for assertions:
+
+```go
+import (
+ "github.com/stretchr/testify/assert"
+ "github.com/stretchr/testify/require"
+)
+```
+
+- **`require.NoError`** — fails the test immediately if there is an error (use for setup steps where continuing is pointless).
+- **`assert.NoError`** — records the failure but continues (use when you want to check multiple things in one test).
+- **`t.Helper()`** — marks setup functions so failures point to the caller, not the helper.
+
+## Table-Driven Tests
+
+The codebase uses table-driven tests for edge cases:
+
+```go
+func TestRegister(t *testing.T) {
+ q := setupAuthTestDB(t)
+ svc := newAuthService(t, q)
+
+ // seed for duplicate test
+ _, err := svc.Register("Existing", "dup@example.com", "pass123")
+ require.NoError(t, err)
+
+ tests := []struct {
+  name    string
+  email   string
+  pass    string
+  wantErr error
+ }{
+  {"valid user", "new@example.com", "pass123", nil},
+  {"duplicate email", "dup@example.com", "pass123", ErrEmailExists},
+  // ...
+ }
+
+ for _, tt := range tests {
+  t.Run(tt.name, func(t *testing.T) {
+   _, err := svc.Register("Test", tt.email, tt.pass)
+   if tt.wantErr != nil {
+    assert.ErrorIs(t, err, tt.wantErr)
+   } else {
+    assert.NoError(t, err)
+   }
+  })
+ }
+}
+```
+
+## Benchmarks
+
+The cache layer includes benchmarks (`app/cache/benchmark_test.go`):
+
+```bash
+go test -bench=. ./app/cache/
+```
+
+## What Not to Do
+
+- **Don't mock the database.** Use in-memory SQLite. Mocks hide SQL errors, type mismatches, and constraint violations.
+- **Don't make HTTP calls in unit tests.** Test services directly, not through the Fiber app.
+- **Don't skip `t.Cleanup`.** Leaked database connections cause flaky tests.
+- **Don't edit `app/queries/` to make tests pass.** It is generated by sqlc. Fix the SQL in `queries/*.sql` and regenerate.

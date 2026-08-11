@@ -1,0 +1,243 @@
+---
+title: Svelte 5 + Inertia
+description: Runes rules, useForm conventions, use:inertia links, and CSRF headers for manual fetch() calls.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The frontend is Svelte 5 (runes mode) driven by Inertia.js 3. There is no separate API — the Go server renders Inertia JSON props directly into Svelte pages. The entry point is `frontend/src/main.ts`, built by Vite into `dist/`.
+
+## Svelte 5 runes rules
+
+Svelte 5 runes replace the old `export let` / `$:` reactivity. Laju Go enforces a strict reading of which rune to use when.
+
+| Rule | |
+|------|--|
+| ❌ Do not use `$effect` for derived state | Use `$derived()` instead |
+| ❌ Do not use `$effect` to init state from props | Use `$state(value ?? default)` |
+| ✅ `$effect` is only for side effects | `document.title`, `localStorage`, DOM measurement |
+| ✅ Props via `$props()` | `let { user, flash }: Props = $props()` |
+
+### Props and state — the real pattern
+
+From `frontend/src/pages/app/Profile.svelte`:
+
+```svelte
+<script lang="ts">
+    import { inertia, useForm, router } from "@inertiajs/svelte";
+    import { getCSRFToken } from "@lib/utils/csrf";
+    import type { User } from "@lib/types";
+
+    interface Props {
+        user?: User;
+        success?: string;
+        error?: string;
+    }
+
+    let { user, success, error }: Props = $props();
+
+    // Form initialized from server props — $state(value ?? default) pattern
+    const profileForm = useForm("EditProfile", {
+        name: user?.name ?? "",
+        email: user?.email ?? "",
+        avatar: user?.avatar ?? "",
+    });
+
+    let showPassword = $state(false);
+
+    // Derived, not an effect — recomputes when user.avatar changes
+    let previewUrl = $derived(user?.avatar ?? null);
+</script>
+```
+
+`previewUrl` is `$derived`, not `$effect` + a manual assignment. If you reach for `$effect` to compute a value, stop — it is almost always `$derived`.
+
+## Inertia form convention
+
+There are two ways to submit a form. Pick by what you need.
+
+| Need | Use |
+|------|-----|
+| Simple form — just collect data and submit | `<Form>` component from `@inertiajs/svelte` |
+| Pre-submit validation, `fetch()` integration, `bind:value` reactive binding, programmatic submit | `useForm` + `<form onsubmit={submit}>` |
+
+**Default to `useForm` + `<form>` when unsure** — it covers more cases.
+
+### Pattern A: `<Form>` — simple
+
+No `bind:` needed; `Form` collects values from `name` attributes. Least boilerplate.
+
+```svelte
+<script lang="ts">
+  import { Form } from '@inertiajs/svelte'
+</script>
+
+<Form action="/users" method="post">
+  <input type="text" name="name" />
+  <input type="email" name="email" />
+  <button type="submit">Create User</button>
+</Form>
+```
+
+Slot props use Svelte 5 snippet syntax:
+
+```svelte
+<Form action="/users" method="post">
+  {#snippet children({ errors, processing, wasSuccessful })}
+    <input type="text" name="name" />
+    {#if errors.name}<div>{errors.name}</div>{/if}
+    <button disabled={processing}>
+      {processing ? 'Creating...' : 'Create User'}
+    </button>
+  {/snippet}
+</Form>
+```
+
+### Pattern B: `useForm` + `<form>` — validation and control
+
+Auto-tracks `processing`, `errors`, `isDirty`, `wasSuccessful`. Allows pre-submit validation and `fetch()` integration.
+
+**Create** — from `frontend/src/pages/auth/Login.svelte`:
+
+```svelte
+<script lang="ts">
+    import { useForm } from "@inertiajs/svelte";
+
+    const form = useForm({
+        email: "",
+        password: "",
+    });
+
+    function submitForm(e: Event) {
+        e.preventDefault();
+        form.post("/login");
+    }
+</script>
+
+<form class="space-y-5" onsubmit={submitForm}>
+    <input bind:value={form.email} type="email" name="email" />
+    <input bind:value={form.password} type="password" name="password" />
+    {#if form.errors.email}<span>{form.errors.email}</span>{/if}
+    <button disabled={form.processing}>Sign in</button>
+</form>
+```
+
+**Update** — give the form a unique key so its data and errors persist to history state:
+
+```svelte
+<script lang="ts">
+  import { useForm } from '@inertiajs/svelte'
+
+  let { user } = $props()
+
+  const form = useForm(`EditUser:${user.id}`, {
+    name: user.name,
+    email: user.email,
+  })
+
+  function submit(e: Event) {
+    e.preventDefault()
+    form.put(`/users/${user.id}`)
+  }
+</script>
+
+<form onsubmit={submit}>
+  <input bind:value={form.name} />
+  {#if form.isDirty}<span>Unsaved changes</span>{/if}
+  <button disabled={form.processing}>Save</button>
+</form>
+```
+
+### Key rules (both patterns)
+
+| Rule | Why |
+|------|-----|
+| `form.post()` for create, `form.put()` / `form.patch()` for update | Correct HTTP method; server knows intent |
+| Unique key for edit forms: `useForm('EditUser:${id}', data)` | Persists form data + errors to history state |
+| `disabled={form.processing}` or `disabled={processing}` | Prevent double-submit |
+| `form.errors.field` or `errors.field` | Server validation errors auto-populate |
+| `e.preventDefault()` in the `useForm` submit handler | Prevents full page reload — Inertia sends an XHR instead |
+| File upload: `fetch() + FormData`, then `form.put()` | Inertia forms cannot send files directly |
+
+## File upload + form save (two-step)
+
+Avatar upload uses `fetch() + FormData` for the file, then `form.put()` to persist the resulting URL. From `frontend/src/pages/app/Profile.svelte`:
+
+```svelte
+<script lang="ts">
+    import { useForm } from "@inertiajs/svelte";
+    import { getCSRFToken } from "@lib/utils/csrf";
+
+    const profileForm = useForm("EditProfile", {
+        name: user?.name ?? "",
+        avatar: user?.avatar ?? "",
+    });
+
+    function handleAvatarChange(event: Event) {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        fetch("/app/upload", {
+            method: "POST",
+            headers: { "X-XSRF-TOKEN": getCSRFToken() },
+            body: formData,
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success && data.url) {
+                    profileForm.avatar = data.url;
+                    profileForm.put("/app/profile");
+                }
+            });
+    }
+</script>
+```
+
+## Internal links: `use:inertia`
+
+<Aside type="caution" title="Internal links must use use:inertia">
+Without `use:inertia`, an internal `<a href>` triggers a full page reload — defeating the SPA. Import it from `@inertiajs/svelte` and apply it to every in-app link.
+</Aside>
+
+```svelte
+<script lang="ts">
+    import { inertia } from "@inertiajs/svelte";
+</script>
+
+<a href="/app/profile" use:inertia>Profile</a>
+```
+
+**Exceptions — plain `<a>` without `use:inertia`:**
+
+- OAuth links (`/auth/google`, `/auth/github`) — these leave the app to a provider and come back; a full navigation is correct.
+- External links (`https://github.com/...`) — `use:inertia` only applies to same-origin routes.
+
+## CSRF for `fetch()`
+
+Inertia's router (Axios) automatically reads the `XSRF-TOKEN` cookie and sends it as the `X-XSRF-TOKEN` header. **Plain `fetch()` does not** — so every manual `fetch()` to a CSRF-protected route (`/app/*`, `/admin/*`) must add the header explicitly.
+
+<Aside type="danger" title="Required for fetch()">
+Every `fetch()` to `/app/*` or `/admin/*` MUST include `X-XSRF-TOKEN` from `getCSRFToken()` in `lib/utils/csrf.ts`. Inertia's `router.*` and `form.*` calls handle this automatically.
+</Aside>
+
+```ts
+// frontend/src/lib/utils/csrf.ts
+export function getCSRFToken(): string {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : "";
+}
+```
+
+Usage:
+
+```ts
+fetch("/app/upload", {
+    method: "POST",
+    headers: { "X-XSRF-TOKEN": getCSRFToken() },
+    body: formData,
+});
+```
+
+If you forget the header on a `fetch()` to a protected route, the `CSRFMiddleware` rejects the request. Inertia form/router calls never need this — only raw `fetch()`.

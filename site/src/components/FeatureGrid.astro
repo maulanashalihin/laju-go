@@ -1,0 +1,116 @@
+---
+interface Feature {
+  title: string;
+  blurb: string;
+  icon: string;
+}
+
+const features: Feature[] = [
+  {
+    title: "Auth, complete",
+    blurb: "Register, login, logout, forgot/reset password, Google OAuth. DB-backed sessions, CSRF, rate limiting, role-based access.",
+    icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 1-.1 1.3l2 1.6-2 3.4-2.4-1a7.4 7.4 0 0 1-2.2 1.3L14.4 21h-4l-.3-2.4a7.4 7.4 0 0 1-2.2-1.3l-2.4 1-2-3.4 2-1.6a7.4 7.4 0 0 1 0-2.6l-2-1.6 2-3.4 2.4 1a7.4 7.4 0 0 1 2.2-1.3L10.4 3h4l.3 2.4a7.4 7.4 0 0 1 2.2 1.3l2.4-1 2 3.4-2 1.6c.07.4.1.9.1 1.3Z",
+  },
+  {
+    title: "Three-tier architecture",
+    blurb: "Handler → Service → Query → DB. No layer skips. sqlc generates type-safe Go from SQL. Business logic stays in services, never in handlers.",
+    icon: "M3 6h18M3 12h18M3 18h18M8 4v4M16 10v4M12 16v4",
+  },
+  {
+    title: "Svelte 5 + Inertia",
+    blurb: "SPA navigation without a separate API. Server-driven props, useForm for CRUD, SSR shell via templ. Svelte 5 runes — $state, $derived, $effect.",
+    icon: "M4 5h16v14H4zM9 9h6M9 13h6M4 17h16",
+  },
+  {
+    title: "Resumable uploads",
+    blurb: "TUS protocol via tusdfiber — chunked, resumable, progress tracking. Avatar upload via multipart for small files, TUS for large.",
+    icon: "M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2",
+  },
+  {
+    title: "sqlc + Goose",
+    blurb: "Write SQL, get type-safe Go. Migrations applied at startup, one table per file. Zero ORM — the AI writes SQL at peak performance.",
+    icon: "M4 7h16M4 12h16M4 17h10M9 4v6M15 14v6",
+  },
+  {
+    title: "Production-grade ops",
+    blurb: "Multi-stage Docker, CGO cross-compilation with Zig, graceful shutdown, security headers, CI-ready. Build once, deploy anywhere.",
+    icon: "M12 3l8 4v5c0 5-3.4 8.5-8 11-4.6-2.5-8-6-8-11V7l8-4Zm-3 9 2 2 4-4",
+  },
+];
+---
+
+<section class="lj-features">
+  <h2 class="lj-section-title">Working code, <span class="lj-accent">not wiring homework</span></h2>
+  <p class="lj-section-sub">Auth, uploads, migrations, SSR, tests, Docker — running end to end, not left for you to wire.</p>
+  <div class="lj-feature-grid">
+    {features.map((f) => (
+      <div class="lj-feature-card">
+        <div class="lj-feature-head">
+          <span class="lj-feature-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={f.icon} />
+            </svg>
+          </span>
+          <h3>{f.title}</h3>
+        </div>
+        <p>{f.blurb}</p>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .lj-features {
+    max-width: 1100px;
+    margin: 0 auto 4rem;
+    padding: 0 1.5rem;
+  }
+
+  .lj-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1rem;
+  }
+
+  .lj-feature-card {
+    border: 1px solid #1e293b;
+    border-radius: 0.6rem;
+    padding: 1.4rem;
+    background: #0b111f;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .lj-feature-card:hover {
+    border-color: #22d3ee;
+    transform: translateY(-2px);
+  }
+
+  .lj-feature-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .lj-feature-head h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .lj-feature-icon {
+    display: inline-flex;
+    padding: 0.45rem;
+    border-radius: 0.4rem;
+    background: rgba(34, 211, 238, 0.1);
+    color: #22d3ee;
+    flex-shrink: 0;
+  }
+
+  .lj-feature-card p {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: #64748b;
+  }
+</style>

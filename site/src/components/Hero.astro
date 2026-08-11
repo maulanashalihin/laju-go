@@ -1,0 +1,245 @@
+---
+---
+
+<div class="lj-hero">
+  <div class="lj-hero-grid">
+    <div class="lj-hero-left">
+      <div class="lj-hero-badge">
+        <span class="lj-hero-dot"></span>
+        Go Fiber + Svelte 5 + Inertia.js
+      </div>
+
+      <h1 class="lj-hero-title">
+        Ship Go apps at <span class="lj-accent">velocity</span>.
+      </h1>
+
+      <p class="lj-hero-desc">
+        High-performance SaaS boilerplate with auth, uploads, migrations, tests,
+        and Docker — wired end to end. No framework tax, no ORM, no wiring homework.
+      </p>
+
+      <div class="lj-hero-actions">
+        <a class="lj-btn lj-btn-primary" href="/getting-started/introduction/">
+          Get started
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a class="lj-btn lj-btn-ghost" href="https://github.com/maulanashalihin/laju-go" target="_blank" rel="noreferrer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02.8-.22 1.65-.33 2.5-.33s1.7.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48C19.14 20.16 22 16.42 22 12c0-5.52-4.48-10-10-10z"/></svg>
+          GitHub
+        </a>
+      </div>
+
+      <div class="lj-hero-chips">
+        <span>Go Fiber</span><span>Svelte 5</span><span>Inertia.js</span><span>SQLite</span><span>templ</span><span>sqlc</span>
+      </div>
+    </div>
+
+    <div class="lj-hero-right">
+      <div class="lj-terminal" aria-label="Quick start">
+        <div class="lj-terminal-bar">
+          <span class="lj-terminal-dot red"></span>
+          <span class="lj-terminal-dot yellow"></span>
+          <span class="lj-terminal-dot green"></span>
+          <span class="lj-terminal-title">terminal</span>
+        </div>
+        <div class="lj-terminal-body">
+          <div class="lj-terminal-line"><span class="lj-prompt">$</span> npm create laju-go@latest my-app</div>
+          <div class="lj-terminal-out">↓ Downloading template...</div>
+          <div class="lj-terminal-out">✓ Dev-only files removed</div>
+          <div class="lj-terminal-out">✓ Go dependencies installed</div>
+          <div class="lj-terminal-out">✓ Node.js dependencies installed</div>
+          <div class="lj-terminal-out">✓ Environment configured</div>
+          <div class="lj-terminal-line"><span class="lj-prompt">$</span> cd my-app && npm run dev:all</div>
+          <div class="lj-terminal-out">→ Go: http://localhost:8080</div>
+          <div class="lj-terminal-out">→ Vite: http://localhost:5173</div>
+          <div class="lj-terminal-cursor">█</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .lj-hero {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem;
+  }
+
+  .lj-hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 3rem;
+    align-items: center;
+  }
+
+  @media (max-width: 880px) {
+    .lj-hero-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+
+  .lj-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid #1e293b;
+    background: rgba(15, 23, 42, 0.6);
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 1.5rem;
+  }
+
+  .lj-hero-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22d3ee;
+    box-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+  }
+
+  .lj-hero-title {
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin: 0 0 1rem;
+  }
+
+  @media (max-width: 640px) {
+    .lj-hero-title {
+      font-size: 2.1rem;
+    }
+  }
+
+  .lj-hero-desc {
+    font-size: 1.05rem;
+    color: #64748b;
+    max-width: 480px;
+    margin: 0 0 1.75rem;
+    line-height: 1.65;
+  }
+
+  .lj-hero-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .lj-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1.4rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+
+  .lj-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .lj-btn-primary {
+    background: #22d3ee;
+    color: #070b16;
+    box-shadow: 0 8px 24px rgba(34, 211, 238, 0.25);
+  }
+
+  .lj-btn-primary:hover {
+    background: #67e8f9;
+    box-shadow: 0 8px 32px rgba(34, 211, 238, 0.35);
+  }
+
+  .lj-btn-ghost {
+    border: 1px solid #1e293b;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.4);
+  }
+
+  .lj-btn-ghost:hover {
+    border-color: #334155;
+  }
+
+  .lj-hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .lj-hero-chips span {
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.3rem;
+    font-size: 0.75rem;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    background: rgba(34, 211, 238, 0.08);
+    color: #67e8f9;
+    border: 1px solid rgba(34, 211, 238, 0.15);
+  }
+
+  /* Terminal */
+  .lj-terminal {
+    border: 1px solid #1e293b;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    background: #0b111f;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  .lj-terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 0.8rem;
+    background: #0f172a;
+    border-bottom: 1px solid #1e293b;
+  }
+
+  .lj-terminal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .lj-terminal-dot.red { background: #ef4444; }
+  .lj-terminal-dot.yellow { background: #f59e0b; }
+  .lj-terminal-dot.green { background: #10b981; }
+
+  .lj-terminal-title {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    color: #475569;
+  }
+
+  .lj-terminal-body {
+    padding: 1rem;
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+
+  .lj-terminal-line {
+    color: #e2e8f0;
+  }
+
+  .lj-prompt {
+    color: #22d3ee;
+    margin-right: 0.4rem;
+  }
+
+  .lj-terminal-out {
+    color: #64748b;
+    padding-left: 1.2rem;
+  }
+
+  .lj-terminal-cursor {
+    color: #22d3ee;
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+</style>

@@ -1,0 +1,96 @@
+---
+title: Why Inertia — not SPA + API
+description: Server-driven SPA, no separate API, useForm, SSR shell via templ, 303 redirects
+date: 2026-08-11T00:00:00Z
+author: maulana
+tags: [inertia, architecture, frontend]
+---
+
+The conventional SaaS architecture is two apps: a React/Vue SPA and a JSON API. You build the API, then you build the SPA, then you build the glue — routing, auth state, fetch wrappers, error handling, loading spinners, optimistic updates. Inertia.js deletes the middle layer. Laju Go is built on it, and the result is a server-driven SPA with no separate API.
+
+## The server owns the page
+
+With Inertia, a GET request returns an HTML shell on the first load and a JSON page payload on subsequent XHRs. The Go handler decides what component renders and what props it gets — exactly like a server-rendered app, except the client swaps the component without a full reload.
+
+Here's a Laju Go handler rendering a page:
+
+```go
+func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
+    user, err := h.store.Get(c)
+    if err != nil {
+        return h.inertiaService.Redirect(c, "/login")
+    }
+    return h.inertiaService.Render(c, "app/Dashboard", fiber.Map{
+        "user": user,
+    })
+}
+```
+
+`Render(c, "app/Dashboard", props)` tells Inertia: render the Svelte component at `app/Dashboard` with these props. On a normal browser hit, it returns the HTML shell with the props serialized into a JSON `<div data-page>`. On an Inertia XHR (`X-Inertia: true`), it returns just the JSON. The Svelte side mounts the component. No API endpoint, no client-side router, no data-fetching hook.
+
+## `useForm` replaces the fetch layer
+
+The other half is form submission. Inertia's `useForm` handles POST/PUT/PATCH with CSRF, loading state, error bag, and redirect-following built in:
+
+```svelte
+<script lang="ts">
+    import { useForm } from "@inertiajs/svelte";
+
+    const form = useForm({ email: "", password: "" });
+
+    function submitForm(e: Event) {
+        e.preventDefault();
+        form.post("/login");
+    }
+</script>
+```
+
+`form.post("/login")` POSTs the form fields as form-encoded data with the CSRF token, follows the response, and updates `form.errors` and `form.processing` automatically. The Go handler doesn't know it's talking to Inertia — it just parses the body, calls the service, and redirects.
+
+## 303 redirects, not JSON contracts
+
+After a successful POST, the handler returns a 303 See Other. Inertia intercepts it and does a partial reload to the new page. This is the same control flow as a traditional server-rendered app — POST, redirect, GET — except the client doesn't blink:
+
+```go
+func (h *AuthHandler) Login(c *fiber.Ctx) error {
+    var req models.LoginRequest
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+    }
+
+    user, err := h.authService.Login(req.Email, req.Password)
+    if err != nil {
+        if errors.Is(err, services.ErrInvalidCredentials) {
+            h.store.Flash(c, "error", "Invalid email or password")
+            return h.inertiaService.Redirect(c, "/login")
+        }
+        h.store.Flash(c, "error", "Failed to login. Please try again.")
+        return h.inertiaService.Redirect(c, "/login")
+    }
+
+    h.store.CreateAuthenticatedSession(c, user.ID, user.Name, ...)
+    return h.inertiaService.Redirect(c, "/app")
+}
+```
+
+No API response shape to design. No `status: "success"` field. No client-side code that maps API errors to form fields. The flash message is set server-side, consumed on the next render, and gone.
+
+## SSR shell via templ
+
+The initial HTML shell — the `<head>`, the asset tags, the root `<div data-page>` — is rendered by a [templ](./why-templ) component, not by a JS bundle. That means the first byte of HTML is real, crawlable, and fast. The Svelte app hydrates into it. You get SPA navigation after the first load and a server-rendered shell on the first request, without running a Node SSR server.
+
+## External redirects work too
+
+For OAuth flows that leave the app, Inertia has a separate mechanism — `Location` returns a 409 with `X-Inertia-Location`, which the client turns into a `window.location` assignment:
+
+```go
+func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
+    state := generateState()
+    url := h.authService.GoogleAuthURL(state)
+    return h.inertiaService.Location(c, url)
+}
+```
+
+## The tradeoff
+
+Inertia is not for apps that need a public JSON API consumed by mobile clients or third parties. If your product is "an API that happens to have a web UI," you need the API. Laju Go's assumption is the opposite: the web UI *is* the product, and the API is an implementation detail of the server. For that shape of app, Inertia removes an entire layer of code — the client-side data layer — and lets the Go handlers be the single source of truth for routing, auth, and data.

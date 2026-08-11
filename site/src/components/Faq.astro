@@ -1,0 +1,145 @@
+---
+const faqs: { q: string; a: string }[] = [
+    {
+        q: "How is Laju Go different from Next.js, Nuxt, or SvelteKit?",
+        a: "Those are meta-frameworks that couple routing and rendering to one client framework, and leave auth, uploads, and persistence to you. Laju Go is a single Go binary with Fiber + SQLite + Inertia, auth and uploads already wired, raw SQL via sqlc instead of an ORM, and Svelte 5 as the frontend. Pick a meta-framework for RSC or edge deploy; pick Laju Go for a wired, ownable, single-binary stack.",
+    },
+    {
+        q: "Why Go and not Node/Bun?",
+        a: "One binary, compiled, concurrent by default. Go's goroutines handle thousands of connections without an event loop. Fiber on fasthttp serves 300K+ req/s. No runtime to install, no node_modules to audit, no GC pauses. Your deployment is a single binary copy — `go build` and ship.",
+    },
+    {
+        q: "Do I have to use Svelte?",
+        a: "The frontend is Svelte 5 with Inertia.js, but the server side (Go, Fiber, SQLite, auth, uploads) is independent. Inertia supports React and Vue too — swap the client adapter and keep the same Go backend. The three-tier architecture stays identical.",
+    },
+    {
+        q: "Why no ORM?",
+        a: "sqlc generates type-safe Go from your SQL — compile-time safety, zero runtime reflection. ORMs were built to help humans avoid writing SQL. In 2026, AI generates correct, optimized raw SQL on demand. What remains is the cost: a dependency you upgrade, audit, and debug. With sqlc you see the exact SQL that runs, at peak performance — no abstraction tax.",
+    },
+    {
+        q: "Why SQLite and not Postgres?",
+        a: "One file for the whole database: no server to install, no connection pool, no credentials. WAL mode serves tens of thousands of reads/s on a single process — enough for most apps. Back up by copying a file. When you outgrow it, Postgres is a deliberate swap point, not an emergency.",
+    },
+    {
+        q: "Is it production-ready?",
+        a: "Every guardrail a deployed app needs is wired and tested: argon2id passwords, DB-backed sessions, CSRF double-submit cookies, rate limiting, security headers, versioned migrations applied at startup, multi-stage Docker, CGO cross-compilation with Zig. The server side is the same code path that runs in production. What is missing is your business logic — and that is the point.",
+    },
+    {
+        q: "Will this still work in 5–10 years?",
+        a: "Laju Go is a boilerplate you fork and own, not a framework that can be deprecated. Go, Fiber, SQLite, and Inertia are stable, pinned versions with no pending rewrites. SQLite has maintained backward compatibility for decades. Because there is no ORM, no SDK, no proprietary abstraction, the code you own is just Go, SQL, and HTTP — readable by any developer or AI agent, now and in 2036.",
+    },
+];
+---
+
+<section class="lj-faq">
+    <div class="lj-faq-cta">
+        <h2 class="lj-section-title">Start in one command.</h2>
+        <div class="lj-cta-cmd">npm create laju-go@latest my-app</div>
+        <div class="lj-cta-actions">
+            <a class="lj-btn lj-btn-primary" href="/getting-started/introduction/">Read the docs</a>
+            <a class="lj-btn lj-btn-ghost" href="https://github.com/maulanashalihin/laju-go" target="_blank" rel="noreferrer">Star on GitHub</a>
+        </div>
+    </div>
+    <h2 class="lj-section-title">FAQ</h2>
+    <p class="lj-section-sub">
+        Questions you might have before running `npm create laju-go@latest`.
+    </p>
+    <div class="lj-faq-list">
+        {faqs.map((f) => (
+            <details class="lj-faq-item">
+                <summary>{f.q}</summary>
+                <p>{f.a}</p>
+            </details>
+        ))}
+    </div>
+</section>
+
+<style>
+    .lj-faq { max-width: 800px; margin: 0 auto 4rem; padding: 0 1.5rem; }
+
+    .lj-faq-cta {
+        text-align: center;
+        padding: 2.5rem 1.5rem;
+        border: 1px solid #1e293b;
+        border-radius: 0.75rem;
+        background: radial-gradient(600px 240px at 50% 0%, rgba(34, 211, 238, 0.08), transparent),
+            #0b111f;
+        margin-bottom: 3rem;
+    }
+    .lj-cta-cmd {
+        display: inline-block;
+        padding: 0.5rem 0.9rem;
+        border-radius: 0.4rem;
+        background: #070b16;
+        border: 1px solid #1e293b;
+        font-size: 0.85rem;
+        color: #22d3ee;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        margin: 1rem 0 1.25rem;
+    }
+    .lj-cta-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+    }
+
+    .lj-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.6rem 1.2rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .lj-btn:hover { transform: translateY(-1px); }
+    .lj-btn-primary {
+        background: #22d3ee;
+        color: #070b16;
+    }
+    .lj-btn-ghost {
+        border: 1px solid #1e293b;
+        color: #e2e8f0;
+        background: rgba(15, 23, 42, 0.4);
+    }
+
+    .lj-faq-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .lj-faq-item {
+        border: 1px solid #1e293b;
+        border-radius: 0.5rem;
+        background: #0b111f;
+        overflow: hidden;
+    }
+    .lj-faq-item summary {
+        padding: 1rem 1.25rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        list-style: none;
+        transition: color 0.15s ease;
+    }
+    .lj-faq-item summary::-webkit-details-marker { display: none; }
+    .lj-faq-item summary::after {
+        content: "+";
+        float: right;
+        color: #475569;
+        font-weight: 400;
+        transition: transform 0.15s ease;
+    }
+    .lj-faq-item[open] summary::after {
+        content: "−";
+    }
+    .lj-faq-item summary:hover { color: #22d3ee; }
+    .lj-faq-item p {
+        margin: 0;
+        padding: 0 1.25rem 1.25rem;
+        font-size: 0.9rem;
+        line-height: 1.65;
+        color: #64748b;
+    }
+</style>

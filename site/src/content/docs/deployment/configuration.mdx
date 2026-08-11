@@ -1,0 +1,163 @@
+---
+title: Configuration
+description: Environment variables, .env file, and app config for Laju Go.
+---
+
+Laju Go is configured through environment variables, loaded from a `.env` file at startup. The config struct lives in `app/config/config.go` and is populated by `config.Load()` on boot.
+
+## .env.example
+
+The repo ships with `.env.example`. Copy it to `.env` and customize:
+
+```bash
+cp .env.example .env
+```
+
+The full template:
+
+```env
+# Server
+APP_PORT=8080
+APP_ENV=development
+APP_URL=http://localhost:8080
+
+# Database (SQLite)
+DB_PATH=./data/app.db
+
+# Session
+SESSION_SECRET=change-this-in-production
+SESSION_TTL=24h
+
+# CORS
+ALLOWED_ORIGINS=http://localhost:5173
+
+# Frontend (Vite dev server)
+FRONTEND_URL=http://localhost:5173
+
+# Google OAuth (optional — leave empty to disable)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URL=http://localhost:8080/auth/google/callback
+
+# SMTP / Email (optional — leave empty to disable)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+FROM_EMAIL=noreply@example.com
+FROM_NAME=Laju
+```
+
+## Environment Variables Reference
+
+### Server
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APP_PORT` | `8080` | Port the Fiber server listens on |
+| `APP_ENV` | `development` | `development` or `production`. Controls `IsDevelopment()` checks |
+| `APP_URL` | `http://localhost:8080` | Public URL of the app (used in emails, OAuth redirects) |
+
+### Database
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_PATH` | `./data/app.db` | Path to the SQLite database file. The DSN is built as `file:<DB_PATH>?_foreign_keys=on` |
+
+### Session
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SESSION_SECRET` | `change-this-in-production` | Secret used to sign session tokens. **Must be changed in production** |
+| `SESSION_TTL` | `24h` | Session lifetime as a Go `time.Duration` string (e.g., `24h`, `8h`, `30m`) |
+
+### CORS
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ALLOWED_ORIGINS` | `http://localhost:5173` | Comma-separated list of allowed origins. Empty in production = strict (no CORS) |
+
+### Frontend
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FRONTEND_URL` | `http://localhost:5173` | Vite dev server URL (used in development for Inertia asset resolution) |
+
+### Google OAuth
+
+Leave `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` empty to disable OAuth. When set, the `/auth/google` routes are active.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GOOGLE_CLIENT_ID` | _(empty)_ | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | _(empty)_ | Google OAuth client secret |
+| `GOOGLE_REDIRECT_URL` | _(empty)_ | OAuth callback URL (e.g., `https://yourdomain.com/auth/google/callback`) |
+
+### SMTP / Email
+
+Leave `SMTP_USER` and `SMTP_PASS` empty to disable email sending (password reset will not send emails).
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SMTP_HOST` | `smtp.gmail.com` | SMTP server hostname |
+| `SMTP_PORT` | `587` | SMTP server port (integer) |
+| `SMTP_USER` | _(empty)_ | SMTP username |
+| `SMTP_PASS` | _(empty)_ | SMTP password or app-specific password |
+| `FROM_EMAIL` | `noreply@example.com` | Sender email address |
+| `FROM_NAME` | `Laju` | Sender display name |
+
+## How Config Loads
+
+The `config.Load()` function in `app/config/config.go`:
+
+```go
+func Load() *Config {
+ if err := godotenv.Load(); err != nil {
+  slog.Warn("no .env file found, using environment variables")
+ }
+
+ c := &Config{
+  AppPort:            getEnv("APP_PORT", "8080"),
+  AppEnv:             getEnv("APP_ENV", "development"),
+  DBPath:             getEnv("DB_PATH", "./data/app.db"),
+  SessionSecret:      getEnv("SESSION_SECRET", "change-this-in-production"),
+  // ...
+  SessionTTL:         getSessionTTL(),
+ }
+
+ return c
+}
+```
+
+If `.env` is missing, it logs a warning and falls back to environment variables (useful for Docker and CI where env vars are injected directly).
+
+## Production Checklist
+
+Before going to production:
+
+1. **`APP_ENV=production`** — disables development-only behaviors
+2. **`SESSION_SECRET`** — generate a secure random value:
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+3. **`APP_URL`** — set to your real domain (e.g., `https://yourdomain.com`)
+4. **`ALLOWED_ORIGINS`** — set to your production frontend origin, or leave empty for strict mode
+5. **`DB_PATH`** — point to a persistent directory (e.g., `/home/user/projects/laju-go/data/app.db`)
+6. **`GOOGLE_REDIRECT_URL`** — update to your production callback URL if using OAuth
+7. **`SMTP_*`** — configure if you need password reset emails
+
+## Docker Configuration
+
+When running in Docker, pass env vars via `--env-file` or `-e` flags. The `.env` file is not read from inside the container unless you mount it:
+
+```bash
+docker run -d \
+  -p 8080:8080 \
+  --env-file .env \
+  -v laju-data:/app/data \
+  laju-go
+```
+
+The `EnvironmentFile` directive in the systemd unit serves the same purpose on a VPS.

@@ -1,0 +1,79 @@
+---
+title: Why Svelte 5 — not React or Vue
+description: Runes reactivity, compiled output, no VDOM — why Svelte 5 fits this stack
+date: 2026-08-11T00:00:00Z
+author: maulana
+tags: [svelte, frontend, architecture]
+---
+
+The frontend choice for Laju Go is Svelte 5. Not React, not Vue. This isn't a fashion call — it's a decision driven by three things: the reactivity model, the compilation step, and how cleanly it integrates with a server-driven architecture.
+
+## Runes, not hooks
+
+Svelte 5 introduced runes — `$state`, `$derived`, `$props`, `$effect` — as the reactivity primitives. They look like function calls but are compiler directives. The difference from React hooks is structural: runes have no rules-of-hooks constraints, no dependency arrays, no stale-closure traps.
+
+Here's the actual profile page in Laju Go:
+
+```svelte
+<script lang="ts">
+    interface Props {
+        user?: User;
+        success?: string;
+        error?: string;
+    }
+
+    let { user, success, error }: Props = $props();
+
+    const profileForm = useForm("EditProfile", {
+        name: user?.name ?? "",
+        email: user?.email ?? "",
+        avatar: user?.avatar ?? "",
+    });
+
+    let showPassword = $state(false);
+    let previewUrl = $derived(user?.avatar ?? null);
+</script>
+```
+
+`$props()` receives server data. `$state(false)` is local reactive state. `$derived(...)` is a computed value that updates when its dependencies change — no `useMemo`, no dependency array to get wrong. You declare what the value *is*, not how to *recompute it on render*.
+
+The rules are short and load-bearing: use `$derived()` for derived state, `$state(value ?? default)` to init from props, and reserve `$effect` for actual side effects (`document.title`, `localStorage`). There is no `useEffect`-as-derived-state anti-pattern because the primitive for that exists.
+
+## Compiled, no virtual DOM
+
+Svelte is a compiler. At build time it turns `.svelte` files into vanilla JavaScript that directly manipulates the DOM. There is no virtual DOM, no diffing, no reconciliation pass at runtime. React reconciles every render; Svelte emits code that touches only the nodes that changed.
+
+The practical consequence is bundle size and runtime cost. A Svelte 5 component ships as a few hundred bytes of JS that wires up event listeners and updates bindings. The same component in React ships the component *plus* the React runtime *plus* the JSX transform, and pays a reconciliation tax on every state change. For a SaaS dashboard with 30 reactive widgets, that's the difference between a 40 KB JS bundle and a 180 KB one.
+
+## Inertia integration
+
+Laju Go uses Inertia.js to drive the SPA from the server. Svelte's Inertia adapter gives you `useForm` and `use:inertia` — the two primitives that replace an entire API layer:
+
+```svelte
+<script lang="ts">
+    import { inertia, useForm } from "@inertiajs/svelte";
+
+    const form = useForm({ email: "", password: "" });
+
+    function submitForm(e: Event) {
+        e.preventDefault();
+        form.post("/login");
+    }
+</script>
+
+<form onsubmit={submitForm}>...</form>
+```
+
+`form.post("/login")` submits to the Go handler, which validates, creates a session, and returns a 303 redirect. No `fetch`, no `JSON.stringify`, no client-side state machine for loading/error/success. The server is the source of truth and Inertia is the transport.
+
+## Why not React
+
+React is the default, but the default is expensive: a larger runtime, a mental model built around renders and effects, and an ecosystem that assumes you're building a client-side app with its own routing and data layer. Laju Go's architecture is server-driven — the Go handlers own routing, auth, and data. React's client-side machinery is overhead you pay for and don't use.
+
+## Why not Vue
+
+Vue 3's composition API is good and Vue is also compiled. But Svelte 5's runes are a cleaner reactivity story than Vue's `ref`/`reactive`/`computed` split, and Svelte's output is smaller. For a starter that prioritizes a small, fast, server-driven frontend, Svelte 5 is the tighter fit.
+
+## The tradeoff
+
+Svelte 5 is newer than React and has a smaller ecosystem. If you need a niche component that only exists as an npm package for React, you'll write it yourself. For a SaaS boilerplate where the frontend is forms, tables, and dashboards driven by a Go backend, that's a trade worth making. You get a smaller bundle, a simpler reactivity model, and a compiler that catches mistakes before they reach the browser.

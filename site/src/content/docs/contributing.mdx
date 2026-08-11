@@ -1,0 +1,172 @@
+---
+title: Contributing
+description: How to contribute to Laju Go — code generation, migration rules, and keeping docs in sync.
+---
+
+Laju Go is open source. Contributions are welcome — bug fixes, features, docs, and improvements to the boilerplate itself. This guide covers the rules that keep the codebase consistent.
+
+## Setup
+
+```bash
+git clone https://github.com/maulanashalihin/laju-go.git
+cd laju-go
+make setup
+```
+
+`make setup` copies `.env.example` to `.env`, runs `go mod tidy`, `go mod download`, and `npm install`.
+
+## Architecture Rules
+
+Before writing code, read the [Architecture Overview](../architecture/overview/) and the [Three-Tier Rule](../architecture/three-tier/). The short version:
+
+```
+Handler → Service → Query → DB
+```
+
+No layer may skip another. Handlers parse requests and return responses. Services hold business logic. Queries are the only layer that executes SQL. Models are pure data structs.
+
+### Handler Structure
+
+Each module gets its own handler file. Do not merge all routes into one giant handler:
+
+- ✅ `app/handlers/auth.go` — login, register, OAuth
+- ✅ `app/handlers/upload.go` — file uploads
+- ❌ `app/handlers/handler.go` — 1000+ lines, every route
+
+### Models
+
+`app/models/` contains pure data structs — domain entities and DTOs. No business logic, no DB access, no imports of `app/queries`.
+
+## Code Generation
+
+Laju Go uses two code generators. Both produce Go code that you must never edit by hand.
+
+### sqlc
+
+Generates type-safe Go query functions from SQL.
+
+```bash
+make db-generate
+# or
+sqlc generate
+```
+
+- **Input:** `queries/*.sql` + schema from `migrations/`
+- **Output:** `app/queries/` (typed Go functions)
+- **Never edit `app/queries/` manually.** Change the SQL in `queries/*.sql` and regenerate.
+
+### templ
+
+Generates type-safe Go rendering code from `.templ` templates.
+
+```bash
+make templ
+# or
+templ generate
+```
+
+- **Input:** `templates/*.templ`
+- **Output:** `*_templ.go`
+- **Edit only `.templ` files.** `*_templ.go` is overwritten by `templ generate`.
+- **Both `.templ` and `*_templ.go` must be committed** so the repo builds without running the generator.
+
+### Generate Both
+
+```bash
+make generate    # runs templ then db-generate
+```
+
+## Migration Rules
+
+Goose migrations live in `migrations/`. The rules are strict:
+
+### Never Edit a Deployed Migration
+
+> 🔴 **Never edit a deployed migration.** Create a new migration file instead.
+
+Goose tracks applied migrations by filename. Once a migration runs in production, Goose records its version and skips it on future startups. Editing an old migration file has no effect in production but can break local development databases.
+
+If you need to change a table's schema, write a new migration that alters it.
+
+### One Table Per File
+
+Each migration file creates or alters exactly one table. This keeps migrations reviewable and rollback-safe.
+
+```bash
+# Generate a new migration
+go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations create add_users_table sql
+```
+
+### Run Migrations
+
+Migrations run automatically on app startup. To run them manually:
+
+```bash
+make migrate
+# or
+go run github.com/pressly/goose/v3/cmd/goose@latest -dir migrations sqlite3 ./data/app.db up
+```
+
+> **Always use `go run` to invoke Goose**, not a standalone `goose` binary. This ensures the correct version is used.
+
+## Build Order
+
+When building for production:
+
+```bash
+make build    # vite build → go build
+```
+
+`vite build` must run **before** `go build`. The Go binary reads `dist/.vite/manifest.json` to resolve hashed frontend asset filenames. Building Go first produces a binary that cannot locate assets.
+
+## Testing
+
+All contributions should pass existing tests:
+
+```bash
+go test ./...
+```
+
+Tests use in-memory SQLite — no mocks, no external services. See [Testing](../testing/) for the full strategy.
+
+When adding a new service method or query, add a test that exercises it against a real in-memory database.
+
+## Keeping Docs in Sync
+
+If you change behavior, update the docs. The docs live in two places:
+
+- **`site/src/content/docs/`** — the Starlight documentation site (this site)
+- **`.llm-wiki/wiki/`** — internal wiki for AI agents
+
+When you add a feature, update or create the relevant doc page. When you change an existing pattern, update the page that documents it.
+
+## Commit Checklist
+
+Before opening a PR:
+
+- [ ] `go test ./...` passes
+- [ ] `make generate` run if you changed `queries/*.sql` or `templates/*.templ`
+- [ ] `go mod tidy` run if you changed dependencies (commit updated `go.sum`)
+- [ ] No manual edits to `app/queries/` or `*_templ.go`
+- [ ] New migrations follow the one-table-per-file rule
+- [ ] No edits to already-deployed migrations
+- [ ] Docs updated if behavior changed
+
+## Linting
+
+```bash
+make lint
+# or
+golangci-lint run ./...
+```
+
+The config is in `.golangci.yml`. Pre-commit hooks (`.pre-commit-config.yaml`) run linting automatically if you have pre-commit installed.
+
+## Installer Strip List
+
+If you are contributing to the boilerplate itself (not an app built on it), note that `npm create laju-go@latest` strips dev-only files when scaffolding a new project:
+
+- `create-laju-go/`, `.llm-wiki/sources`, `.devin`, `AGENTS.md`, `site/`
+- It keeps `.llm-wiki/concepts` and `.llm-wiki/entities` (useful for understanding the repo)
+
+If you add a file that should not be included in new projects, add it to the installer's strip list.

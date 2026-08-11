@@ -32,7 +32,6 @@ type Config struct {
 	SessionTTL time.Duration
 }
 
-var AppConfig *Config
 
 func Load() *Config {
 	// Load .env file
@@ -40,7 +39,7 @@ func Load() *Config {
 		slog.Warn("no .env file found, using environment variables")
 	}
 
-	AppConfig = &Config{
+	c := &Config{
 		AppPort:            getEnv("APP_PORT", "8080"),
 		AppEnv:             getEnv("APP_ENV", "development"),
 		DBPath:             getEnv("DB_PATH", "./data/app.db"),
@@ -61,7 +60,7 @@ func Load() *Config {
 		SessionTTL: getSessionTTL(),
 	}
 
-	return AppConfig
+	return c
 }
 
 func getEnv(key, defaultValue string) string {

@@ -1,0 +1,169 @@
+/* Laju Go landing page — dark tech / devtool vibe.
+   Cyan-teal accent on navy-tinted near-black.
+   Grid layout, mono details, near-invisible borders, minimal motion. */
+
+:root {
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: "Inter", system-ui, -apple-system, sans-serif;
+	background: #070b16;
+	color: #e2e8f0;
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+/* --- Nav --- */
+
+.lj-nav {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	max-width: 1100px;
+	margin: 0 auto;
+	padding: 1.25rem 1.5rem;
+}
+
+.lj-nav-brand {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-weight: 700;
+	font-size: 1.1rem;
+	letter-spacing: -0.01em;
+}
+
+.lj-nav-brand img {
+	width: 24px;
+	height: 24px;
+}
+
+.lj-nav-links {
+	display: flex;
+	gap: 1.75rem;
+}
+
+.lj-nav-links a {
+	font-size: 0.9rem;
+	font-weight: 500;
+	color: #94a3b8;
+	transition: color 0.15s ease;
+}
+
+.lj-nav-links a:hover {
+	color: #22d3ee;
+}
+
+/* --- Sections --- */
+
+.lj-section-title {
+	font-size: 1.7rem;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	text-align: center;
+	margin: 0;
+}
+
+.lj-section-sub {
+	text-align: center;
+	color: #64748b;
+	margin: 0.5rem 0 2.5rem;
+	font-size: 0.95rem;
+}
+
+.lj-accent {
+	color: #22d3ee;
+}
+
+/* --- Footer --- */
+
+.lj-footer {
+	border-top: 1px solid #1e293b;
+	padding: 3rem 1.5rem 2rem;
+	margin-top: 4rem;
+}
+
+.lj-footer-grid {
+	display: grid;
+	grid-template-columns: 2fr 1fr 1fr;
+	gap: 2rem;
+	max-width: 1100px;
+	margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+	.lj-footer-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.lj-footer-brand p {
+	color: #64748b;
+	font-size: 0.9rem;
+	margin: 0.75rem 0 0;
+	max-width: 320px;
+}
+
+.lj-footer-logo {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-weight: 700;
+}
+
+.lj-footer-logo img {
+	width: 20px;
+	height: 20px;
+}
+
+.lj-footer-col h4 {
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #475569;
+	margin: 0 0 0.75rem;
+}
+
+.lj-footer-col a {
+	display: block;
+	font-size: 0.9rem;
+	color: #94a3b8;
+	padding: 0.25rem 0;
+	transition: color 0.15s ease;
+}
+
+.lj-footer-col a:hover {
+	color: #22d3ee;
+}
+
+.lj-footer-bottom {
+	display: flex;
+	justify-content: space-between;
+	max-width: 1100px;
+	margin: 2rem auto 0;
+	padding-top: 1.5rem;
+	border-top: 1px solid #1e293b;
+	font-size: 0.85rem;
+	color: #475569;
+}
+
+.lj-footer-bottom em {
+	font-style: italic;
+	color: #64748b;
+}

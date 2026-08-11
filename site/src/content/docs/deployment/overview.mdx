@@ -1,0 +1,97 @@
+---
+title: Deployment Overview
+description: Three ways to deploy Laju Go to production — git pull, Docker, and systemd.
+---
+
+Laju Go is a single binary that serves both the Go backend and the compiled Svelte frontend. There is no separate API server or static file host to wire up. You build one artifact and run it.
+
+## Build Order
+
+The build has two stages and the order is fixed:
+
+```bash
+vite build   # produces dist/.vite/manifest.json + dist/assets/*
+go build     # embeds manifest references, serves assets from dist/
+```
+
+**`vite build` must run before `go build`.** The Go binary reads `dist/.vite/manifest.json` at startup to resolve hashed asset filenames. If you build Go first, the manifest is missing or stale and the app serves broken asset links.
+
+The `make build` target encodes this order for you:
+
+```makefile
+build: vite-build go-build
+```
+
+Or with npm:
+
+```bash
+npm run build:all
+```
+
+Both run `vite build` then `go build` in sequence.
+
+## Three Deployment Methods
+
+### 1. Git Pull (Simplest)
+
+Clone the repo on the server, build in place, restart the service. No containers, no registries.
+
+```bash
+cd ~/projects/laju-go
+git pull
+make build
+sudo systemctl restart laju-go
+```
+
+This is the fastest path for a single VPS. The server needs Go, Node.js, and npm installed. See [Linux VPS](./vps/) for the full setup including the systemd unit.
+
+### 2. Docker
+
+A multi-stage `Dockerfile` builds the frontend and backend in separate stages, then copies only the runtime artifacts into a minimal Alpine image.
+
+```bash
+make docker
+# or
+docker build -t laju-go .
+```
+
+The image is self-contained — no Go or Node runtime inside. See [Docker](./docker/) for the full Dockerfile breakdown.
+
+### 3. Systemd (One-Click Deploy Script)
+
+The `scripts/deploy.sh` script rsyncs source code to the server, builds on the server, and restarts a systemd **user** service. No root needed for the service itself (only `loginctl enable-linger` once).
+
+```bash
+cp .deploy.example .deploy
+# edit .deploy with your server host + path
+./scripts/deploy.sh
+```
+
+First run triggers `scripts/first-deploy.sh` (sets up `.env`, enables linger, creates the service). Subsequent runs trigger `scripts/update-deploy.sh` (stop → rebuild → start). See [Linux VPS](./vps/) for details.
+
+## Choosing a Method
+
+| Method | Best for | Server needs | Rollback |
+|--------|----------|-------------|----------|
+| Git pull | Solo dev, single VPS | Go + Node + npm | `git checkout <prev> && make build` |
+| Docker | Container orchestration, CI/CD | Docker daemon | Previous image tag |
+| Systemd script | Repeatable VPS deploys from local machine | Go + Node + npm + SSH | Re-run with old code |
+
+## What Gets Deployed
+
+Regardless of method, the runtime needs:
+
+- **`laju-go`** — the compiled binary
+- **`dist/`** — Vite-built frontend assets (CSS, JS, images)
+- **`public/`** — static files served directly (favicon, OG image)
+- **`migrations/`** — Goose SQL migration files (applied at startup)
+- **`.env`** — environment configuration
+- **`data/`** — SQLite database (created on first run, must persist across deploys)
+
+The binary runs migrations automatically on startup via Goose. No separate migration step is needed during deployment.
+
+## Next Steps
+
+- [Docker](./docker/) — multi-stage container build
+- [Linux VPS](./vps/) — systemd service + CGO cross-compilation
+- [Configuration](./configuration/) — environment variables and `.env`

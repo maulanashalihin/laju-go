@@ -1,0 +1,246 @@
+---
+title: sqlc
+description: Generate type-safe Go from SQL queries — workflow, config, and the rule against editing generated code
+---
+
+Laju Go uses [sqlc](https://sqlc.dev) to generate type-safe Go code from SQL queries. You write SQL in `queries/*.sql`, run `sqlc generate`, and get Go functions in `app/queries/` with full type safety — no ORM, no string concatenation, no runtime reflection.
+
+## Why sqlc, Not an ORM
+
+sqlc generates code at build time, not at runtime. The compiler catches SQL errors before your code runs. You see the exact SQL in the query file, and the generated Go is plain structs and functions — no magic methods, no lazy loading, no N+1 traps.
+
+## Workflow
+
+```
+queries/*.sql  →  sqlc generate  →  app/queries/*.go
+  (you write)       (you run)         (generated, never edit)
+```
+
+1. Write SQL queries in `queries/*.sql` with special `-- name:` annotations.
+2. Run `sqlc generate` (or `make db-generate`, or `npm run db:generate`).
+3. sqlc reads the schema from `migrations/` and the queries from `queries/`, then generates Go code into `app/queries/`.
+4. Services call the generated functions via `s.querier.*`.
+
+## Configuration
+
+```yaml
+# sqlc.yaml
+version: "2"
+sql:
+  - engine: "sqlite"
+    schema: "migrations/"
+    queries: "queries/"
+    gen:
+      go:
+        package: "queries"
+        out: "app/queries"
+        overrides:
+          - db_type: "DATETIME"
+            go_type:
+              type: "time.Time"
+          - column: "users.password"
+            go_type:
+              import: "database/sql"
+              type: "NullString"
+          - column: "users.google_id"
+            go_type:
+              import: "database/sql"
+              type: "NullString"
+```
+
+- **`engine: "sqlite"`** — Targets SQLite (the `mattn/go-sqlite3` driver).
+- **`schema: "migrations/"`** — sqlc reads migration files to understand table structures. This is why migrations must be valid SQL that sqlc can parse.
+- **`queries: "queries/"`** — Source directory for `*.sql` query files.
+- **`out: "app/queries"`** — Generated Go code goes here.
+- **`overrides`** — Maps SQL types to Go types. `DATETIME` → `time.Time`, nullable columns → `sql.NullString`.
+
+## Writing Queries
+
+Each query is annotated with a name and a special command (`:one`, `:many`, `:exec`, `:execrows`). sqlc uses these to determine the generated function's return type.
+
+### `:one` — Returns a single row
+
+```sql
+-- queries/user.sql
+-- name: GetUserByID :one
+SELECT id, email, name, password, avatar, role, google_id, email_verified, created_at, updated_at
+FROM users
+WHERE id = ?;
+```
+
+Generates:
+
+```go
+func (q *Querier) GetUserByID(ctx context.Context, id int64) (User, error)
+```
+
+### `:many` — Returns multiple rows
+
+```sql
+-- name: GetSessionsByUserID :many
+SELECT id, user_id, data, expires_at, created_at, updated_at
+FROM sessions
+WHERE user_id = ?;
+```
+
+Generates:
+
+```go
+func (q *Querier) GetSessionsByUserID(ctx context.Context, userID int64) ([]Session, error)
+```
+
+### `:exec` — No return value
+
+```sql
+-- name: CreateSession :exec
+INSERT INTO sessions (id, user_id, data, expires_at, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?);
+```
+
+Generates:
+
+```go
+func (q *Querier) CreateSession(ctx context.Context, session *Session) error
+```
+
+### `:execrows` — Returns rows affected
+
+```sql
+-- name: UpdateUserPassword :execrows
+UPDATE users
+SET password = ?, updated_at = ?
+WHERE id = ?;
+```
+
+Generates:
+
+```go
+func (q *Querier) UpdateUserPassword(ctx context.Context, password string, updatedAt time.Time, id int64) (int64, error)
+```
+
+### `RETURNING` — Returns the inserted row
+
+```sql
+-- name: CreateUser :one
+INSERT INTO users (email, name, password, role, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?)
+RETURNING id;
+```
+
+Generates a function that returns the new row's ID.
+
+## Generated Code
+
+The generated code lives in `app/queries/`. It contains:
+
+- **`db.go`** — `Querier` struct wrapping `*sql.DB`, `NewQuerier(db)` constructor.
+- **`models.go`** — Go structs for each table (`User`, `Session`, etc.) with field types from the overrides.
+- **`*.sql.go`** — One file per query file, containing the generated functions.
+
+Example generated struct:
+
+```go
+// app/queries/models.go (generated)
+type User struct {
+ ID            int64
+ Email         string
+ Name          string
+ Password      sql.NullString
+ Avatar        string
+ Role          string
+ GoogleID      sql.NullString
+ EmailVerified bool
+ CreatedAt     time.Time
+ UpdatedAt     time.Time
+}
+```
+
+## Using Queries in Services
+
+Services hold a `*queries.Querier` and call generated functions. This is the **only** layer that executes SQL:
+
+```go
+// app/services/auth.go
+func (s *AuthService) Register(name, email, password string) (*models.User, error) {
+ // Check if user already exists
+ _, err := s.querier.GetUserByEmail(context.Background(), email)
+ if err == nil {
+  return nil, ErrUserAlreadyExists
+ }
+ if !errors.Is(err, queries.ErrUserNotFound) {
+  return nil, err
+ }
+
+ hashedPassword, err := HashPassword(password)
+ if err != nil {
+  return nil, err
+ }
+
+ user := &models.User{
+  Email: email,
+  Name:  name,
+  Password: sql.NullString{String: hashedPassword, Valid: true},
+  Role:          models.RoleUser,
+  EmailVerified: false,
+ }
+
+ if err := s.querier.CreateUser(context.Background(), user); err != nil {
+  return nil, err
+ }
+ return user, nil
+}
+```
+
+## The Querier
+
+The `Querier` is initialized once in `cmd/laju-go/main.go` and passed to all services:
+
+```go
+querier := queries.NewQuerier(db)
+```
+
+All services receive the same `*queries.Querier` instance. It wraps a `*sql.DB` connection pool.
+
+## Rules
+
+- **Never edit `app/queries/` manually.** These files are overwritten by `sqlc generate`. Any manual changes will be lost.
+- **Write SQL in `queries/*.sql` only.** This is the source of truth.
+- **Run `sqlc generate` after changing queries or schema.** If you add a migration, run `sqlc generate` so the generated code reflects the new schema.
+- **Handlers must not call queries directly.** The three-tier rule is Handler → Service → Query → DB. Only services call `s.querier.*`.
+- **Test files may call queries directly.** This is the documented exception for `*_test.go` files.
+
+## Common Commands
+
+```bash
+# Generate Go code from SQL queries
+sqlc generate
+# or
+make db-generate
+# or
+npm run db:generate
+
+# Full refresh: wipe DB, re-migrate, regenerate
+npm run db:refresh && npm run db:migrate && npm run db:generate
+```
+
+## Error Handling
+
+sqlc-generated functions return Go standard library errors. For `:one` queries that find no row, the error is `sql.ErrNoRows`. Laju Go wraps this in a sentinel error:
+
+```go
+// app/queries/ — generated
+var ErrUserNotFound = errors.New("user not found")
+```
+
+Services check for this sentinel:
+
+```go
+user, err := s.querier.GetUserByEmail(ctx, email)
+if err == nil {
+ return nil, ErrUserAlreadyExists
+}
+if !errors.Is(err, queries.ErrUserNotFound) {
+ return nil, err
+}
+// User doesn't exist — proceed with creation
+```

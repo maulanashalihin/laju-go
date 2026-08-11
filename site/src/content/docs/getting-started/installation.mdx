@@ -1,0 +1,185 @@
+---
+title: Installation
+description: Prerequisites, the create-laju-go installer, npm scripts, and running Laju Go from a repo clone.
+---
+
+## Prerequisites
+
+| Tool | Version | Why |
+|------|---------|-----|
+| **Go** | 1.26+ | Required at runtime and build time. The installer checks for it. |
+| **Node.js** | 20+ | Vite dev server and frontend build. The `create-laju-go` installer requires Node ≥ 20. |
+| **Git** | any | The installer clones the template via `degit`. |
+| **C compiler** | GCC / Clang | SQLite uses `go-sqlite3`, which is CGO-based. macOS has Clang via Xcode CLT; Linux needs `build-essential` or `gcc`. |
+
+A package manager (`npm`, `yarn`, or `bun`) is also needed for the frontend. The installer detects what you have and asks which to use.
+
+### Installing the prerequisites
+
+```bash title="macOS"
+brew install go node git
+xcode-select --install   # provides Clang for CGO
+```
+
+```bash title="Ubuntu / Debian"
+sudo apt install golang-go nodejs npm git build-essential
+```
+
+Verify everything is on PATH:
+
+```bash
+go version    # go1.26.x
+node --version # v20.x or newer
+git --version
+```
+
+## Option A — The installer (recommended)
+
+`npm create laju-go@latest` scaffolds a fresh project from the template. It clones the repo, strips dev-only files (the installer itself, `AGENTS.md`, `site/`, agent configs), keeps the useful `.llm-wiki/concepts` and `entities`, installs Go and Node dependencies, and copies `.env.example` to `.env`.
+
+```bash
+npm create laju-go@latest my-app
+```
+
+The installer prompts for a project name and a service name (used in the generated `.deploy` config), then prints the next steps:
+
+```bash
+cd my-app
+npm run dev:all
+```
+
+That's it. Open `http://localhost:8080`.
+
+### What gets stripped
+
+These repo-internal artifacts do not belong in a fresh scaffold and are removed automatically:
+
+- `create-laju-go/` — the installer itself
+- `AGENTS.md`, `.mcp.json` — agent instructions and MCP config
+- `.devin/`, `.windsurf/`, `.zero/`, `.pi/` — agent skill and rule directories
+- `site/` — this documentation site
+- `.llm-wiki/sources`, `.llm-wiki/meta`, `.llm-wiki/raw` — session logs and regenerable metadata
+
+The `.llm-wiki/wiki/concepts` and `entities` directories are **kept** — they document the repo's architecture and are useful for understanding what you just cloned.
+
+## Option B — Run from a repo clone
+
+If you want the full repo (docs, agent configs, installer source):
+
+```bash
+git clone https://github.com/maulanashalihin/laju-go.git
+cd laju-go
+make setup
+```
+
+`make setup` does three things:
+
+```makefile
+setup:
+ @test -f .env || cp .env.example .env
+ go mod tidy
+ go mod download
+ npm install
+```
+
+Then start the dev servers:
+
+```bash
+npm run dev:all
+```
+
+## Scripts
+
+Laju Go ships both `npm` scripts and a `Makefile`. They overlap — pick whichever you prefer.
+
+### npm scripts
+
+| Script | What it does |
+|--------|--------------|
+| `npm run dev` | Vite dev server only (frontend, port 5173) |
+| `npm run dev:go` | Air live-reload for the Go backend only (port 8080) |
+| `npm run dev:all` | Both, concurrently — the normal dev command |
+| `npm run build` | `vite build` — compiles frontend to `dist/` |
+| `npm run build:go` | `go build -o laju-go ./cmd/laju-go` |
+| `npm run build:all` | `vite build && go build` — full production build |
+| `npm run build:linux` | Cross-compile a Linux amd64 binary via `cross-env` |
+| `npm run serve` | `go run ./cmd/laju-go` — run without building a binary |
+| `npm run deploy` | Runs `./scripts/deploy.sh` |
+| `npm run db:generate` | `sqlc generate` — regenerate `app/queries/` from `queries/*.sql` |
+| `npm run db:migrate` | Run Goose migrations up |
+| `npm run db:migrate:status` | Show migration status |
+| `npm run db:migrate:down` | Roll back the last migration |
+| `npm run db:migrate:create` | Create a new migration file |
+| `npm run db:refresh` | Delete the SQLite DB and cache — fresh slate |
+| `npm run verify` | `templ generate && vite build && go build && go vet && go test` — the full pre-push check |
+
+### Make targets
+
+| Target | Equivalent |
+|--------|------------|
+| `make setup` | Copy `.env`, `go mod tidy/download`, `npm install` |
+| `make build` | `vite build` then `go build` |
+| `make build-go` | `go build` only |
+| `make build-linux` | Cross-compile Linux amd64 (with `-trimpath` and version ldflags) |
+| `make test` | `go test ./...` |
+| `make lint` | `golangci-lint run ./...` |
+| `make generate` | `templ generate && sqlc generate` |
+| `make templ` | `templ generate` |
+| `make db-generate` | `sqlc generate` |
+| `make migrate` | Run Goose migrations up |
+| `make db-refresh` | Delete the DB and cache |
+| `make clean` | Remove binary, `tmp/`, `dist/`, DB files |
+| `make docker` | `docker build -t laju-go .` |
+| `make version` | Print the current version + commit |
+
+### Build order matters
+
+```bash
+# Correct — Vite first, then Go
+npm run build:all
+
+# The Go binary reads dist/.vite/manifest.json at runtime.
+# If you build Go before Vite, the manifest is stale or missing.
+```
+
+The `build:all` and `make build` targets handle this ordering for you. If you ever run the steps manually, always run `vite build` before `go build`.
+
+## Configuration
+
+All config lives in `.env`, copied from `.env.example` during setup. The key variables:
+
+```bash
+APP_PORT=8080
+APP_ENV=development
+APP_URL=http://localhost:8080
+
+DB_PATH=./data/app.db
+
+SESSION_SECRET=change-this-in-production
+SESSION_TTL=24h
+
+ALLOWED_ORIGINS=http://localhost:5173
+FRONTEND_URL=http://localhost:5173
+
+# Optional — leave empty to disable
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+SMTP_HOST=smtp.gmail.com
+```
+
+Google OAuth and SMTP are optional — leave them blank and those features simply don't activate. See [Configuration](/deployment/configuration/) for the full list.
+
+## Verifying the install
+
+Run the full check to confirm everything compiles and tests pass:
+
+```bash
+npm run verify
+```
+
+This runs `templ generate`, `vite build`, `go build`, `go vet`, and `go test ./...`. If it passes, your install is good.
+
+## Next steps
+
+- [Building with AI agents](/getting-started/ai-agents/) — the repo conventions that keep generated code correct
+- [Architecture overview](/architecture/overview/) — how requests flow through the layers

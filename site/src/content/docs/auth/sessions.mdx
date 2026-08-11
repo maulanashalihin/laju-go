@@ -1,0 +1,368 @@
+---
+title: Sessions
+description: DB-backed sessions with session.Store, auth middleware, and CSRF double-submit cookie protection
+---
+
+Laju Go stores sessions in SQLite, not in encrypted cookies or external stores like Redis. The `session.Store` wraps the database with an optional in-memory cache, and three middleware functions enforce authentication across route groups.
+
+## Session Store
+
+The session store lives in `app/session/session.go`. It is initialized in `cmd/laju-go/main.go` with a database querier, an in-memory cache, and a TTL:
+
+```go
+// cmd/laju-go/main.go
+sessionCache := cache.NewSessionCache()
+sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)
+sessionStore.SetSecure(cfg.AppEnv == "production")
+```
+
+The `Store` struct holds the querier, cache, cookie name (`session_id`), TTL (default 24h), and a `secure` flag for HTTPS-only cookies:
+
+```go
+// app/session/session.go
+type Store struct {
+ querier      *queries.Querier
+ sessionCache *cache.SessionCache
+ sessionName  string
+ sessionTTL   time.Duration
+ secure       bool
+}
+```
+
+### Session Data
+
+Session data is serialized as JSON and stored in the `sessions` table. The `SessionData` struct defines the fields:
+
+```go
+type SessionData struct {
+ UserID        int64  `json:"user_id"`
+ Name          string `json:"name,omitempty"`
+ Email         string `json:"email"`
+ Avatar        string `json:"avatar,omitempty"`
+ EmailVerified bool   `json:"email_verified,omitempty"`
+ Role          string `json:"role"`
+ CSRFToken     string `json:"csrf_token,omitempty"`
+ CSRFExpiry    int64  `json:"csrf_expiry,omitempty"`
+ IP            string `json:"ip,omitempty"`
+ UserAgent     string `json:"ua,omitempty"`
+}
+```
+
+The `IP` and `UserAgent` fields form a fingerprint used for session hijacking protection (see below).
+
+### Get / Save / Destroy / Regenerate
+
+- **`store.Get(c)`** — Retrieves the session. Checks `c.Locals("session")` first (per-request cache), then the in-memory cache, then the database. Returns an empty session if no cookie is present.
+- **`sess.Save()`** — Marshals session data to JSON, captures the client fingerprint (IP + User-Agent), and upserts into the `sessions` table. Sets the `session_id` cookie with `HTTPOnly: true`, `SameSite: Lax`. Sliding expiration: every save refreshes `expires_at`.
+- **`sess.Destroy()`** — Deletes the session row from the database, invalidates the cache entry, and clears the cookie. Called on logout.
+- **`sess.Regenerate()`** — Generates a new session ID, creates a new database row, deletes the old one, and updates the cookie. Called after every successful login/register/OAuth callback to prevent session fixation.
+
+### CreateAuthenticatedSession
+
+A helper that sets all user fields and saves in one call. Every auth handler uses this:
+
+```go
+func (s *Store) CreateAuthenticatedSession(c *fiber.Ctx, userID int64, name, email, avatar, role string, emailVerified bool) error {
+ sess, err := s.Get(c)
+ if err != nil {
+  return err
+ }
+ sess.Set("user_id", userID)
+ sess.Set("name", name)
+ sess.Set("email", email)
+ sess.Set("avatar", avatar)
+ sess.Set("email_verified", emailVerified)
+ sess.Set("role", role)
+ return sess.Save()
+}
+```
+
+After calling it, handlers regenerate the session ID:
+
+```go
+// app/handlers/auth.go — Login handler
+if err := h.store.CreateAuthenticatedSession(c, user.ID, user.Name, user.Email, user.Avatar, string(user.Role), user.EmailVerified); err != nil {
+ return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+  "error": "Failed to create session",
+ })
+}
+
+// Regenerate session ID to prevent session fixation
+if sess, err := h.store.Get(c); err == nil {
+ sess.Regenerate()
+}
+```
+
+### Session Fingerprinting
+
+Every session stores the client's IP address and User-Agent. On each request, `checkFingerprint()` compares the stored values against the current request:
+
+```go
+func checkFingerprint(storedIP, storedUA, reqIP, reqUA string, isPage bool) fingerprintAction {
+ if storedIP != "" && storedIP != reqIP {
+  if !isValidIP(storedIP) {
+   return fpFixGarbageIP // stored IP is garbage — silently fix it
+  }
+  return fpInvalidate // IP mismatch — invalidate session
+ }
+ if isPage && storedUA != "" && storedUA != reqUserAgent {
+  return fpInvalidate // UA mismatch on page request — invalidate
+ }
+ return fpOK
+}
+```
+
+- **IP mismatch** → session is invalidated (deleted from DB + cache, cookie cleared).
+- **User-Agent mismatch** → only checked on page requests (Inertia XHR or initial HTML), not on API/asset side requests.
+- **Garbage IP fix** → if the stored IP is not a valid IPv4/IPv6 address (e.g. from a misconfigured proxy), it is silently corrected instead of invalidating.
+
+`ClientIP()` extracts the real client IP behind Cloudflare or reverse proxies:
+
+```go
+func ClientIP(c *fiber.Ctx) string {
+ if cfIP := c.Get("CF-Connecting-IP"); cfIP != "" {
+  return cfIP
+ }
+ if xff := c.Get("X-Forwarded-For"); xff != "" {
+  return strings.TrimSpace(strings.Split(xff, ",")[0])
+ }
+ return c.IP()
+}
+```
+
+### Background Cleanup
+
+A goroutine runs every hour to delete expired sessions and password reset tokens:
+
+```go
+// cmd/laju-go/main.go
+func startBackgroundCleanup(querier *queries.Querier) {
+ go func() {
+  ticker := time.NewTicker(1 * time.Hour)
+  defer ticker.Stop()
+
+  // Run immediately on startup
+  querier.DeleteExpiredSessions(context.Background())
+  querier.DeleteExpiredPasswordResets(context.Background())
+
+  for range ticker.C {
+   querier.DeleteExpiredSessions(context.Background())
+   querier.DeleteExpiredPasswordResets(context.Background())
+  }
+ }()
+}
+```
+
+### Flash Messages
+
+Flash messages are short-lived cookies for one-time display (error/success messages after redirects):
+
+```go
+// Set a flash message
+h.store.Flash(c, "error", "Invalid email or password")
+return h.inertiaService.Redirect(c, "/login")
+
+// Retrieve and clear on the next request
+msg := h.store.GetFlash(c, "error")
+```
+
+## Auth Middleware
+
+Three middleware functions in `app/middlewares/auth.go` control route access. All take `*session.Store` to check authentication state.
+
+### AuthRequired
+
+Protects `/app/*` routes. Checks for `user_id` in the session. Skips OPTIONS requests (CORS preflight doesn't send cookies). Stores user info in `c.Locals()` for downstream handlers:
+
+```go
+func AuthRequired(store *session.Store) fiber.Handler {
+ return func(c *fiber.Ctx) error {
+  if c.Method() == fiber.MethodOptions {
+   return c.Next()
+  }
+
+  sess, err := store.Get(c)
+  if err != nil {
+   return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+    "error": "Failed to get session",
+   })
+  }
+
+  userID := sess.Get("user_id")
+  if userID == nil {
+   if c.Get("X-Inertia") == "true" {
+    return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+     "component": "Login",
+     "props": fiber.Map{"error": "Please login to continue"},
+    })
+   }
+   return c.Redirect("/login")
+  }
+
+  c.Locals("user_id", userID)
+  c.Locals("email", sess.Get("email"))
+  c.Locals("role", sess.Get("role"))
+  return c.Next()
+ }
+}
+```
+
+For Inertia requests, it returns a 401 with the `Login` component so the SPA renders the login page without a full reload.
+
+### AdminRequired
+
+Protects `/admin/*` routes. Verifies the admin role from the **database** (via `UserService.IsAdmin`), not from the session-stored role, so role changes take effect immediately without requiring a re-login:
+
+```go
+func AdminRequired(store *session.Store, userService *services.UserService) fiber.Handler {
+ return func(c *fiber.Ctx) error {
+  sess, err := store.Get(c)
+  // ...
+  userID := sess.Get("user_id")
+  if userID == nil {
+   return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Not authenticated"})
+  }
+
+  isAdmin, err := userService.IsAdmin(userID.(int64))
+  if err != nil {
+   return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to verify admin status"})
+  }
+  if !isAdmin {
+   return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Admin access required"})
+  }
+
+  c.Locals("user_id", userID)
+  c.Locals("role", "admin")
+  return c.Next()
+ }
+}
+```
+
+### Guest
+
+Redirects already-authenticated users away from login/register pages:
+
+```go
+func Guest(store *session.Store) fiber.Handler {
+ return func(c *fiber.Ctx) error {
+  sess, err := store.Get(c)
+  if err != nil {
+   return c.Next()
+  }
+  if sess.Get("user_id") != nil {
+   return c.Redirect("/app")
+  }
+  return c.Next()
+ }
+}
+```
+
+### Route Registration
+
+```go
+// routes/web.go
+// Guest-only routes
+app.Get("/login", middlewares.Guest(store), authHandler.ShowLoginForm)
+app.Post("/login", middlewares.Guest(store), authHandler.Login, middlewares.AuthRateLimit.Limit())
+
+// Protected app routes
+protected := app.Group("/app", middlewares.AuthRequired(store))
+protected.Use(csrfMiddleware.Protect())
+
+// Admin-only routes
+admin := app.Group("/admin", middlewares.AdminRequired(store, userService))
+
+// Logout (auth + CSRF)
+app.Post("/logout", middlewares.AuthRequired(store), csrfMiddleware.Protect(), authHandler.Logout)
+```
+
+## CSRF Protection
+
+Laju Go uses the **double-submit cookie** pattern for CSRF protection. The token is stored only in a cookie — no session storage needed.
+
+### How It Works
+
+1. On safe methods (GET, HEAD, OPTIONS), the middleware sets an `XSRF-TOKEN` cookie if one doesn't already exist. The cookie is **not** HTTPOnly — JavaScript must read it.
+2. On state-changing methods (POST, PUT, DELETE), the middleware compares the `X-XSRF-TOKEN` header against the `XSRF-TOKEN` cookie value using constant-time comparison.
+3. If they match, the request proceeds. If not, the request is rejected with 400/403.
+
+```go
+// app/middlewares/csrf.go
+func (csrf *CSRFMiddleware) validateToken(c *fiber.Ctx) error {
+ token := c.Get(csrf.config.HeaderName) // X-XSRF-TOKEN header
+ if token == "" {
+  token = c.FormValue(csrf.config.CookieName)
+ }
+ if token == "" {
+  token = c.Query(csrf.config.CookieName)
+ }
+
+ if token == "" {
+  return fiber.NewError(fiber.StatusBadRequest, "CSRF token missing")
+ }
+
+ cookieToken := c.Cookies(csrf.config.CookieName) // XSRF-TOKEN cookie
+ if cookieToken == "" {
+  return fiber.NewError(fiber.StatusForbidden, "CSRF token invalid")
+ }
+
+ if !csrf.constantTimeCompare(token, cookieToken) {
+  return fiber.NewError(fiber.StatusForbidden, "CSRF token invalid")
+ }
+ return nil
+}
+```
+
+### Configuration
+
+```go
+func DefaultCSRFConfig(secret string) CSRFConfig {
+ return CSRFConfig{
+  Secret:      secret,
+  CookieName:  "XSRF-TOKEN",
+  HeaderName:  "X-XSRF-TOKEN",
+  TokenLength: 32,
+  Expiry:      24 * time.Hour,
+  Secure:      false, // Set to true in production with HTTPS
+  SameSite:    "Lax",
+  SkipMethods: []string{fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions},
+ }
+}
+```
+
+### Frontend Integration
+
+**Inertia/Axios** automatically reads the `XSRF-TOKEN` cookie and sends it as the `X-XSRF-TOKEN` header — no manual handling needed for `router.*` and `useForm` calls.
+
+**Manual `fetch()`** calls to `/app/*` or `/admin/*` **must** include the header explicitly. Use the `getCSRFToken()` helper:
+
+```typescript
+// frontend/src/lib/utils/csrf.ts
+export function getCSRFToken(): string {
+ const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+ return match ? decodeURIComponent(match[1]) : "";
+}
+
+// Usage in fetch()
+fetch("/app/upload", {
+ method: "POST",
+ headers: { "X-XSRF-TOKEN": getCSRFToken() },
+ body: formData,
+})
+```
+
+Without the header, the request is rejected with 400 "CSRF token missing".
+
+### Where CSRF Is Applied
+
+CSRF middleware is applied to the `/app/*` group and the `/logout` route:
+
+```go
+// routes/web.go
+protected := app.Group("/app", middlewares.AuthRequired(store))
+protected.Use(csrfMiddleware.Protect())
+
+app.Post("/logout", middlewares.AuthRequired(store), csrfMiddleware.Protect(), authHandler.Logout)
+```
+
+TUS upload routes (`/tus/*`) do **not** use CSRF — they use the TUS protocol's own authentication via the `AuthRequired` middleware applied to the `/tus` prefix.

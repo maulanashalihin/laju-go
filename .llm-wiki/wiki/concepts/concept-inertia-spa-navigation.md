@@ -13,8 +13,8 @@ Inertia.js enables single-page application (SPA) navigation in Laju Go without b
 |--------|--------|-------|
 | Internal links | `<a href="/path" use:inertia>` | Uses `use:inertia` action from `@inertiajs/svelte` |
 | OAuth links | `<a href="/auth/google">` | Plain `<a>` — must redirect to external provider |
-| Form submission | `router.post()` / `router.put()` | From `@inertiajs/svelte` |
-| File upload | `fetch()` + FormData | Must include CSRF header, then `router.put()` to save URL |
+| Form submission | `<Form>` or `useForm` + `<form>` | See [[concept-inertia-form-patterns]] |
+| File upload | `fetch()` + FormData | Must include CSRF header, then `form.put()` to save URL |
 
 ## Redirect Rules
 

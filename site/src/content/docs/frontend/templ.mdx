@@ -1,0 +1,131 @@
+---
+title: templ components
+description: templ generates type-safe Go rendering code from .templ files. Edit the source, never the generated _templ.go.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Most of Laju Go's HTML is rendered by Inertia + Svelte. The exception is **server-rendered pages that are not part of the SPA** — the public landing page, email bodies, any standalone HTML that should not ship JS. Those use [templ](https://templ.pages.dev/), a typed template language that compiles to Go.
+
+## The workflow
+
+You write `.templ` files. The `templ generate` command compiles each `.templ` into a `*_templ.go` file containing a normal Go function you call directly.
+
+```
+templates/index.templ   →   templ generate   →   templates/index_templ.go
+```
+
+1. Edit `templates/<name>.templ`.
+2. Run `templ generate` (or `make templ`).
+3. Call the generated function from a handler: `templates.LandingPage(title, isDev, viteURL, mainCSS).Render(ctx, w)`.
+
+The generated function is type-checked by the Go compiler, so a typo in a prop name or a missing argument is a compile error, not a runtime 500.
+
+## `.templ` vs `*_templ.go`
+
+<Aside type="danger" title="Never edit *_templ.go">
+Edit only `.templ` files. `*_templ.go` is overwritten on every `templ generate` — any change you make there is lost.
+</Aside>
+
+| File | Edit? | Purpose |
+|------|-------|---------|
+| `templates/index.templ` | ✅ Yes | Source — templ syntax, components, layout |
+| `templates/index_templ.go` | ❌ Never | Generated Go — overwritten by `templ generate` |
+
+If you see a bug in rendered HTML, fix the `.templ` and regenerate. Do not patch the `_templ.go`.
+
+## Real example: landing page
+
+The public landing page is a templ component — it is a full standalone HTML document (not an Inertia page) so it can render with zero JS on first paint.
+
+```go
+// templates/index.templ
+package templates
+
+templ LandingPage(title string, isDev bool, viteURL string, mainCSS string) {
+    {{
+        productLinks := FooterLinks{
+            {FLabel: "Features", FURL: "#features"},
+            {FLabel: "How it works", FURL: "#how-it-works"},
+            // ...
+        }
+    }}
+    <!doctype html>
+    <html lang="en" class="dark">
+        <head>
+            <meta charset="UTF-8"/>
+            <title>{ title } - Laju Go</title>
+            // ...
+        </head>
+        <body class="bg-neutral-950 text-white antialiased min-h-screen">
+            // ...
+            @FeatureCardLarge("auth", "Authentication", "Email and password with Argon2id hashing...", "brand")
+        </body>
+    </html>
+}
+```
+
+Notes:
+
+- `{{
+    ... }}` blocks run Go at render time — building link lists, computing values.
+- `{ title }` interpolates a typed parameter.
+- `@FeatureCardLarge(...)` calls another templ component, also type-checked.
+
+The handler calls it directly — no string templating, no `fmt.Sprintf`:
+
+```go
+// app/handlers/public.go (illustrative)
+func (h *PublicHandler) Index(c *fiber.Ctx) error {
+    w := c.Response().BodyWriter()
+    return templates.LandingPage("Laju Go", h.assetService.IsDev(), viteURL, mainCSS).Render(c.UserContext(), w)
+}
+```
+
+## The SVG gotcha
+
+<Aside type="caution" title="SVG attributes need self-closing syntax">
+Inline SVG in templ must use self-closing tags and XML-style attributes. templ parses SVG as XML, not HTML — unclosed tags like `<path ...>` (without `/>`) or unquoted attributes will fail to compile.
+</Aside>
+
+Always self-close and quote every attribute:
+
+```templ
+<!-- ✅ Correct — self-closing, quoted -->
+<svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" rx="8" fill="url(#logoGrad)"/>
+    <path d="M19 7L10 17h5l-1 8 9-10h-5l1-8Z" fill="white"/>
+</svg>
+
+<!-- ❌ Wrong — unclosed tags, will not compile -->
+<svg width="28" height="28">
+    <rect width="32" height="32" rx="8" fill="url(#logoGrad)">
+    <path d="..." fill="white">
+</svg>
+```
+
+The landing page in `templates/index.templ` has many inline SVGs (logo, icons, social marks) — all self-closing. Copy that style.
+
+## Air does not watch `.templ` files
+
+<Aside type="caution" title="Regenerate templ manually">
+Air (the Go hot-reloader) does not watch `.templ` files. After editing a `.templ`, run `templ generate` (or `make templ`) yourself — the change will not appear until you do.
+</Aside>
+
+The dev loop for templ is:
+
+1. Edit `templates/<name>.templ`.
+2. Run `templ generate` in another terminal (or `make templ`).
+3. Air picks up the regenerated `*_templ.go` and rebuilds the Go binary.
+
+Vite HMR covers Svelte; Air covers Go; **templ is the manual step between them.** If your templ edit is not showing up, you forgot step 2.
+
+## When to use templ vs Inertia
+
+| Use templ when | Use Inertia + Svelte when |
+|----------------|---------------------------|
+| Standalone HTML with no client interactivity (landing page, marketing) | Anything inside the authenticated app |
+| Email bodies | Forms, dashboards, any page that needs state |
+| SEO-critical pages that must render with zero JS | Pages where a SPA feel is desired |
+
+The split is deliberate: templ keeps the public surface fast and JS-free, while Inertia gives the app a modern SPA experience without a separate API.

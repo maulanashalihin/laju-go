@@ -17,9 +17,9 @@ status: stub
 
 - Internal links must use `use:inertia` action (imported from `@inertiajs/svelte`) for SPA navigation
 - OAuth links (`/auth/google`, `/auth/github`) use plain `<a>` without `use:inertia`
-- Form submissions use `router.post()` / `router.put()` from `@inertiajs/svelte`
+- Form submissions: `<Form>` for simple forms, `useForm` + `<form>` for validation/control — see [[concept-inertia-form-patterns]]
 - POST/PUT redirects must use HTTP 303 (`StatusSeeOther`)
-- File uploads require manual `fetch()` with FormData (Inertia cannot send binary)
+- File uploads require manual `fetch()` with FormData, then `form.put()` to persist URL
 
 ## Source
 

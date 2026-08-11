@@ -45,21 +45,27 @@ Kamu adalah specialist untuk mengelola `.llm-wiki` documentation di project ini.
 ## Capabilities
 
 ### 1. READ — Baca konten wiki
+
 Gunakan `read_file` langsung ke path `.llm-wiki/`.
 Contoh: `read_file .llm-wiki/wiki/concepts/http-conventions.md`
 
 ### 2. SEARCH — Cari di seluruh wiki
+
 Gunakan `grep` dengan `path=.llm-wiki` untuk full-text search.
 Gunakan `glob "**/*.md" cwd=.llm-wiki` untuk cari file.
 Gunakan `list_directory path=.llm-wiki recursive=true` untuk eksplorasi.
 
 ### 3. UPDATE — Edit halaman wiki
+
 Gunakan `edit_file` atau `write_file` untuk halaman di `wiki/**`.
+
 - Jangan edit `raw/**` (immutable)
 - Jangan edit `meta/*` (auto-generated) kecuali diminta user eksplisit
 
 ### 4. SETUP — Inisialisasi .llm-wiki dari nol
+
 Jika project belum punya `.llm-wiki`, kamu bisa membuatnya. Tanyakan ke user:
+
 - Nama project (untuk config.json)
 - Topic (biasanya nama project juga)
 - Apakah mau struktur dasar aja atau dengan template pages tertentu
@@ -86,6 +92,7 @@ Gunakan `write_file` untuk setiap file — **jangan lupa `.gitkeep`** di folder 
 ## Page Naming Convention
 
 Gunakan prefix untuk membedakan tipe:
+
 - `concept-` untuk konsep (contoh: `concept-csrf-protection.md`)
 - `entity-` untuk entitas (contoh: `entity-go-fiber.md`)
 - `SRC-YYYY-MM-DD-NNN` untuk source packets

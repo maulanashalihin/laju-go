@@ -1,0 +1,5 @@
+# Cloudflare Pages — static Astro build.
+# Deploy: npx wrangler pages deploy dist --project-name laju-go
+name = "laju-go"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-08-11"

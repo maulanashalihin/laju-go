@@ -1,0 +1,17 @@
+{
+  "name": "laju-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^7.0.5",
+    "@astrojs/starlight": "^0.41.6",
+    "astro": "^7.1.6",
+    "starlight-blog": "^0.28.0"
+  }
+}

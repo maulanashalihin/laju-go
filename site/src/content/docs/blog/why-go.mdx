@@ -1,0 +1,64 @@
+---
+title: Why Go — not Node
+description: Compiled binary, goroutines, fasthttp — why Go is the right choice for SaaS
+date: 2026-08-11T00:00:00Z
+author: maulana
+tags: [go, architecture]
+---
+
+Every SaaS starter has to pick a backend language. Most pick Node or Bun because that's where the tutorials are. Laju Go picks Go, and the reason isn't vibes — it's a set of engineering tradeoffs that compound over the life of a product.
+
+## One binary, no `node_modules`
+
+`go build` produces a single static binary. You ship it to a $6 VPS, `./laju-go`, and you're done. There is no `node_modules/` to sync, no runtime to install, no version manager to fight. The Dockerfile is a multi-stage build that ends with `COPY /laju-go /laju-go` on a `FROM scratch`-style base. The deploy story is a 12 MB artifact and a systemd unit.
+
+Node ships a runtime. Go ships a binary. For a SaaS that needs to run for years, that difference shows up every time you provision a server, every time you debug a production issue at 2am, and every time you onboard a contributor who just wants to run the thing.
+
+## Goroutines, not an event loop
+
+Node's concurrency model is a single-threaded event loop with async callbacks. It works, but it forces every I/O operation through a callback chain and punishes you with callback hell or `async`/`await` coloring if you forget. Go's model is goroutines — lightweight, multiplexed onto OS threads by the runtime, with no function-coloring.
+
+Laju Go uses this directly. The main process starts a background cleanup goroutine that prunes expired sessions and password-reset tokens every few minutes, while the HTTP server handles requests on the main goroutine:
+
+```go
+// Start background cleanup for expired sessions and password reset tokens
+startBackgroundCleanup(querier)
+
+// ...later, the server runs in its own goroutine
+go func() {
+    slog.Info("server listening", "port", cfg.AppPort)
+    if err := app.Listen(":" + cfg.AppPort); err != nil {
+        slog.Error("server failed", "error", err)
+        os.Exit(1)
+    }
+}()
+```
+
+No `setInterval`, no `Promise.all`, no thinking about whether something blocks the loop. You write sequential code and the runtime handles the scheduling.
+
+## fasthttp under the hood
+
+Laju Go runs on [Fiber](https://gofiber.io), which is built on [fasthttp](https://github.com/valyala/fasthttp) — not `net/http`. fasthttp is purpose-built for low allocation and high throughput. The Fiber benchmark sits around 300,000 requests per second on commodity hardware, an order of magnitude above Express and well above what Bun's HTTP layer sustains under real workloads.
+
+The app is configured for it explicitly:
+
+```go
+app := fiber.New(fiber.Config{
+    AppName:           "Laju",
+    ErrorHandler:      customErrorHandler,
+    StreamRequestBody: true,        // stream uploads, don't buffer
+    ReadBufferSize:    64 * 1024,   // tuned for large uploads
+})
+```
+
+`StreamRequestBody: true` is the difference between buffering a 2 GB TUS upload in RAM and streaming it to disk. On Node, you'd be configuring streams manually and hoping the framework respects them.
+
+## No GC pauses that matter
+
+Go's GC is concurrent and sub-millisecond for small heaps. Laju Go's heap is small — SQLite is the store, sessions are cached in a `sync.RWMutex` map, and the query layer is generated code with no reflection. There is no V8-style pause-the-world stop on request paths. The p99 latency is the database, not the runtime.
+
+## The real tradeoff
+
+Go is not the right answer if your team only knows TypeScript, or if you need a library that only exists on npm. It is the right answer when you want a backend that compiles in 2 seconds, deploys as one file, handles hundreds of thousands of requests per second per core, and has a concurrency model that doesn't require a mental model of the event loop to reason about.
+
+Laju Go is a SaaS starter. The backend is the part that runs forever and costs you money per request. That's the part worth optimizing — and Go is the optimization.

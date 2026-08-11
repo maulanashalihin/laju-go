@@ -1,0 +1,345 @@
+/* Laju Go site — Starlight theme overrides.
+   Accent: Electric Cyan-Teal (#22d3ee) — the color of velocity.
+   Dark mode is primary. Navy-tinted near-black, never pure black. */
+
+:root {
+	--sl-color-accent: #22d3ee;
+	--sl-color-accent-low: #0891b2;
+	--sl-color-accent-high: #67e8f9;
+	--sl-color-accent-contrast: #070b16;
+}
+
+:root[data-theme="light"] {
+	--sl-color-accent: #0891b2;
+	--sl-color-accent-low: #0e7490;
+	--sl-color-accent-high: #155e75;
+	--sl-color-accent-contrast: #ffffff;
+}
+
+/* Docs navbar logo */
+.site-title {
+	font-size: 1.05rem;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+.site-title img {
+	width: 24px;
+	height: 24px;
+}
+
+/* Heading hierarchy */
+.sl-markdown-content h2 {
+	margin-top: 2.5rem;
+	font-size: 1.6rem;
+}
+
+/* Paragraph measure */
+.sl-markdown-content p {
+	line-height: 1.75;
+}
+
+/* Lists */
+.sl-markdown-content li {
+	margin-top: 0.4rem;
+}
+
+/* Links — cyan-teal, underline follows font metrics */
+.sl-markdown-content a {
+	color: var(--sl-color-accent);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+.sl-markdown-content a:hover {
+	color: var(--sl-color-accent-high);
+}
+
+/* Code blocks — rounded corners */
+.sl-markdown-content .expressive-code {
+	--ec-brdRad: 0.5rem;
+}
+.sl-markdown-content pre code {
+	font-size: 0.85rem;
+}
+
+/* Inline code — soft chip */
+.sl-markdown-content code:not(pre code) {
+	padding: 0.15rem 0.4rem;
+	border-radius: 0.3rem;
+	font-size: 0.85em;
+	background: var(--sl-color-gray-7);
+	color: var(--sl-color-accent-high);
+}
+
+/* Blockquotes */
+.sl-markdown-content blockquote {
+	border-left: 3px solid var(--sl-color-accent);
+	padding-left: 1rem;
+	color: var(--sl-color-gray-3);
+	font-style: italic;
+}
+.sl-markdown-content blockquote p {
+	margin: 0;
+}
+
+/* Tables */
+.sl-markdown-content table {
+	width: 100%;
+	border-collapse: collapse;
+}
+.sl-markdown-content th {
+	text-align: left;
+	border-bottom: 2px solid var(--sl-color-gray-5);
+	padding: 0.6rem 1rem;
+}
+
+/* Blog index overrides */
+.posts + h1,
+h1#_top {
+	font-size: 2rem;
+}
+
+.posts {
+	gap: 1.25rem !important;
+}
+
+article.preview {
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.75rem;
+	padding: 1.25rem;
+	background: var(--sl-color-gray-9);
+	transition: border-color 0.15s ease;
+}
+article.preview:hover {
+	border-color: var(--sl-color-accent);
+}
+
+article.preview .preview-link h2 {
+	font-size: 1.15rem;
+}
+article.preview .preview-link:hover h2,
+article.preview:hover .preview-link h2 {
+	color: var(--sl-color-accent);
+}
+
+article.preview .preview-link {
+	text-decoration: none;
+}
+
+article.preview .metadata {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem;
+	font-size: 0.85rem;
+	color: var(--sl-color-gray-3);
+	margin-bottom: 0;
+}
+article.preview .metadata .authors {
+	display: flex;
+}
+article.preview .metadata .author {
+	gap: 0.4rem;
+}
+article.preview .metadata .name {
+	font-weight: 600;
+}
+article.preview .metadata .name a {
+	color: var(--sl-color-accent);
+	text-decoration: none;
+}
+article.preview .metadata .title {
+	color: var(--sl-color-gray-3);
+}
+article.preview .metadata .author .text {
+	font-size: 0.8rem;
+}
+
+article.preview .sl-markdown-content {
+	margin-top: 0.25rem;
+}
+article.preview .sl-markdown-content p {
+	font-size: 0.9rem;
+	color: var(--sl-color-gray-3);
+	line-height: 1.6;
+}
+
+/* Tags */
+article.preview footer {
+	margin-top: 0.75rem;
+}
+article.preview footer > div {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+article.preview footer b {
+	font-size: 0.8rem;
+	color: var(--sl-color-gray-3);
+	font-weight: 500;
+}
+article.preview footer ul {
+	display: flex;
+	gap: 0.4rem;
+	padding: 0;
+	margin: 0;
+}
+article.preview footer li {
+	list-style: none;
+}
+article.preview footer a {
+	padding: 0.2rem 0.6rem;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	background: var(--sl-color-gray-7);
+	color: var(--sl-color-accent-high);
+	text-decoration: none;
+	transition: background 0.15s ease;
+}
+article.preview footer a:hover {
+	background: var(--sl-color-accent-low);
+}
+
+/* Blog post page */
+h1#_top {
+	margin-bottom: 1rem;
+}
+
+.sl-markdown-content .metadata {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem;
+	padding-bottom: 1rem;
+	border-bottom: 1px solid var(--sl-color-gray-5);
+}
+.sl-markdown-content .metadata .dates {
+	font-size: 0.85rem;
+	color: var(--sl-color-gray-3);
+}
+.sl-markdown-content .metadata .authors {
+	display: flex;
+}
+.sl-markdown-content .metadata .author {
+	gap: 0.4rem;
+}
+.sl-markdown-content .metadata .author .text {
+	font-size: 0.8rem;
+}
+.sl-markdown-content .metadata .name {
+	font-weight: 600;
+}
+.sl-markdown-content .metadata .name a {
+	color: var(--sl-color-accent);
+	text-decoration: none;
+}
+.sl-markdown-content .metadata .title {
+	color: var(--sl-color-gray-3);
+}
+
+.sl-markdown-content .metadata + p {
+	font-size: 1.1rem;
+	color: var(--sl-color-gray-2);
+}
+
+/* Post footer */
+.post-footer {
+	border-top: 1px solid var(--sl-color-gray-5);
+	padding-top: 1.5rem;
+	margin-top: 2rem;
+}
+
+.post-footer > div:first-child {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+.post-footer > div:first-child b {
+	font-size: 0.8rem;
+	color: var(--sl-color-gray-3);
+	font-weight: 500;
+}
+.post-footer > div:first-child ul {
+	display: flex;
+	gap: 0.4rem;
+}
+.post-footer > div:first-child li {
+	list-style: none;
+}
+.post-footer > div:first-child a {
+	padding: 0.2rem 0.6rem;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	background: var(--sl-color-gray-7);
+	color: var(--sl-color-accent-high);
+	text-decoration: none;
+	transition: background 0.15s ease;
+}
+.post-footer > div:first-child a:hover {
+	background: var(--sl-color-accent-low);
+}
+
+/* Related posts cards */
+.post-footer .card-grid {
+	gap: 1rem;
+}
+.post-footer .sl-link-card {
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.75rem;
+	transition: border-color 0.15s ease;
+}
+.post-footer .sl-link-card:hover {
+	border-color: var(--sl-color-accent);
+}
+.post-footer .sl-link-card a {
+	text-decoration: none;
+}
+.post-footer .sl-link-card .title {
+	font-weight: 600;
+	transition: color 0.15s ease;
+}
+.post-footer .sl-link-card:hover .title {
+	color: var(--sl-color-accent);
+}
+
+/* Pagination */
+.pagination-links a {
+	transition: border-color 0.15s ease;
+}
+.pagination-links a:hover {
+	border-color: var(--sl-color-accent);
+}
+.pagination-links a:hover .link-title {
+	color: var(--sl-color-accent);
+}
+.pagination-links .link-title {
+	transition: color 0.15s ease;
+}
+
+/* Right sidebar TOC */
+starlight-toc nav h2#starlight__on-this-page {
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--sl-color-gray-3);
+}
+starlight-toc nav ul {
+	padding-left: 0;
+}
+starlight-toc nav ul li {
+	list-style: none;
+}
+starlight-toc nav ul li a {
+	font-size: 0.85rem;
+	color: var(--sl-color-gray-3);
+	text-decoration: none;
+	transition: color 0.15s ease;
+}
+starlight-toc nav ul li a:hover {
+	color: var(--sl-color-accent);
+}
+starlight-toc nav ul li a[aria-current="true"],
+starlight-toc nav ul li a.is-current {
+	color: var(--sl-color-accent);
+	font-weight: 600;
+}
+
