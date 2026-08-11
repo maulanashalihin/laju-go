@@ -50,6 +50,37 @@ routes/web.go → app/handlers/ → app/services/ → app/queries/ → SQLite
 
 🔴 **This is the most important rule — never violate it.**
 
+## Multi-Branch Rule (🔴 CRITICAL)
+
+This repo uses multi-template branches. Each branch is **unique and independent**:
+
+| Branch | Frontend | Entry Point |
+|--------|----------|-------------|
+| `main` | Svelte 5 | `src/main.ts` |
+| `template/react-tailwind` | React 19 | `src/main.tsx` |
+| `template/vue-tailwind` | Vue 3 | `src/main.ts` |
+
+🔴 **NEVER touch a branch you're not currently working on.**
+
+- Framework-specific fixes stay on their branch. Do NOT cherry-pick to other branches.
+- Do NOT assume "consistency" means all branches need the same code.
+- Only shared changes (CLI, Go backend bugfixes unrelated to frontend) may cross branches — and only when the user explicitly asks.
+- Before every commit, answer: "Is this the branch I'm working on? Have I verified?"
+
+## Verify-Before-Commit Rule (🔴 CRITICAL)
+
+🔴 **NEVER commit before verifying the fix works.**
+
+| Change Type | Verification Required |
+|-------------|---------------------|
+| Go backend | `go build -o /dev/null ./cmd/laju-go` passes |
+| Frontend | Browser test or `vite build` passes |
+| Config (vite, tsconfig, package.json) | Build or dev server starts clean |
+
+- If verification fails, fix and re-verify. Do NOT commit a broken fix.
+- Do NOT commit "cleanup" of your own broken commits — revert/reset instead.
+- One verified commit > five speculative commits.
+
 ## Handler Structure Rule (🔴 Important)
 
 **Each module/feature must have its own handler file.** Do not merge all routes into one handler.
