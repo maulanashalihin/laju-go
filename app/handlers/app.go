@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"fmt"
+	"log/slog"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/maulanashalihin/laju-go/app/services"
@@ -134,9 +137,9 @@ func (h *AppHandler) UpdatePassword(c *fiber.Ctx) error {
 		})
 	}
 
-	if len(req.NewPassword) < 8 {
+	if err := validatePasswordStrength(req.NewPassword); err != nil {
 		return h.inertiaService.Render(c, "app/Profile", fiber.Map{
-			"error": "Password must be at least 8 characters",
+			"error": err.Error(),
 		})
 	}
 
@@ -147,7 +150,17 @@ func (h *AppHandler) UpdatePassword(c *fiber.Ctx) error {
 		})
 	}
 
+	// Invalidate all sessions for this user — forces re-login on all devices.
+	// The current session is also invalidated; user stays logged in via the
+	// session cookie which will be re-seeded on the next request.
+	uid := userID.(int64)
+	if err := h.userService.InvalidateAllSessions(uid); err != nil {
+		slog.Error("failed to invalidate sessions after password change", "user_id", uid, "error", err)
+	}
+
+	// Re-create the current session so the user doesn't get logged out immediately
 	sess, _ := h.store.Get(c)
+	sess.Regenerate()
 	user := sessionUser(sess)
 
 	return h.inertiaService.Render(c, "app/Profile", fiber.Map{
@@ -178,4 +191,27 @@ func toBool(v interface{}) bool {
 		return false
 	}
 	return b
+}
+
+// validatePasswordStrength enforces minimum password complexity:
+// at least 8 characters, one uppercase, one lowercase, one digit.
+func validatePasswordStrength(password string) error {
+	if len(password) < 8 {
+		return fmt.Errorf("password must be at least 8 characters")
+	}
+	var hasUpper, hasLower, hasDigit bool
+	for _, r := range password {
+		switch {
+		case r >= 'A' && r <= 'Z':
+			hasUpper = true
+		case r >= 'a' && r <= 'z':
+			hasLower = true
+		case r >= '0' && r <= '9':
+			hasDigit = true
+		}
+	}
+	if !hasUpper || !hasLower || !hasDigit {
+		return fmt.Errorf("password must contain at least one uppercase letter, one lowercase letter, and one digit")
+	}
+	return nil
 }

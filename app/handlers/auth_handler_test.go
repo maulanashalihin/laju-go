@@ -34,6 +34,8 @@ func setupTestApp(t *testing.T) (*fiber.App, *queries.Querier) {
 		password TEXT, avatar TEXT DEFAULT '',
 		role TEXT NOT NULL DEFAULT 'user', google_id TEXT UNIQUE,
 		email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+		failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+		locked_until DATETIME,
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);
@@ -54,9 +56,10 @@ func setupTestApp(t *testing.T) (*fiber.App, *queries.Querier) {
 		SessionSecret: "test-secret-32-chars-long-for-testing!!",
 	})
 	inertiaSvc := services.NewInertiaService(services.NewAssetService("", "", false), store)
+	mailerSvc := services.NewMailerService(querier, services.MailConfig{Driver: services.MailDriverLog}, "http://localhost:8080")
 
 	app := fiber.New()
-	h := NewAuthHandler(authSvc, store, inertiaSvc)
+	h := NewAuthHandler(authSvc, store, inertiaSvc, mailerSvc)
 	app.Get("/login", h.ShowLoginForm)
 	app.Get("/register", h.ShowRegisterForm)
 	app.Post("/register", h.Register)
@@ -112,7 +115,7 @@ func TestRegisterEndpoint(t *testing.T) {
 		wantSession  bool
 	}{
 		{
-			"success", `{"name":"T","email":"a@b.com","password":"pass123"}`,
+		"success", `{"name":"T","email":"a@b.com","password":"Pass1234"}`,
 			http.StatusSeeOther, "/app", true,
 		},
 		{

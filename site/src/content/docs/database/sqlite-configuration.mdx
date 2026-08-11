@@ -1,0 +1,609 @@
+---
+title: SQLite configuration
+description: Tune PRAGMAs and the connection pool by server RAM, storage type, and workload pattern.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Laju Go uses SQLite with optimizations that can be customized based on:
+
+- **Available RAM** — determines cache size and connection pool
+- **CPU cores** — determines concurrent connections
+- **Storage type** — NVMe vs SSD vs HDD (mmap optimization)
+- **Traffic pattern** — read-heavy vs write-heavy workloads
+
+## Current configuration (default)
+
+The default configuration in `cmd/laju-go/main.go` is optimized for a **1–2 GB RAM VPS with NVMe**:
+
+```go
+// cmd/laju-go/main.go — initDatabase()
+db.SetMaxOpenConns(15)                    // Connection pool size
+db.SetMaxIdleConns(10)                    // Keep idle connections ready
+db.SetConnMaxLifetime(5 * time.Minute)    // Connection lifetime
+
+db.Exec("PRAGMA journal_mode = WAL")           // Write-Ahead Logging
+db.Exec("PRAGMA synchronous = NORMAL")         // Balance speed/durability
+db.Exec("PRAGMA cache_size = -16000")          // 16 MB cache
+db.Exec("PRAGMA mmap_size = 268435456")        // 256 MB mmap
+db.Exec("PRAGMA temp_store = MEMORY")          // Memory temp tables
+db.Exec("PRAGMA busy_timeout = 5000")          // 5 second lock wait
+db.Exec("PRAGMA wal_autocheckpoint = 1000")    // Checkpoint frequency
+```
+
+## Configuration by RAM size
+
+### 1. Small server (512 MB – 1 GB RAM)
+
+**Use case**: development, low-traffic staging, MVP
+
+```go
+// Connection pooling
+db.SetMaxOpenConns(10)                    // Conservative pool
+db.SetMaxIdleConns(3)                     // Minimal idle
+db.SetConnMaxLifetime(5 * time.Minute)
+
+// SQLite PRAGMAs
+db.Exec("PRAGMA cache_size = -8000")           // 8 MB cache (~1.5% of 512 MB)
+db.Exec("PRAGMA mmap_size = 134217728")        // 128 MB mmap (virtual)
+db.Exec("PRAGMA busy_timeout = 5000")          // 5 second timeout
+db.Exec("PRAGMA wal_autocheckpoint = 1000")    // Default checkpoint
+db.Exec("PRAGMA synchronous = NORMAL")         // Safe for WAL
+db.Exec("PRAGMA journal_mode = WAL")           // WAL mode
+db.Exec("PRAGMA temp_store = MEMORY")          // Memory temp tables
+```
+
+**Memory breakdown**:
+
+```
+App (Go/Fiber)      : ~200-300 MB
+SQLite cache        : 8 MB
+SQLite mmap (virt)  : 128 MB (not physical RAM)
+OS overhead         : ~150 MB
+Buffer/Headroom     : ~50-100 MB
+─────────────────────────────────
+Total               : ~400-500 MB of 512 MB (80-95% usage)
+```
+
+<Aside type="caution" title="Add swap on 512 MB servers">
+For 512 MB, you **must add a swap file** of at least 512 MB:
+
+```bash
+sudo fallocate -l 512M /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Make permanent
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+</Aside>
+
+### 2. Medium server (2 GB – 4 GB RAM) — recommended
+
+**Use case**: production apps, medium traffic (10k–50k users/day)
+
+```go
+// Connection pooling
+db.SetMaxOpenConns(25)                    // Moderate pool
+db.SetMaxIdleConns(10)                    // Keep connections warm
+db.SetConnMaxLifetime(5 * time.Minute)
+
+// SQLite PRAGMAs
+db.Exec("PRAGMA cache_size = -32000")          // 32 MB cache (~1% of 4 GB)
+db.Exec("PRAGMA mmap_size = 536870912")        // 512 MB mmap
+db.Exec("PRAGMA busy_timeout = 7500")          // 7.5 second timeout
+db.Exec("PRAGMA wal_autocheckpoint = 2000")    // Less frequent checkpoint
+db.Exec("PRAGMA synchronous = NORMAL")         // Safe for WAL
+db.Exec("PRAGMA journal_mode = WAL")           // WAL mode
+db.Exec("PRAGMA temp_store = MEMORY")          // Memory temp tables
+```
+
+**Memory breakdown**:
+
+```
+App (Go/Fiber)      : ~300-400 MB
+SQLite cache        : 32 MB
+SQLite mmap (virt)  : 512 MB (virtual)
+OS overhead         : ~200 MB
+Buffer/Headroom     : ~1 GB+
+─────────────────────────────────
+Total               : ~600-700 MB of 2-4 GB (20-35% usage)
+```
+
+**Expected performance**:
+
+- Max RPS: ~15,000–25,000
+- Concurrent users: 500–1,000
+- Cache hit ratio: ~85–90%
+- P99 latency: ~30–50 ms
+
+### 3. Large server (8 GB – 16 GB RAM)
+
+**Use case**: high-traffic production (50k–200k users/day)
+
+```go
+// Connection pooling
+db.SetMaxOpenConns(50)                    // Large pool
+db.SetMaxIdleConns(15)                    // More idle connections
+db.SetConnMaxLifetime(10 * time.Minute)   // Longer lifetime
+
+// SQLite PRAGMAs
+db.Exec("PRAGMA cache_size = -500000")         // 500 MB cache (~3% of 16 GB)
+db.Exec("PRAGMA mmap_size = 1073741824")       // 1 GB mmap
+db.Exec("PRAGMA busy_timeout = 10000")         // 10 second timeout
+db.Exec("PRAGMA wal_autocheckpoint = 3000")    // Less frequent checkpoint
+db.Exec("PRAGMA synchronous = NORMAL")         // Safe for WAL
+db.Exec("PRAGMA journal_mode = WAL")           // WAL mode
+db.Exec("PRAGMA temp_store = MEMORY")          // Memory temp tables
+```
+
+**Memory breakdown**:
+
+```
+App (Go/Fiber)      : ~400-600 MB
+SQLite cache        : 500 MB
+SQLite mmap (virt)  : 1 GB (virtual)
+OS overhead         : ~300 MB
+Buffer/Headroom     : ~6-10 GB
+─────────────────────────────────
+Total               : ~1.5-2 GB of 8-16 GB (10-25% usage)
+```
+
+**Expected performance**:
+
+- Max RPS: ~40,000–60,000
+- Concurrent users: 2,000–3,000
+- Cache hit ratio: ~92–95%
+- P99 latency: ~15–25 ms
+
+### 4. Enterprise server (32 GB – 64 GB RAM)
+
+**Use case**: enterprise production (200k–1M+ users/day)
+
+```go
+// Connection pooling
+db.SetMaxOpenConns(100)                   // Maximum pool for 16+ vCPU
+db.SetMaxIdleConns(25)                    // Many idle connections
+db.SetConnMaxLifetime(10 * time.Minute)   // Long lifetime
+
+// SQLite PRAGMAs
+db.Exec("PRAGMA cache_size = -4000000")        // 4 GB cache (~7% of 58 GB)
+db.Exec("PRAGMA mmap_size = 2147483648")       // 2 GB mmap (NVMe optimization)
+db.Exec("PRAGMA busy_timeout = 10000")         // 10 second timeout
+db.Exec("PRAGMA wal_autocheckpoint = 5000")    // Minimal checkpoint overhead
+db.Exec("PRAGMA synchronous = NORMAL")         // Safe for WAL
+db.Exec("PRAGMA journal_mode = WAL")           // WAL mode
+db.Exec("PRAGMA temp_store = MEMORY")          // Memory temp tables
+db.Exec("PRAGMA page_size = 4096")             // Explicit page size
+```
+
+**Memory breakdown** (example: 58 GB RAM):
+
+```
+App (Go/Fiber)      : ~500-800 MB
+SQLite cache        : 4 GB
+SQLite mmap (virt)  : 2 GB (virtual)
+OS overhead         : ~500 MB
+Buffer/Headroom     : ~50 GB+
+─────────────────────────────────
+Total               : ~5-6 GB of 58 GB (10% usage)
+```
+
+**Expected performance**:
+
+- Max RPS: ~80,000–120,000
+- Concurrent users: 5,000–10,000
+- Cache hit ratio: ~96–99%
+- P99 latency: ~8–15 ms
+
+<Aside type="caution" title="SQLite write limits apply regardless of RAM">
+SQLite has inherent limitations:
+
+- **Max concurrent writes**: 1 at a time (WAL helps, but still limited)
+- **Write contention**: starts after ~50–100 concurrent connections
+
+For write-heavy workloads with this hardware, **consider PostgreSQL**. See [Why SQLite — not Postgres](../../blog/why-sqlite/) for the migration path.
+</Aside>
+
+## Configuration by workload
+
+### Read-heavy workload (>90% reads)
+
+**Optimization for maximum caching**:
+
+```go
+// Increase cache size
+db.Exec("PRAGMA cache_size = -1000000")  // 1 GB cache
+db.Exec("PRAGMA mmap_size = 2147483648") // 2 GB mmap
+
+// Aggressive connection pooling
+db.SetMaxOpenConns(50)
+db.SetMaxIdleConns(25)
+```
+
+**Reason**: more data cached = less disk I/O.
+
+### Write-heavy workload (>30% writes)
+
+**Optimization for write throughput**:
+
+```go
+// Reduce checkpoint frequency
+db.Exec("PRAGMA wal_autocheckpoint = 10000")  // Less frequent checkpoints
+
+// Keep cache moderate (WAL needs memory too)
+db.Exec("PRAGMA cache_size = -32000")  // 32 MB cache
+
+// Increase busy timeout for write contention
+db.Exec("PRAGMA busy_timeout = 15000")  // 15 second timeout
+```
+
+**Reason**: less frequent checkpoints = better write performance.
+
+<Aside type="caution">
+SQLite is not suitable for >50% write workloads. Consider PostgreSQL.
+</Aside>
+
+### Mixed workload (70% reads, 30% writes)
+
+**Balanced configuration** (default is sufficient):
+
+```go
+db.SetMaxOpenConns(25)
+db.SetMaxIdleConns(10)
+db.Exec("PRAGMA cache_size = -32000")       // 32 MB
+db.Exec("PRAGMA wal_autocheckpoint = 2000") // Balanced
+```
+
+## PRAGMA reference
+
+### Connection pooling
+
+| Setting | Recommended range | Description |
+|---------|-------------------|-------------|
+| `MaxOpenConns` | 10–100 | Max concurrent DB connections |
+| `MaxIdleConns` | 3–25 | Idle connections to keep |
+| `ConnMaxLifetime` | 5–10 min | Connection reuse duration |
+
+**Rule of thumb**: `MaxOpenConns = 6–8 × CPU cores`
+
+### Cache size
+
+```sql
+PRAGMA cache_size = -<KB>  -- Negative value = KB
+```
+
+| RAM | Cache size | Value |
+|-----|------------|-------|
+| 512 MB | 8 MB | `-8000` |
+| 1 GB | 16 MB | `-16000` |
+| 2 GB | 32 MB | `-32000` |
+| 4 GB | 64 MB | `-64000` |
+| 8 GB | 256 MB | `-256000` |
+| 16 GB | 500 MB | `-500000` |
+| 32 GB | 2 GB | `-2000000` |
+| 58 GB | 4 GB | `-4000000` |
+
+**Rule of thumb**: 1–7% of total RAM.
+
+### Mmap size
+
+```sql
+PRAGMA mmap_size = <bytes>
+```
+
+| Storage type | Mmap size | Value |
+|--------------|-----------|-------|
+| HDD | 64 MB | `67108864` |
+| SSD | 256 MB | `268435456` |
+| NVMe | 1–2 GB | `1073741824` – `2147483648` |
+
+**Reason**: NVMe benefits greatly from memory-mapped I/O.
+
+### Busy timeout
+
+```sql
+PRAGMA busy_timeout = <milliseconds>
+```
+
+| Concurrency | Timeout | Value |
+|-------------|---------|-------|
+| Low (&lt;100 RPS) | 3 seconds | `3000` |
+| Medium (100–1000 RPS) | 5–7 seconds | `5000`–`7500` |
+| High (>1000 RPS) | 10 seconds | `10000` |
+| Very high (write contention) | 15 seconds | `15000` |
+
+### WAL autocheckpoint
+
+```sql
+PRAGMA wal_autocheckpoint = <pages>
+```
+
+| Workload | Checkpoint | Value |
+|----------|------------|-------|
+| Read-heavy | 1000 pages | `1000` (default) |
+| Mixed | 2000–3000 pages | `2000`–`3000` |
+| Write-heavy | 5000–10000 pages | `5000`–`10000` |
+
+**Trade-off**: less frequent = better write perf, more disk usage.
+
+### Synchronous
+
+```sql
+PRAGMA synchronous = FULL | NORMAL | OFF
+```
+
+| Mode | Safety | Performance | Use case |
+|------|--------|-------------|----------|
+| `FULL` | Maximum | Slowest | Financial/critical data |
+| `NORMAL` | Very high | Fast | Production web apps (recommended) |
+| `OFF` | Low | Fastest | Development only (risky!) |
+
+<Aside type="danger">
+`OFF` can cause data corruption on power loss.
+</Aside>
+
+## Verification
+
+### Check current settings
+
+```bash
+# Connect to database
+sqlite3 data/app.db
+
+# Check all settings
+PRAGMA journal_mode;           -- Should be: wal
+PRAGMA synchronous;            -- Should be: 1 (NORMAL)
+PRAGMA cache_size;             -- Should be: -<value>
+PRAGMA mmap_size;              -- Should be: <value>
+PRAGMA busy_timeout;           -- Should be: <value>
+PRAGMA wal_autocheckpoint;     -- Should be: <value>
+PRAGMA temp_store;             -- Should be: 2 (MEMORY)
+
+# Exit
+.exit
+```
+
+### Verify from application logs
+
+When the server starts, you'll see:
+
+```
+SQLite optimizations: journal_mode=WAL, synchronous=NORMAL, cache_size=32000KB, mmap_size=536870912KB, wal_autocheckpoint=2000, busy_timeout=7500ms
+```
+
+## Troubleshooting
+
+### Database locked errors
+
+**Symptoms**: `database is locked`, `PRAGMA busy_timeout` doesn't help
+
+**Solutions**:
+
+1. Increase busy_timeout: `PRAGMA busy_timeout = 15000`
+2. Reduce MaxOpenConns: `db.SetMaxOpenConns(10)`
+3. Check for long-running transactions
+4. Enable WAL mode: `PRAGMA journal_mode = WAL`
+
+### High memory usage
+
+**Symptoms**: OOM killer, server swap thrashing
+
+**Solutions**:
+
+1. Reduce cache_size: `PRAGMA cache_size = -8000` (8 MB)
+2. Reduce MaxOpenConns: `db.SetMaxOpenConns(10)`
+3. Reduce mmap_size: `PRAGMA mmap_size = 134217728` (128 MB)
+
+### Slow queries
+
+**Symptoms**: P99 latency > 100 ms
+
+**Solutions**:
+
+1. Increase cache_size: `PRAGMA cache_size = -64000` (64 MB)
+2. Add indexes for frequent queries
+3. Run ANALYZE: `sqlite3 data/app.db "ANALYZE;"`
+4. Check query plans: `EXPLAIN QUERY PLAN <your-query>`
+
+### Write contention
+
+**Symptoms**: timeouts on write operations, WAL file grows large
+
+**Solutions**:
+
+1. Increase wal_autocheckpoint: `PRAGMA wal_autocheckpoint = 5000`
+2. Run manual checkpoint: `PRAGMA wal_checkpoint(PASSIVE)`
+3. Reduce concurrent writes (queue/batch writes)
+4. **Consider PostgreSQL** if write-heavy
+
+## Migration guide
+
+### From development to production
+
+**Step 1**: Update configuration in `cmd/laju-go/main.go`:
+
+```go
+// Change from development (512MB-1GB) to production (2-4GB)
+db.SetMaxOpenConns(10)  // → 25
+db.SetMaxIdleConns(3)   // → 10
+
+db.Exec("PRAGMA cache_size = -8000")      // → -32000 (32MB)
+db.Exec("PRAGMA mmap_size = 134217728")   // → 536870912 (512MB)
+db.Exec("PRAGMA busy_timeout = 5000")     // → 7500 (7.5s)
+db.Exec("PRAGMA wal_autocheckpoint = 1000") // → 2000
+```
+
+**Step 2**: Deploy and monitor:
+
+```bash
+# Deploy
+git push && ssh user@server "cd laju-go && git pull && go build && sudo systemctl restart laju-go"
+
+# Monitor logs
+journalctl -u laju-go -f
+
+# Check SQLite settings
+sqlite3 data/app.db "PRAGMA cache_size;"
+```
+
+### From SQLite to PostgreSQL (future scaling)
+
+**When to migrate**:
+
+- Write-heavy workload (>30% writes)
+- >10,000 concurrent users
+- Need horizontal scaling
+- Need high-availability (multi-region)
+
+**Migration steps**:
+
+1. Install PostgreSQL
+2. Update connection string in `.env`
+3. Replace SQLite-specific PRAGMAs with PostgreSQL equivalents
+4. Run migrations
+5. Test thoroughly
+
+## Performance benchmarks
+
+### Vultr HF 1 GB (1 vCPU, 1 GB RAM, NVMe)
+
+```
+Configuration:
+- MaxOpenConns: 10
+- cache_size: 8 MB
+- mmap_size: 128 MB
+
+Benchmark (hey -n 1000 -c 10):
+- Requests/sec: ~3,500
+- P50 latency: 15 ms
+- P95 latency: 45 ms
+- P99 latency: 80 ms
+```
+
+### Vultr HF 2 GB (2 vCPU, 2 GB RAM, NVMe)
+
+```
+Configuration:
+- MaxOpenConns: 25
+- cache_size: 32 MB
+- mmap_size: 512 MB
+
+Benchmark (hey -n 10000 -c 50):
+- Requests/sec: ~15,000
+- P50 latency: 8 ms
+- P95 latency: 25 ms
+- P99 latency: 45 ms
+```
+
+### Vultr HF 4 GB (4 vCPU, 4 GB RAM, NVMe)
+
+```
+Configuration:
+- MaxOpenConns: 50
+- cache_size: 64 MB
+- mmap_size: 1 GB
+
+Benchmark (hey -n 50000 -c 100):
+- Requests/sec: ~35,000
+- P50 latency: 5 ms
+- P95 latency: 15 ms
+- P99 latency: 25 ms
+```
+
+### Vultr HF 8 GB (6 vCPU, 8 GB RAM, NVMe)
+
+```
+Configuration:
+- MaxOpenConns: 75
+- cache_size: 256 MB
+- mmap_size: 1 GB
+
+Benchmark (hey -n 100000 -c 200):
+- Requests/sec: ~60,000
+- P50 latency: 3 ms
+- P95 latency: 10 ms
+- P99 latency: 18 ms
+```
+
+### Vultr HF 16 GB / 58 GB (16 vCPU, 16–58 GB RAM, NVMe)
+
+```
+Configuration:
+- MaxOpenConns: 100
+- cache_size: 4 GB
+- mmap_size: 2 GB
+
+Expected (hey -n 200000 -c 500):
+- Requests/sec: ~100,000-120,000
+- P50 latency: 2 ms
+- P95 latency: 8 ms
+- P99 latency: 12 ms
+```
+
+## Best practices
+
+### 1. Start conservative, scale up
+
+```go
+// Start with minimal configuration
+db.SetMaxOpenConns(10)
+db.Exec("PRAGMA cache_size = -8000")
+
+// Monitor usage for 1-2 weeks
+// Increase if needed
+```
+
+### 2. Monitor memory usage
+
+```bash
+# Check memory usage
+ps aux | grep laju-go
+
+# Check SQLite memory
+sqlite3 data/app.db "PRAGMA cache_size;"
+```
+
+### 3. Test before production
+
+```bash
+# Load test with new configuration
+hey -n 10000 -c 50 http://localhost:8080/
+
+# Monitor response times
+# Check for errors
+```
+
+### 4. Document changes
+
+Always document configuration changes:
+
+- Date of change
+- Reason for change
+- Before/after values
+- Performance impact
+
+### 5. Keep WAL files managed
+
+```bash
+# Check WAL file size
+ls -lh data/app.db*
+
+# Manual checkpoint if WAL is too large
+sqlite3 data/app.db "PRAGMA wal_checkpoint(PASSIVE);"
+```
+
+## Quick reference table
+
+| Server RAM | MaxOpenConns | cache_size | mmap_size | busy_timeout | wal_autocheckpoint |
+|------------|--------------|------------|-----------|--------------|-------------------|
+| 512 MB | 10 | 8 MB | 128 MB | 5000 | 1000 |
+| 1 GB | 15 | 16 MB | 256 MB | 5000 | 1000 |
+| 2 GB | 25 | 32 MB | 512 MB | 7500 | 2000 |
+| 4 GB | 50 | 64 MB | 1 GB | 10000 | 3000 |
+| 8 GB | 75 | 256 MB | 1 GB | 10000 | 3000 |
+| 16 GB | 100 | 500 MB | 2 GB | 10000 | 5000 |
+| 32 GB | 100 | 2 GB | 2 GB | 10000 | 5000 |
+| 58 GB | 100 | 4 GB | 2 GB | 10000 | 5000 |

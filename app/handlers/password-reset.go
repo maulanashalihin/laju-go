@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log/slog"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -123,6 +124,12 @@ func (h *PasswordResetHandler) ResetPassword(c *fiber.Ctx) error {
 		})
 	}
 
+	if err := validatePasswordStrength(req.Password); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
 	if req.Password != req.PasswordConfirmed {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Passwords do not match",
@@ -167,6 +174,12 @@ func (h *PasswordResetHandler) ResetPassword(c *fiber.Ctx) error {
 
 	// Invalidate token so it can't be reused
 	h.mailerService.InvalidateResetToken(c.Context(), token)
+
+	// Invalidate all sessions for this user — any stolen session cookie
+	// becomes invalid after a password reset.
+	if err := h.userService.InvalidateAllSessions(user.ID); err != nil {
+		slog.Error("failed to invalidate sessions after password reset", "user_id", user.ID, "error", err)
+	}
 
 	return h.inertiaService.Render(c, "auth/ResetPassword", fiber.Map{
 		"token":   token,

@@ -87,6 +87,8 @@ func (h *UploadHandler) handleCompletedUpload(event tusdfiber.HookEvent) {
 	if filename == "" {
 		filename = info.ID
 	}
+	// Strip path components — only keep the base name to prevent path traversal
+	filename = filepath.Base(filename)
 
 	// Get the filestore path (from .info Storage.Path)
 	storePath := info.Storage["Path"]
@@ -176,8 +178,14 @@ func (h *UploadHandler) AvatarUpload(c *fiber.Ctx) error {
 	if file.Size > 5*1024*1024 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "File too large. Max size: 5MB"})
 	}
-
-	ext := filepath.Ext(file.Filename)
+	// Map content-type to extension — never trust the client-provided filename extension
+	extMap := map[string]string{
+		"image/jpeg": ".jpg",
+		"image/png":  ".png",
+		"image/gif":  ".gif",
+		"image/webp": ".webp",
+	}
+	ext := extMap[contentType]
 	filename := fmt.Sprintf("%d_%d%s", userID.(int64), time.Now().UnixNano(), ext)
 	uploadPath := filepath.Join("storage", "avatars", filename)
 

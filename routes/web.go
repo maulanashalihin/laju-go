@@ -7,7 +7,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/handlers"
 	"github.com/maulanashalihin/laju-go/app/middlewares"
-	"github.com/maulanashalihin/laju-go/app/queries"
 	"github.com/maulanashalihin/laju-go/app/services"
 	"github.com/maulanashalihin/laju-go/app/session"
 )
@@ -52,8 +51,20 @@ func setupStaticRoutes(app *fiber.App) {
 		CacheDuration: 1 * time.Hour,
 		MaxAge:        3600,
 	})
-	// Uploaded files (avatars, completed uploads — moderate cache)
-	app.Static("/storage", "./storage", fiber.Static{
+	// Avatars — served inline so <img src> works. Extensions are validated
+	// at upload time (only JPEG/PNG/GIF/WEBP) and X-Content-Type-Options: nosniff
+	// prevents MIME sniffing.
+	app.Static("/storage/avatars", "./storage/avatars", fiber.Static{
+		CacheDuration: 24 * time.Hour,
+		MaxAge:        86400,
+	})
+	// Completed uploads — force download to prevent browser execution of
+	// arbitrary uploaded files (HTML, JS) as a defense-in-depth measure.
+	app.Use("/storage/completed", func(c *fiber.Ctx) error {
+		c.Set("Content-Disposition", "attachment")
+		return c.Next()
+	})
+	app.Static("/storage/completed", "./storage/completed", fiber.Static{
 		CacheDuration: 24 * time.Hour,
 		MaxAge:        86400,
 	})
@@ -85,11 +96,14 @@ func setupAuthRoutes(app *fiber.App, authHandler *handlers.AuthHandler, password
 	app.Post("/forgot-password", passwordResetHandler.SendResetLink, middlewares.PasswordResetRateLimit.Limit())
 	app.Get("/reset-password/:token", passwordResetHandler.ShowResetPasswordForm)
 	app.Post("/reset-password/:token", passwordResetHandler.ResetPassword)
+
+	// Email verification
+	app.Get("/verify-email/:token", authHandler.VerifyEmail)
 }
 
 func setupAppRoutes(app *fiber.App, appHandler *handlers.AppHandler, uploadHandler *handlers.UploadHandler, store *session.Store, userService *services.UserService, csrfMiddleware *middlewares.CSRFMiddleware) {
 	// Protected app routes with CSRF protection
-	protected := app.Group("/app", middlewares.AuthRequired(store))
+	protected := app.Group("/app", middlewares.AuthRequired(store), middlewares.NoCache())
 	protected.Use(csrfMiddleware.Protect())
 
 	// Dashboard
@@ -113,7 +127,7 @@ func setupAppRoutes(app *fiber.App, appHandler *handlers.AppHandler, uploadHandl
 	uploadHandler.RegisterTUSRoutes(app, authMiddleware)
 
 	// Admin-only routes
-	admin := app.Group("/admin", middlewares.AdminRequired(store, userService))
+	admin := app.Group("/admin", middlewares.AdminRequired(store, userService), middlewares.NoCache())
 	admin.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"message": "Admin dashboard",
@@ -129,10 +143,6 @@ func SetupCSRFMiddleware(secret string, secure bool) *middlewares.CSRFMiddleware
 	return middlewares.NewCSRFMiddleware(config)
 }
 
-// SetupMailerService sets up the mailer service
-func SetupMailerService(querier *queries.Querier, smtpHost string, smtpPort int, smtpUser, smtpPass, fromEmail, fromName, appURL string) *services.MailerService {
-	return services.NewMailerService(querier, smtpHost, smtpPort, smtpUser, smtpPass, fromEmail, fromName, appURL)
-}
 
 // SetupPasswordResetHandler sets up the password reset handler
 func SetupPasswordResetHandler(

@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/maulanashalihin/laju-go/app/models"
@@ -18,13 +18,15 @@ type AuthHandler struct {
 	authService    *services.AuthService
 	store          *session.Store
 	inertiaService *services.InertiaService
+	mailerService  *services.MailerService
 }
 
-func NewAuthHandler(authService *services.AuthService, store *session.Store, inertiaService *services.InertiaService) *AuthHandler {
+func NewAuthHandler(authService *services.AuthService, store *session.Store, inertiaService *services.InertiaService, mailerService *services.MailerService) *AuthHandler {
 	return &AuthHandler{
 		authService:    authService,
 		store:          store,
 		inertiaService: inertiaService,
+		mailerService:  mailerService,
 	}
 }
 
@@ -53,6 +55,11 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return h.inertiaService.Redirect(c, "/register")
 	}
 
+	if err := validatePasswordStrength(req.Password); err != nil {
+		h.store.Flash(c, "error", err.Error())
+		return h.inertiaService.Redirect(c, "/register")
+	}
+
 	user, err := h.authService.Register(req.Name, req.Email, req.Password)
 	if err != nil {
 		if errors.Is(err, services.ErrUserAlreadyExists) {
@@ -73,6 +80,13 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	if sess, err := h.store.Get(c); err == nil {
 		sess.Regenerate()
 	}
+
+	// Send verification email (async — don't block registration)
+	go func() {
+		if err := h.mailerService.SendVerificationEmail(context.Background(), user.Email, user.ID); err != nil {
+			slog.Error("failed to send verification email", "user_id", user.ID, "error", err)
+		}
+	}()
 
 	slog.Info("session created", "handler", "Auth.Register", "user_id", user.ID, "redirect", "/app")
 	return h.inertiaService.Redirect(c, "/app")
@@ -130,7 +144,13 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
-	state := generateState()
+	state, err := generateState()
+	if err != nil {
+		slog.Error("failed to generate OAuth state", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to initiate OAuth",
+		})
+	}
 	c.Cookie(&fiber.Cookie{
 		Name:     "oauth_state",
 		Value:    state,
@@ -150,8 +170,9 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
 
 	storedState := c.Cookies("oauth_state")
-	if state != storedState {
-		slog.Warn("oauth state mismatch", "got", state, "expected", storedState)
+	// Constant-time comparison to prevent timing attacks on the OAuth state
+	if !constantTimeCompareString(state, storedState) {
+		slog.Warn("oauth state mismatch")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid OAuth state",
 		})
@@ -163,7 +184,7 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	if err != nil {
 		slog.Error("google token error", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to authenticate with Google: " + err.Error(),
+			"error": "Failed to authenticate with Google",
 		})
 	}
 
@@ -184,14 +205,48 @@ func (h *AuthHandler) GoogleCallback(c *fiber.Ctx) error {
 	return h.inertiaService.Redirect(c, "/app")
 }
 
-// generateState generates a random state string for OAuth
-func generateState() string {
-	// Generate random bytes
+// generateState generates a random state string for OAuth.
+// Returns an error if crypto/rand fails — never falls back to a predictable value.
+func generateState() (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
-		// Fallback to timestamp-based
-		return fmt.Sprintf("state_%d", time.Now().UnixNano())
+		return "", fmt.Errorf("generate OAuth state: %w", err)
 	}
-	// Convert to hex string
-	return hex.EncodeToString(b)
+	return hex.EncodeToString(b), nil
+}
+
+// constantTimeCompareString compares two strings in constant time.
+func constantTimeCompareString(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	result := byte(0)
+	for i := 0; i < len(a); i++ {
+		result |= a[i] ^ b[i]
+	}
+	return result == 0
+}
+
+// VerifyEmail handles GET /verify-email/:token — validates the token and
+// marks the user's email as verified.
+func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
+	token := c.Params("token")
+	if token == "" {
+		return h.inertiaService.Redirect(c, "/login")
+	}
+
+	userID, err := h.mailerService.VerifyEmail(c.Context(), token)
+	if err != nil {
+		slog.Warn("email verification failed", "error", err)
+		return h.inertiaService.Render(c, "auth/VerifyEmail", fiber.Map{
+			"Title":  "Email Verification",
+			"error":  "Invalid or expired verification link.",
+		})
+	}
+
+	slog.Info("email verified", "user_id", userID)
+	return h.inertiaService.Render(c, "auth/VerifyEmail", fiber.Map{
+		"Title":   "Email Verification",
+		"success": "Your email has been verified. You can now log in.",
+	})
 }

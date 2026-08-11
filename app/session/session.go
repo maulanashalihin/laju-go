@@ -3,10 +3,10 @@ package session
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"log/slog"
-	"net"
 	"strings"
 	"time"
 
@@ -96,43 +96,24 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 			if cached.ExpiresAt.Before(time.Now()) {
 				s.sessionCache.Invalidate(cookieValue)
 			} else {
-				switch checkFingerprint(cached.IP, cached.UserAgent, reqIP, reqUA, isPage) {
-				case fpInvalidate:
-					slog.Warn("session fingerprint mismatch (cache) — invalidating",
-						"session_id", cookieValue,
-						"expected_ip", cached.IP, "got_ip", reqIP)
-					s.invalidateSession(c, cookieValue)
-				case fpFixGarbageIP:
-					slog.Warn("session fingerprint mismatch (cache) — fixing garbage IP",
-						"session_id", cookieValue,
-						"stored_ip", cached.IP, "got_ip", reqIP)
-					s.sessionCache.Set(cookieValue, cache.CachedSessionData{
-						UserID:        cached.UserID,
-						Name:          cached.Name,
-						Email:         cached.Email,
-						Avatar:        cached.Avatar,
-						EmailVerified: cached.EmailVerified,
-						Role:          cached.Role,
-						CSRFToken:     cached.CSRFToken,
-						CSRFExpiry:    cached.CSRFExpiry,
-						IP:            reqIP,
-						UserAgent:     reqUA,
-						ExpiresAt:     cached.ExpiresAt,
-					})
-				case fpOK:
-					if cached.IP == "" {
-						s.setFingerprint(c, cookieValue, cached)
-					}
-					session.populate(cookieValue, fieldsFromCached(cached))
-					c.Locals("session", session)
-					return session, nil
+			switch checkFingerprint(cached.IP, cached.UserAgent, reqIP, reqUA, isPage) {
+			case fpInvalidate:
+				slog.Warn("session fingerprint mismatch (cache) — invalidating",
+					"session_id", cookieValue)
+				s.invalidateSession(c, cookieValue)
+			case fpOK:
+				if cached.IP == "" {
+					s.setFingerprint(c, cookieValue, cached)
 				}
+				session.populate(cookieValue, fieldsFromCached(cached))
+				c.Locals("session", session)
+				return session, nil
+			}
 			}
 		}
 	}
 
-	// Cache miss or mismatch: find session in database
-	dbSession, err := s.querier.GetSessionByID(context.Background(), cookieValue)
+	dbSession, err := s.querier.GetSessionByID(context.Background(), hashSessionID(cookieValue))
 	if err == nil {
 		if dbSession.ExpiresAt.Before(time.Now()) {
 			s.deleteSession(context.Background(), cookieValue)
@@ -142,32 +123,22 @@ func (s *Store) Get(c *fiber.Ctx) (*Session, error) {
 		} else {
 			var data SessionData
 			if err := json.Unmarshal([]byte(dbSession.Data), &data); err == nil {
-				switch checkFingerprint(data.IP, data.UserAgent, reqIP, reqUA, isPage) {
-				case fpInvalidate:
-					slog.Warn("session fingerprint mismatch (db) — invalidating",
-						"session_id", cookieValue,
-						"expected_ip", data.IP, "got_ip", reqIP)
-					s.invalidateSession(c, cookieValue)
-					c.Locals("session", session)
-					return session, nil
-				case fpFixGarbageIP:
-					slog.Warn("session fingerprint mismatch (db) — fixing garbage IP",
-						"session_id", cookieValue,
-						"stored_ip", data.IP, "got_ip", reqIP)
+			switch checkFingerprint(data.IP, data.UserAgent, reqIP, reqUA, isPage) {
+			case fpInvalidate:
+				slog.Warn("session fingerprint mismatch (db) — invalidating",
+					"session_id", cookieValue)
+				s.invalidateSession(c, cookieValue)
+				c.Locals("session", session)
+				return session, nil
+			case fpOK:
+				if data.IP == "" {
 					data.IP = reqIP
 					data.UserAgent = reqUA
 					newJSON, _ := json.Marshal(data)
 					dbSession.Data = string(newJSON)
 					s.querier.UpdateSession(context.Background(), dbSession)
-				case fpOK:
-					if data.IP == "" {
-						data.IP = reqIP
-						data.UserAgent = reqUA
-						newJSON, _ := json.Marshal(data)
-						dbSession.Data = string(newJSON)
-						s.querier.UpdateSession(context.Background(), dbSession)
-					}
 				}
+			}
 				session.populate(cookieValue, fieldsFromSessionData(&data, dbSession.ExpiresAt))
 
 				// Store in cache for subsequent requests
@@ -242,26 +213,25 @@ func fieldsFromSessionData(d *SessionData, expiresAt time.Time) sessionFields {
 }
 
 // fingerprintAction represents the result of validating a session's
-// IP and User-Agent fingerprint against the current request.
+// User-Agent against the current request.
 type fingerprintAction int
 
 const (
-	fpOK            fingerprintAction = iota // fingerprint matches or is empty
-	fpFixGarbageIP                           // stored IP is invalid — silently fix it
-	fpInvalidate                             // fingerprint mismatch — invalidate session
+	fpOK        fingerprintAction = iota // fingerprint matches or is empty
+	fpInvalidate                         // fingerprint mismatch — invalidate session
 )
 
-// checkFingerprint compares stored IP/UA against request IP/UA and returns
-// the appropriate action. Both cache and DB paths use this to avoid duplicating
-// the validation logic.
+// checkFingerprint validates the session's User-Agent against the current
+// request. IP-based fingerprinting was removed because IP changes are normal
+// for SaaS users (mobile networks, VPN, IPv6 privacy extensions, corporate
+// NAT) and caused excessive false logouts.
+//
+// The only check: if this is a page request and the request sends no
+// User-Agent at all (a strong indicator of a non-browser client using a
+// stolen cookie), invalidate the session. Normal UA changes from browser
+// updates or extensions are tolerated.
 func checkFingerprint(storedIP, storedUA, reqIP, reqUA string, isPage bool) fingerprintAction {
-	if storedIP != "" && storedIP != reqIP {
-		if !isValidIP(storedIP) {
-			return fpFixGarbageIP
-		}
-		return fpInvalidate
-	}
-	if isPage && storedUA != "" && storedUA != reqUA {
+	if isPage && reqUA == "" {
 		return fpInvalidate
 	}
 	return fpOK
@@ -308,6 +278,15 @@ func generateSessionID() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+// hashSessionID returns the SHA-256 hex digest of a raw session ID.
+// The DB stores only the hash — if the database leaks, the attacker
+// cannot reconstruct valid cookies from the hashed session IDs.
+// The in-memory cache keys on the raw ID (no hash) for speed.
+func hashSessionID(rawID string) string {
+	h := sha256.Sum256([]byte(rawID))
+	return hex.EncodeToString(h[:])
 }
 
 // Set sets a value in the session
@@ -395,7 +374,7 @@ func (s *Session) Save() error {
 		s.id = sessionID
 
 		dbSession := &queries.Session{
-			ID:        s.id,
+			ID:        hashSessionID(s.id),
 			UserID:    sessionData.UserID,
 			Data:      string(jsonData),
 			ExpiresAt: s.expiresAt,
@@ -425,7 +404,7 @@ func (s *Session) Save() error {
 	} else {
 		// Update existing session
 		dbSession := &queries.Session{
-			ID:        s.id,
+			ID:        hashSessionID(s.id),
 			UserID:    sessionData.UserID,
 			Data:      string(jsonData),
 			ExpiresAt: s.expiresAt,
@@ -548,7 +527,7 @@ func (s *Session) Regenerate() error {
 
 	// Create new session with new ID + fingerprint
 	dbSession := &queries.Session{
-		ID:        newID,
+		ID:        hashSessionID(newID),
 		UserID:    sessionData.UserID,
 		Data:      string(jsonData),
 		ExpiresAt: s.expiresAt,
@@ -620,10 +599,6 @@ func (s *Store) GetFlash(c *fiber.Ctx, key string) string {
 	return value
 }
 
-// isValidIP returns true if s is a syntactically valid IPv4 or IPv6 address.
-func isValidIP(s string) bool {
-	return net.ParseIP(s) != nil
-}
 
 // isPageRequest returns true if the request is an actual page navigation
 // (Inertia XHR or initial HTML load), not an API/asset/DevTools side request.
@@ -676,7 +651,7 @@ func (s *Store) setFingerprint(c *fiber.Ctx, sessionID string, cached *cache.Cac
 
 	// Update DB
 	dbSession := &queries.Session{
-		ID:        sessionID,
+		ID:        hashSessionID(sessionID),
 		UserID:    cached.UserID,
 		Data:      string(newJSON),
 		ExpiresAt: cached.ExpiresAt,
@@ -698,8 +673,8 @@ func (s *Store) setFingerprint(c *fiber.Ctx, sessionID string, cached *cache.Cac
 			CSRFExpiry:    cached.CSRFExpiry,
 			IP:            ip,
 			UserAgent:     ua,
-			ExpiresAt:     cached.ExpiresAt,
-		})
+		ExpiresAt:     cached.ExpiresAt,
+	})
 	}
 
 	slog.Debug("fingerprint captured for existing session",
@@ -707,9 +682,11 @@ func (s *Store) setFingerprint(c *fiber.Ctx, sessionID string, cached *cache.Cac
 }
 
 // deleteSession removes a session from the database and logs any error.
+// The raw session ID is hashed before the DB query — the DB stores only
+// SHA-256(rawID), so a database leak cannot be used to hijack sessions.
 func (s *Store) deleteSession(ctx context.Context, sessionID string) {
-	if err := s.querier.DeleteSession(ctx, sessionID); err != nil {
-		slog.Error("failed to delete session", "session_id", sessionID, "error", err)
+	if err := s.querier.DeleteSession(ctx, hashSessionID(sessionID)); err != nil {
+		slog.Error("failed to delete session", "error", err)
 	}
 }
 

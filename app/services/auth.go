@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/maulanashalihin/laju-go/app/models"
 	"github.com/maulanashalihin/laju-go/app/queries"
@@ -159,7 +160,10 @@ func (s *AuthService) downloadAndSaveAvatar(ctx context.Context, pictureURL, goo
 		return "", fmt.Errorf("create request: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	// Use a dedicated client with a timeout — http.DefaultClient has none,
+	// which allows a hanging endpoint to block the goroutine forever.
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("download: %w", err)
 	}
@@ -185,7 +189,8 @@ func (s *AuthService) downloadAndSaveAvatar(ctx context.Context, pictureURL, goo
 	}
 	defer f.Close()
 
-	if _, err := io.Copy(f, resp.Body); err != nil {
+	// Limit read to 10 MB to prevent a malicious or oversized response from filling disk
+	if _, err := io.Copy(f, io.LimitReader(resp.Body, 10*1024*1024)); err != nil {
 		return "", fmt.Errorf("write file: %w", err)
 	}
 
@@ -229,7 +234,9 @@ func (s *AuthService) Register(name, email, password string) (*models.User, erro
 	return user, nil
 }
 
-// Login authenticates a user with email/password
+// Login authenticates a user with email/password.
+// Implements account lockout: after 5 failed attempts, the account is
+// locked for 15 minutes. Successful login resets the counter.
 func (s *AuthService) Login(email, password string) (*models.User, error) {
 	user, err := s.querier.GetUserByEmail(context.Background(), email)
 	if err != nil {
@@ -239,13 +246,29 @@ func (s *AuthService) Login(email, password string) (*models.User, error) {
 		return nil, err
 	}
 
+	// Check if account is locked
+	if user.LockedUntil.Valid && time.Now().Before(user.LockedUntil.Time) {
+		remaining := user.LockedUntil.Time.Sub(time.Now()).Round(time.Minute)
+		slog.Warn("login attempt on locked account", "email", email, "locked_for", remaining)
+		return nil, fmt.Errorf("account locked, try again in %s", remaining)
+	}
+
 	// Check password - user must have a password (not OAuth-only user)
 	if !user.Password.Valid {
 		return nil, ErrInvalidCredentials
 	}
 
 	if !CheckPassword(password, user.Password.String) {
+		// Increment failed attempts — lock if threshold reached
+		if lockErr := s.querier.IncrementFailedLogin(context.Background(), user.ID); lockErr != nil {
+			slog.Error("failed to increment login attempts", "user_id", user.ID, "error", lockErr)
+		}
 		return nil, ErrInvalidCredentials
+	}
+
+	// Successful login — reset failed attempts
+	if resetErr := s.querier.ResetFailedLogin(context.Background(), user.ID); resetErr != nil {
+		slog.Error("failed to reset login attempts", "user_id", user.ID, "error", resetErr)
 	}
 
 	return user, nil

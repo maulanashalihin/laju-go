@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+type EmailVerification struct {
+	Token     string
+	UserID    int64
+	Email     string
+	ExpiresAt time.Time
+	Used      int64
+	CreatedAt time.Time
+}
+
 type PasswordReset struct {
 	Token     string
 	UserID    int64
@@ -28,14 +37,16 @@ type Session struct {
 }
 
 type User struct {
-	ID            int64
-	Email         string
-	Name          string
-	Password      sql.NullString
-	Avatar        sql.NullString
-	Role          string
-	GoogleID      sql.NullString
-	EmailVerified bool
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID                  int64
+	Email               string
+	Name                string
+	Password            sql.NullString
+	Avatar              sql.NullString
+	Role                string
+	GoogleID            sql.NullString
+	EmailVerified       bool
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	FailedLoginAttempts int64
+	LockedUntil         sql.NullTime
 }

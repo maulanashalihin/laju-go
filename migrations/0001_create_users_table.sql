@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
+    -- Argon2id encoded hash: $argon2id$v=19$m=32768,t=1,p=4$<salt>$<hash>
+    -- Never stored in plaintext. Verified via constant-time comparison.
     password TEXT,
     avatar TEXT DEFAULT '',
     role TEXT NOT NULL DEFAULT 'user',

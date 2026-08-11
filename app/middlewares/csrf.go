@@ -108,13 +108,11 @@ func (csrf *CSRFMiddleware) setToken(c *fiber.Ctx) error {
 // validateToken validates the CSRF token using double-submit cookie pattern.
 // Compares the X-XSRF-TOKEN header with the XSRF-TOKEN cookie — no session lookup needed.
 func (csrf *CSRFMiddleware) validateToken(c *fiber.Ctx) error {
-	// Get token from header, form, or query
+	// Get token from header or form body only — never from query params
+	// (query params leak via Referer header, access logs, and browser history)
 	token := c.Get(csrf.config.HeaderName)
 	if token == "" {
 		token = c.FormValue(csrf.config.CookieName)
-	}
-	if token == "" {
-		token = c.Query(csrf.config.CookieName)
 	}
 
 	if token == "" {

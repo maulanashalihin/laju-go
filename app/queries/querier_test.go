@@ -32,6 +32,8 @@ func setupTestDB(t *testing.T) *sql.DB {
 		role TEXT NOT NULL DEFAULT 'user',
 		google_id TEXT UNIQUE,
 		email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+		failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+		locked_until DATETIME,
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);

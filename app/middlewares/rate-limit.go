@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/maulanashalihin/laju-go/app/session"
 )
 
 // RateLimiterConfig holds the rate limiter configuration
@@ -87,13 +88,15 @@ func (rl *RateLimiter) Limit() fiber.Handler {
 	}
 }
 
-// getClientKey returns the client identifier
+// getClientKey returns the client identifier.
+// Uses session.ClientIP to correctly extract the real client IP behind
+// Cloudflare or a reverse proxy — c.IP() returns the proxy IP, making
+// rate limiting ineffective when deployed behind a proxy.
 func (rl *RateLimiter) getClientKey(c *fiber.Ctx) string {
 	if rl.config.CustomKeyFn != nil {
 		return rl.config.CustomKeyFn(c)
 	}
-	// Default: use IP address
-	return c.IP()
+	return session.ClientIP(c)
 }
 
 // cleanup removes expired entries periodically

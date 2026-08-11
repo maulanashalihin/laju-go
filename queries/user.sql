@@ -9,17 +9,17 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id;
 
 -- name: GetUserByID :one
-SELECT id, email, name, password, avatar, role, google_id, email_verified, created_at, updated_at
+SELECT id, email, name, password, avatar, role, google_id, email_verified, failed_login_attempts, locked_until, created_at, updated_at
 FROM users
 WHERE id = ?;
 
 -- name: GetUserByEmail :one
-SELECT id, email, name, password, avatar, role, google_id, email_verified, created_at, updated_at
+SELECT id, email, name, password, avatar, role, google_id, email_verified, failed_login_attempts, locked_until, created_at, updated_at
 FROM users
 WHERE email = ?;
 
 -- name: GetUserByGoogleID :one
-SELECT id, email, name, password, avatar, role, google_id, email_verified, created_at, updated_at
+SELECT id, email, name, password, avatar, role, google_id, email_verified, failed_login_attempts, locked_until, created_at, updated_at
 FROM users
 WHERE google_id = ?;
 
@@ -45,4 +45,19 @@ WHERE id = ?;
 -- name: SetUserRoleAdmin :execrows
 UPDATE users
 SET role = ?, updated_at = ?
+WHERE id = ?;
+
+-- name: IncrementFailedLoginAttempts :execrows
+UPDATE users
+SET failed_login_attempts = failed_login_attempts + 1, updated_at = ?
+WHERE id = ?;
+
+-- name: LockUserAccount :execrows
+UPDATE users
+SET locked_until = ?, updated_at = ?
+WHERE id = ?;
+
+-- name: ResetFailedLoginAttempts :execrows
+UPDATE users
+SET failed_login_attempts = 0, locked_until = NULL, updated_at = ?
 WHERE id = ?;

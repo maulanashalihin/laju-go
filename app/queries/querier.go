@@ -33,16 +33,69 @@ func NewQuerier(db DBTX) *Querier {
 
 func toModelUser(qUser User) *models.User {
 	return &models.User{
-		ID:            qUser.ID,
-		Email:         qUser.Email,
-		Name:          qUser.Name,
-		Password:      qUser.Password,
-		Avatar:        nullStringToString(qUser.Avatar),
-		Role:          models.UserRole(qUser.Role),
-		GoogleID:      qUser.GoogleID,
-		EmailVerified: qUser.EmailVerified,
-		CreatedAt:     qUser.CreatedAt,
-		UpdatedAt:     qUser.UpdatedAt,
+		ID:                  qUser.ID,
+		Email:               qUser.Email,
+		Name:                qUser.Name,
+		Password:            qUser.Password,
+		Avatar:              nullStringToString(qUser.Avatar),
+		Role:                models.UserRole(qUser.Role),
+		GoogleID:            qUser.GoogleID,
+		EmailVerified:       qUser.EmailVerified,
+		FailedLoginAttempts: int(qUser.FailedLoginAttempts),
+		LockedUntil:         qUser.LockedUntil,
+		CreatedAt:           qUser.CreatedAt,
+		UpdatedAt:           qUser.UpdatedAt,
+	}
+}
+
+func toModelUserFromGetByID(r GetUserByIDRow) *models.User {
+	return &models.User{
+		ID:                  r.ID,
+		Email:               r.Email,
+		Name:                r.Name,
+		Password:            r.Password,
+		Avatar:              nullStringToString(r.Avatar),
+		Role:                models.UserRole(r.Role),
+		GoogleID:            r.GoogleID,
+		EmailVerified:       r.EmailVerified,
+		FailedLoginAttempts: int(r.FailedLoginAttempts),
+		LockedUntil:         r.LockedUntil,
+		CreatedAt:           r.CreatedAt,
+		UpdatedAt:           r.UpdatedAt,
+	}
+}
+
+func toModelUserFromGetByEmail(r GetUserByEmailRow) *models.User {
+	return &models.User{
+		ID:                  r.ID,
+		Email:               r.Email,
+		Name:                r.Name,
+		Password:            r.Password,
+		Avatar:              nullStringToString(r.Avatar),
+		Role:                models.UserRole(r.Role),
+		GoogleID:            r.GoogleID,
+		EmailVerified:       r.EmailVerified,
+		FailedLoginAttempts: int(r.FailedLoginAttempts),
+		LockedUntil:         r.LockedUntil,
+		CreatedAt:           r.CreatedAt,
+		UpdatedAt:           r.UpdatedAt,
+	}
+}
+
+func toModelUserFromGetByGoogleID(r GetUserByGoogleIDRow) *models.User {
+	return &models.User{
+		ID:                  r.ID,
+		Email:               r.Email,
+		Name:                r.Name,
+		Password:            r.Password,
+		Avatar:              nullStringToString(r.Avatar),
+		Role:                models.UserRole(r.Role),
+		GoogleID:            r.GoogleID,
+		EmailVerified:       r.EmailVerified,
+		FailedLoginAttempts: int(r.FailedLoginAttempts),
+		LockedUntil:         r.LockedUntil,
+		CreatedAt:           r.CreatedAt,
+		UpdatedAt:           r.UpdatedAt,
 	}
 }
 
@@ -52,7 +105,6 @@ func nullStringToString(ns sql.NullString) string {
 	}
 	return ""
 }
-
 // --- User operations ---
 
 func (q *Querier) CreateUser(ctx context.Context, user *models.User) error {
@@ -103,7 +155,7 @@ func (q *Querier) GetUserByID(ctx context.Context, id int64) (*models.User, erro
 		}
 		return nil, err
 	}
-	return toModelUser(qUser), nil
+	return toModelUserFromGetByID(qUser), nil
 }
 
 func (q *Querier) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
@@ -114,7 +166,7 @@ func (q *Querier) GetUserByEmail(ctx context.Context, email string) (*models.Use
 		}
 		return nil, err
 	}
-	return toModelUser(qUser), nil
+	return toModelUserFromGetByEmail(qUser), nil
 }
 
 func (q *Querier) GetUserByGoogleID(ctx context.Context, googleID string) (*models.User, error) {
@@ -125,7 +177,7 @@ func (q *Querier) GetUserByGoogleID(ctx context.Context, googleID string) (*mode
 		}
 		return nil, err
 	}
-	return toModelUser(qUser), nil
+	return toModelUserFromGetByGoogleID(qUser), nil
 }
 
 func (q *Querier) UpdateUser(ctx context.Context, user *models.User) error {
@@ -191,6 +243,55 @@ func (q *Querier) SetUserRoleAdmin(ctx context.Context, id int64) error {
 		Role:      string(models.RoleAdmin),
 		UpdatedAt: time.Now(),
 		ID:        id,
+	})
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
+// --- Account lockout ---
+
+const maxFailedAttempts = 5
+const lockoutDuration = 15 * time.Minute
+
+// IncrementFailedLogin increments the failed login counter. If the counter
+// reaches maxFailedAttempts, the account is locked for lockoutDuration.
+func (q *Querier) IncrementFailedLogin(ctx context.Context, userID int64) error {
+	rows, err := q.Queries.IncrementFailedLoginAttempts(ctx, IncrementFailedLoginAttemptsParams{
+		UpdatedAt: time.Now(),
+		ID:        userID,
+	})
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+	// Lock the account if threshold reached
+	user, err := q.Queries.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user.FailedLoginAttempts >= maxFailedAttempts {
+		_, err = q.Queries.LockUserAccount(ctx, LockUserAccountParams{
+			LockedUntil: sql.NullTime{Time: time.Now().Add(lockoutDuration), Valid: true},
+			UpdatedAt:   time.Now(),
+			ID:          userID,
+		})
+		return err
+	}
+	return nil
+}
+
+// ResetFailedLogin resets the failed login counter and clears the lock.
+func (q *Querier) ResetFailedLogin(ctx context.Context, userID int64) error {
+	rows, err := q.Queries.ResetFailedLoginAttempts(ctx, ResetFailedLoginAttemptsParams{
+		UpdatedAt: time.Now(),
+		ID:        userID,
 	})
 	if err != nil {
 		return err
@@ -326,4 +427,40 @@ func isDuplicateEmail(err error) bool {
 	msg := err.Error()
 	return strings.Contains(msg, "UNIQUE constraint failed: users.email") ||
 		strings.Contains(msg, "UNIQUE constraint failed: users.google_id")
+}
+
+// ── Email Verification ──────────────────────────────────────────
+
+func (q *Querier) CreateEmailVerification(ctx context.Context, token string, userID int64, email string, expiresAt time.Time) error {
+	return q.Queries.CreateEmailVerification(ctx, CreateEmailVerificationParams{
+		Token:     token,
+		UserID:    userID,
+		Email:     email,
+		ExpiresAt: expiresAt,
+		CreatedAt: time.Now(),
+	})
+}
+
+func (q *Querier) GetEmailVerification(ctx context.Context, token string) (EmailVerification, error) {
+	return q.Queries.GetEmailVerification(ctx, GetEmailVerificationParams{
+		Token:     token,
+		ExpiresAt: time.Now(),
+	})
+}
+
+func (q *Querier) MarkEmailVerified(ctx context.Context, userID int64) error {
+	_, err := q.Queries.MarkEmailVerified(ctx, MarkEmailVerifiedParams{
+		UpdatedAt: time.Now(),
+		ID:        userID,
+	})
+	return err
+}
+
+func (q *Querier) MarkEmailVerificationUsed(ctx context.Context, token string) error {
+	_, err := q.Queries.MarkEmailVerificationUsed(ctx, token)
+	return err
+}
+
+func (q *Querier) DeleteExpiredEmailVerifications(ctx context.Context) error {
+	return q.Queries.DeleteExpiredEmailVerifications(ctx)
 }

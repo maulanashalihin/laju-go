@@ -87,14 +87,29 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) (int64, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, password, avatar, role, google_id, email_verified, created_at, updated_at
+SELECT id, email, name, password, avatar, role, google_id, email_verified, failed_login_attempts, locked_until, created_at, updated_at
 FROM users
 WHERE email = ?
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+type GetUserByEmailRow struct {
+	ID                  int64
+	Email               string
+	Name                string
+	Password            sql.NullString
+	Avatar              sql.NullString
+	Role                string
+	GoogleID            sql.NullString
+	EmailVerified       bool
+	FailedLoginAttempts int64
+	LockedUntil         sql.NullTime
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
-	var i User
+	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
@@ -104,6 +119,8 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Role,
 		&i.GoogleID,
 		&i.EmailVerified,
+		&i.FailedLoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -111,14 +128,29 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByGoogleID = `-- name: GetUserByGoogleID :one
-SELECT id, email, name, password, avatar, role, google_id, email_verified, created_at, updated_at
+SELECT id, email, name, password, avatar, role, google_id, email_verified, failed_login_attempts, locked_until, created_at, updated_at
 FROM users
 WHERE google_id = ?
 `
 
-func (q *Queries) GetUserByGoogleID(ctx context.Context, googleID sql.NullString) (User, error) {
+type GetUserByGoogleIDRow struct {
+	ID                  int64
+	Email               string
+	Name                string
+	Password            sql.NullString
+	Avatar              sql.NullString
+	Role                string
+	GoogleID            sql.NullString
+	EmailVerified       bool
+	FailedLoginAttempts int64
+	LockedUntil         sql.NullTime
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+}
+
+func (q *Queries) GetUserByGoogleID(ctx context.Context, googleID sql.NullString) (GetUserByGoogleIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByGoogleID, googleID)
-	var i User
+	var i GetUserByGoogleIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
@@ -128,6 +160,8 @@ func (q *Queries) GetUserByGoogleID(ctx context.Context, googleID sql.NullString
 		&i.Role,
 		&i.GoogleID,
 		&i.EmailVerified,
+		&i.FailedLoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -135,14 +169,29 @@ func (q *Queries) GetUserByGoogleID(ctx context.Context, googleID sql.NullString
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, name, password, avatar, role, google_id, email_verified, created_at, updated_at
+SELECT id, email, name, password, avatar, role, google_id, email_verified, failed_login_attempts, locked_until, created_at, updated_at
 FROM users
 WHERE id = ?
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
+type GetUserByIDRow struct {
+	ID                  int64
+	Email               string
+	Name                string
+	Password            sql.NullString
+	Avatar              sql.NullString
+	Role                string
+	GoogleID            sql.NullString
+	EmailVerified       bool
+	FailedLoginAttempts int64
+	LockedUntil         sql.NullTime
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+}
+
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, id)
-	var i User
+	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
@@ -152,10 +201,70 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.Role,
 		&i.GoogleID,
 		&i.EmailVerified,
+		&i.FailedLoginAttempts,
+		&i.LockedUntil,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const incrementFailedLoginAttempts = `-- name: IncrementFailedLoginAttempts :execrows
+UPDATE users
+SET failed_login_attempts = failed_login_attempts + 1, updated_at = ?
+WHERE id = ?
+`
+
+type IncrementFailedLoginAttemptsParams struct {
+	UpdatedAt time.Time
+	ID        int64
+}
+
+func (q *Queries) IncrementFailedLoginAttempts(ctx context.Context, arg IncrementFailedLoginAttemptsParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, incrementFailedLoginAttempts, arg.UpdatedAt, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const lockUserAccount = `-- name: LockUserAccount :execrows
+UPDATE users
+SET locked_until = ?, updated_at = ?
+WHERE id = ?
+`
+
+type LockUserAccountParams struct {
+	LockedUntil sql.NullTime
+	UpdatedAt   time.Time
+	ID          int64
+}
+
+func (q *Queries) LockUserAccount(ctx context.Context, arg LockUserAccountParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, lockUserAccount, arg.LockedUntil, arg.UpdatedAt, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const resetFailedLoginAttempts = `-- name: ResetFailedLoginAttempts :execrows
+UPDATE users
+SET failed_login_attempts = 0, locked_until = NULL, updated_at = ?
+WHERE id = ?
+`
+
+type ResetFailedLoginAttemptsParams struct {
+	UpdatedAt time.Time
+	ID        int64
+}
+
+func (q *Queries) ResetFailedLoginAttempts(ctx context.Context, arg ResetFailedLoginAttemptsParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, resetFailedLoginAttempts, arg.UpdatedAt, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const setUserRoleAdmin = `-- name: SetUserRoleAdmin :execrows

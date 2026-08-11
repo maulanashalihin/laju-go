@@ -80,3 +80,17 @@ func (c *SessionCache) Clear() {
 	c.data = make(map[string]cacheEntry)
 	c.mu.Unlock()
 }
+
+// EvictExpired removes all expired entries from the cache.
+// Called periodically by the background cleanup goroutine to prevent
+// unbounded memory growth from sessions that are never accessed again.
+func (c *SessionCache) EvictExpired() {
+	now := time.Now()
+	c.mu.Lock()
+	for id, entry := range c.data {
+		if now.After(entry.data.ExpiresAt) {
+			delete(c.data, id)
+		}
+	}
+	c.mu.Unlock()
+}

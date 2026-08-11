@@ -18,14 +18,14 @@ templ LandingPage(title string, isDev bool, viteURL string, mainCSS string) {
 			{FLabel: "FAQ", FURL: "#faq"},
 		}
 		resourceLinks := FooterLinks{
-			{FLabel: "Documentation", FURL: "https://github.com/maulanashalihin/laju-go/tree/main/docs"},
-			{FLabel: "GitHub", FURL: "https://github.com/maulanashalihin/laju-go"},
-			{FLabel: "Benchmarks", FURL: "https://github.com/maulanashalihin/laju-go/tree/main/docs/benchmark"},
+		{FLabel: "Documentation", FURL: "https://laju.dev"},
+		{FLabel: "GitHub", FURL: "https://github.com/maulanashalihin/laju-go"},
+		{FLabel: "Deployment", FURL: "https://laju.dev/deployment/overview/"},
 		}
 		deployLinks := FooterLinks{
 			{FLabel: "Docker", FURL: "https://github.com/maulanashalihin/laju-go/blob/main/Dockerfile"},
 			{FLabel: "Systemd", FURL: "https://github.com/maulanashalihin/laju-go/tree/main/systemd"},
-			{FLabel: "Nginx", FURL: "https://github.com/maulanashalihin/laju-go/blob/main/docs/deployment/production.md"},
+			{FLabel: "Reverse proxy", FURL: "https://laju.dev/deployment/reverse-proxy/"},
 		}
 	}}
 	<!doctype html>
@@ -434,7 +434,7 @@ templ LandingPage(title string, isDev bool, viteURL string, mainCSS string) {
 								@FaqItem("What is the license?", "MIT. Use it commercially, modify it, ship it. Attribution is appreciated but not required.")
 							</div>
 							<div class="reveal-on-scroll anim-stagger-4">
-								@FaqItem("How do I deploy?", "Run npm run build:all to produce a single static binary plus your dist/ assets. Upload both to any VPS and run the binary. Systemd and Nginx configs are included in docs/deployment/.")
+							@FaqItem("How do I deploy?", "Run npm run build:all to produce a single static binary plus your dist/ assets. Upload both to any VPS and run the binary. See the deployment guide at laju.dev/deployment for Docker, systemd, and reverse proxy configs.")
 							</div>
 						</div>
 					</div>

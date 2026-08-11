@@ -1,5 +1,9 @@
 -- +goose Up
 -- +goose StatementBegin
+-- The `token` column stores SHA-256(raw_token), NOT the raw token.
+-- The raw token (64 hex chars from crypto/rand) is embedded in the reset URL
+-- sent via email. If the database leaks, the attacker cannot reconstruct
+-- valid reset URLs from the hashed tokens.
 CREATE TABLE IF NOT EXISTS password_resets (
     token      TEXT PRIMARY KEY,
     user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

@@ -97,6 +97,12 @@ func (s *UserService) DeleteAccount(userID int64) error {
 	return s.querier.DeleteUser(context.Background(), userID)
 }
 
+// InvalidateAllSessions deletes all sessions for a user from the database.
+// Called after password change or reset to force re-authentication on all devices.
+func (s *UserService) InvalidateAllSessions(userID int64) error {
+	return s.querier.DeleteSessionsByUserID(context.Background(), userID)
+}
+
 // IsAdmin checks if a user is an admin (direct DB query).
 func (s *UserService) IsAdmin(userID int64) (bool, error) {
 	user, err := s.querier.GetUserByID(context.Background(), userID)

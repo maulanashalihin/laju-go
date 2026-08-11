@@ -20,6 +20,7 @@ import (
 	"github.com/maulanashalihin/laju-go/app/cache"
 	"github.com/maulanashalihin/laju-go/app/config"
 	"github.com/maulanashalihin/laju-go/app/handlers"
+	"github.com/maulanashalihin/laju-go/app/middlewares"
 	"github.com/maulanashalihin/laju-go/app/queries"
 	"github.com/maulanashalihin/laju-go/app/services"
 	"github.com/maulanashalihin/laju-go/app/session"
@@ -84,8 +85,8 @@ func main() {
 	sessionStore := session.New(querier, sessionCache, cfg.SessionTTL)
 	sessionStore.SetSecure(cfg.AppEnv == "production")
 
-	// Start background cleanup for expired sessions and password reset tokens
-	startBackgroundCleanup(querier)
+	// Start background cleanup for expired sessions, password reset tokens, and cache
+	startBackgroundCleanup(querier, sessionCache)
 
 	// Initialize services
 	authService := services.NewAuthService(querier, services.AuthServiceConfig{
@@ -111,31 +112,28 @@ func main() {
 		slog.Error("failed to create avatars directory", "error", err)
 		os.Exit(1)
 	}
+	// Setup CSRF middleware (Secure cookies only in production with HTTPS)
+	csrfMiddleware := routes.SetupCSRFMiddleware(cfg.SessionSecret, cfg.AppEnv == "production")
+
+	// Setup mailer service (multi-provider: log / resend / mailtrap)
+	appURL := routes.GetAppURL(cfg.AppPort, cfg.AppEnv)
+	mailerService := services.NewMailerService(querier, services.MailConfig{
+		Driver:          services.MailDriver(cfg.MailDriver),
+		From:            cfg.MailFrom,
+		FromName:        cfg.MailFromName,
+		ResendAPIKey:    cfg.ResendAPIKey,
+		MailtrapToken:   cfg.MailtrapAPIToken,
+		MailtrapInboxID: cfg.MailtrapInboxID,
+	}, appURL)
 
 	// Initialize handlers
 	uploadHandler := handlers.NewUploadHandler(sessionStore, userService, "storage/uploads")
 	routeHandlers := routes.Handlers{
 		Public: handlers.NewPublicHandler(authService, userService, inertiaService, assetService),
-		Auth:   handlers.NewAuthHandler(authService, sessionStore, inertiaService),
+		Auth:   handlers.NewAuthHandler(authService, sessionStore, inertiaService, mailerService),
 		App:    handlers.NewAppHandler(userService, sessionStore, inertiaService),
 		Upload: uploadHandler,
 	}
-
-	// Setup CSRF middleware (Secure cookies only in production with HTTPS)
-	csrfMiddleware := routes.SetupCSRFMiddleware(cfg.SessionSecret, cfg.AppEnv == "production")
-
-	// Setup mailer service (with DB-backed token storage)
-	appURL := routes.GetAppURL(cfg.AppPort, cfg.AppEnv)
-	mailerService := routes.SetupMailerService(
-		querier,
-		cfg.SMTPHost,
-		cfg.SMTPPort,
-		cfg.SMTPUser,
-		cfg.SMTPPass,
-		cfg.FromEmail,
-		cfg.FromName,
-		appURL,
-	)
 
 	// Setup password reset handler
 	passwordResetHandler := routes.SetupPasswordResetHandler(
@@ -145,8 +143,6 @@ func main() {
 		inertiaService,
 	)
 	routeHandlers.PasswordReset = passwordResetHandler
-
-	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
 		AppName:      "Laju",
 		ErrorHandler: customErrorHandler,
@@ -162,6 +158,7 @@ func main() {
 		app.Use(logger.New())
 	}
 	app.Use(recover.New())
+	app.Use(middlewares.SecurityHeaders())
 
 	// Response compression (brotli > gzip, best speed for low CPU overhead)
 	app.Use(compress.New(compress.Config{
@@ -323,8 +320,9 @@ func logDatabaseOptimizations(db *sql.DB) {
 	)
 }
 
-// startBackgroundCleanup runs periodic cleanup of expired sessions and password reset tokens
-func startBackgroundCleanup(querier *queries.Querier) {
+// startBackgroundCleanup runs periodic cleanup of expired sessions, password
+// reset tokens, and in-memory session cache entries.
+func startBackgroundCleanup(querier *queries.Querier, sessionCache *cache.SessionCache) {
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
 		defer ticker.Stop()
@@ -340,15 +338,25 @@ func startBackgroundCleanup(querier *queries.Querier) {
 		} else {
 			slog.Debug("cleanup: expired password resets deleted")
 		}
-
-		for range ticker.C {
-			if err := querier.DeleteExpiredSessions(context.Background()); err != nil {
-				slog.Error("cleanup: failed to delete expired sessions", "error", err)
-			}
-			if err := querier.DeleteExpiredPasswordResets(context.Background()); err != nil {
-				slog.Error("cleanup: failed to delete expired password resets", "error", err)
-			}
+		sessionCache.EvictExpired()
+		if err := querier.DeleteExpiredEmailVerifications(context.Background()); err != nil {
+			slog.Error("cleanup: failed to delete expired email verifications", "error", err)
+		} else {
+			slog.Debug("cleanup: expired email verifications deleted")
 		}
+
+	for range ticker.C {
+		if err := querier.DeleteExpiredSessions(context.Background()); err != nil {
+			slog.Error("cleanup: failed to delete expired sessions", "error", err)
+		}
+		if err := querier.DeleteExpiredPasswordResets(context.Background()); err != nil {
+			slog.Error("cleanup: failed to delete expired password resets", "error", err)
+		}
+		sessionCache.EvictExpired()
+		if err := querier.DeleteExpiredEmailVerifications(context.Background()); err != nil {
+			slog.Error("cleanup: failed to delete expired email verifications", "error", err)
+		}
+	}
 	}()
 	slog.Info("background cleanup started (interval: 1h)")
 }
@@ -366,25 +374,26 @@ func runMigrations(db *sql.DB, migrationsDir string) error {
 	return nil
 }
 
-// customErrorHandler handles Fiber errors
+// customErrorHandler handles Fiber errors.
+// Internal errors are logged server-side; clients receive a generic message
+// to prevent information leakage (file paths, SQL queries, stack traces).
 func customErrorHandler(c *fiber.Ctx, err error) error {
 	code := fiber.StatusInternalServerError
 	if e, ok := err.(*fiber.Error); ok {
 		code = e.Code
 	}
 
-	// For Inertia requests, return JSON
-	if c.Get("X-Inertia") == "true" {
-		return c.Status(code).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+	// Log full error server-side
+	slog.Error("request error", "method", c.Method(), "path", c.Path(), "status", code, "error", err)
+
+	// For Fiber errors (4xx), the message is safe to return.
+	// For 5xx, return a generic message to avoid leaking internals.
+	msg := "Internal Server Error"
+	if code < 500 {
+		msg = err.Error()
 	}
 
-	// Set Content-Type: application/json; charset=utf-8
-	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
-
-	// Return custom error page
 	return c.Status(code).JSON(fiber.Map{
-		"error": err.Error(),
+		"error": msg,
 	})
 }

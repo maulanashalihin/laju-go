@@ -87,6 +87,8 @@ export default defineConfig({
 							slug: "database/schema-migrations",
 						},
 						{ label: "sqlc code generation", slug: "database/sqlc" },
+						{ label: "SQLite configuration", slug: "database/sqlite-configuration" },
+						{ label: "Data protection & recovery", slug: "database/data-protection" },
 					],
 				},
 				{

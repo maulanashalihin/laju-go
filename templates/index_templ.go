@@ -45,14 +45,14 @@ func LandingPage(title string, isDev bool, viteURL string, mainCSS string) templ
 			{FLabel: "FAQ", FURL: "#faq"},
 		}
 		resourceLinks := FooterLinks{
-			{FLabel: "Documentation", FURL: "https://github.com/maulanashalihin/laju-go/tree/main/docs"},
+			{FLabel: "Documentation", FURL: "https://laju.dev"},
 			{FLabel: "GitHub", FURL: "https://github.com/maulanashalihin/laju-go"},
-			{FLabel: "Benchmarks", FURL: "https://github.com/maulanashalihin/laju-go/tree/main/docs/benchmark"},
+			{FLabel: "Deployment", FURL: "https://laju.dev/deployment/overview/"},
 		}
 		deployLinks := FooterLinks{
 			{FLabel: "Docker", FURL: "https://github.com/maulanashalihin/laju-go/blob/main/Dockerfile"},
 			{FLabel: "Systemd", FURL: "https://github.com/maulanashalihin/laju-go/tree/main/systemd"},
-			{FLabel: "Nginx", FURL: "https://github.com/maulanashalihin/laju-go/blob/main/docs/deployment/production.md"},
+			{FLabel: "Reverse proxy", FURL: "https://laju.dev/deployment/reverse-proxy/"},
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" class=\"dark\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>")
 		if templ_7745c5c3_Err != nil {
@@ -191,7 +191,7 @@ func LandingPage(title string, isDev bool, viteURL string, mainCSS string) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = FaqItem("How do I deploy?", "Run npm run build:all to produce a single static binary plus your dist/ assets. Upload both to any VPS and run the binary. Systemd and Nginx configs are included in docs/deployment/.").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FaqItem("How do I deploy?", "Run npm run build:all to produce a single static binary plus your dist/ assets. Upload both to any VPS and run the binary. See the deployment guide at laju.dev/deployment for Docker, systemd, and reverse proxy configs.").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

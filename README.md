@@ -14,7 +14,7 @@ cd my-app
 npm run dev:all
 ```
 
-> `create-laju-go` clones the latest template from this repo, replaces placeholders (`laju-go` → `my-app`), runs `go mod download` + package manager install, copies `.env.example` to `.env`, and generates `.deploy` from your service name. See <https://www.npmjs.com/package/create-laju-go>.
+> `create-laju-go` clones the latest template from this repo, replaces placeholders (`laju-go` → `my-app`), runs `go mod download` + package manager install, and copies `.env.example` to `.env`. See <https://www.npmjs.com/package/create-laju-go>.
 
 Alternatively, clone directly (manual setup):
 
@@ -90,7 +90,7 @@ laju-go/
 ├── routes/                    # Route definitions
 ├── migrations/                # Goose SQL migrations (1 table per file)
 ├── templates/                 # templ HTML components
-├── docs/                      # Documentation
+├── prompts/                   # AI agent deploy prompts
 └── systemd/                   # Production service file
 ```
 
@@ -160,46 +160,17 @@ go test ./...                  # backend tests
 
 ## 🚀 Deployment
 
-One-click deploy: rsync source to server, build on server, restart systemd --user service.
+Three paths: **AI agent** (copy-paste a prompt), **Docker**, or **bare VPS** with systemd. Full guides at <https://laju.dev/deployment/>.
 
 ```bash
-# 1. Configure (once)
-cp .deploy.example .deploy
-# edit .deploy: APP_NAME, SERVER_USER, SERVER_HOST, SERVER_PATH
+# Build (vite build → go build)
+npm run build:all
 
-# 2. Deploy
-./scripts/deploy.sh
+# Build for Linux (from macOS, requires zig cc for CGO cross-compile)
+make build-linux
 ```
 
-`deploy.sh` detects first vs update deploy automatically:
-- **First deploy**: creates `.env`, enables linger, installs systemd --user service, seeds admin, auto-finds available port
-- **Update deploy**: rsync source, rebuild, restart service
-
-### Prerequisites (server)
-
-- Go 1.22+, Node 18+, npm, sqlite3, rsync
-- Passwordless sudo (only for `loginctl enable-linger`, run once during first deploy)
-- SSH key access from dev machine
-
-### OS Support (dev machine)
-
-| OS | Status | Notes |
-|----|--------|-------|
-| **macOS** | ✅ Full | Works out of the box |
-| **Linux** | ✅ Full | Works out of the box |
-| **Windows (WSL2)** | ✅ Full | Recommended — install WSL2 + Ubuntu, run scripts from WSL shell |
-| **Windows (Git Bash)** | ⚠️ Partial | rsync not included — install via MSYS2 or scoop: `scoop install rsync` |
-| **Windows (PowerShell)** | ❌ No | Bash scripts don't run — use WSL2 or Git Bash |
-
-> **Why build on server, not locally?** `mattn/go-sqlite3` uses CGO (C bindings). Cross-compiling from macOS/Windows to Linux requires a C cross-compiler (zig, musl-gcc, or Docker). Building on the server with native `gcc` is simpler — no extra toolchain on your dev machine.
->
-> **Alternative: zig cross-compile** (build locally, no Go needed on server):
-> ```bash
-> brew install zig   # macOS
-> CC="zig cc -target x86_64-linux-musl" CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
->   go build -o app ./cmd/laju-go
-> ```
-> Produces a static ELF binary. Works on Windows too (download zig from <https://ziglang.org/download/>).
+> **CGO note**: `mattn/go-sqlite3` uses C bindings. Cross-compiling from macOS/Windows to Linux requires a C cross-compiler. `make build-linux` uses `zig cc` — install with `brew install zig`. Produces a static ELF binary.
 
 ## 🗄️ Database
 
@@ -225,11 +196,10 @@ npm run db:generate    # sqlc generates Go code into app/queries/
 
 | Section | Description |
 |---------|-------------|
-| [Architecture](docs/guide/architecture.md) | Layered design, patterns, conventions |
-| [Database](docs/guide/database.md) | SQLite setup, migrations, sqlc |
-| [Frontend](docs/guide/frontend.md) | Svelte 5 + Inertia.js patterns |
-| [Deployment](docs/deployment/production.md) | Systemd, Nginx, production setup |
-| [Benchmarks](docs/benchmark/) | SQLite driver performance data |
+| [Architecture](https://laju.dev/architecture/overview/) | Layered design, patterns, conventions |
+| [Database](https://laju.dev/database/schema-migrations/) | SQLite setup, migrations, sqlc |
+| [Frontend](https://laju.dev/frontend/svelte-inertia/) | Svelte 5 + Inertia.js patterns |
+| [Deployment](https://laju.dev/deployment/overview/) | Docker, systemd, reverse proxy, configuration |
 
 ## 📄 License
 

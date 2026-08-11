@@ -21,13 +21,13 @@ type Config struct {
 	FrontendURL        string
 	// CORS
 	AllowedOrigins []string
-	// Email configuration
-	SMTPHost  string
-	SMTPPort  int
-	SMTPUser  string
-	SMTPPass  string
-	FromEmail string
-	FromName  string
+	// Email
+	MailDriver          string
+	MailFrom            string
+	MailFromName        string
+	ResendAPIKey        string
+	MailtrapAPIToken    string
+	MailtrapInboxID     string
 	// Session
 	SessionTTL time.Duration
 }
@@ -49,13 +49,13 @@ func Load() *Config {
 		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", ""),
 		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:5173"),
 		AllowedOrigins:     parseAllowedOrigins(),
-		// Email configuration
-		SMTPHost:  getEnv("SMTP_HOST", "smtp.gmail.com"),
-		SMTPPort:  getEnvAsInt("SMTP_PORT", 587),
-		SMTPUser:  getEnv("SMTP_USER", ""),
-		SMTPPass:  getEnv("SMTP_PASS", ""),
-		FromEmail: getEnv("FROM_EMAIL", "noreply@example.com"),
-		FromName:  getEnv("FROM_NAME", "Laju"),
+		// Email
+		MailDriver:       getEnv("MAIL_DRIVER", "log"),
+		MailFrom:         getEnv("MAIL_FROM", "noreply@example.com"),
+		MailFromName:     getEnv("MAIL_FROM_NAME", "Laju"),
+		ResendAPIKey:     getEnv("RESEND_API_KEY", ""),
+		MailtrapAPIToken: getEnv("MAILTRAP_API_TOKEN", ""),
+		MailtrapInboxID:  getEnv("MAILTRAP_INBOX_ID", ""),
 		// Session
 		SessionTTL: getSessionTTL(),
 	}
