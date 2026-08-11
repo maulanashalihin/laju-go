@@ -5,7 +5,6 @@ import starlightBlog from "starlight-blog";
 import mdx from "@astrojs/mdx";
 
 export default defineConfig({
-	tsconfig: "./tsconfig.json",
 	site: "https://laju.dev",
 	integrations: [
 		starlight({

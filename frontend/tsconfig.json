@@ -12,12 +12,12 @@
     "verbatimModuleSyntax": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["frontend/src/*"],
-      "@components/*": ["frontend/src/components/*"],
-      "@layouts/*": ["frontend/src/layouts/*"],
-      "@pages/*": ["frontend/src/pages/*"],
-      "@lib/*": ["frontend/src/lib/*"]
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@layouts/*": ["src/layouts/*"],
+      "@pages/*": ["src/pages/*"],
+      "@lib/*": ["src/lib/*"]
     }
   },
-  "include": ["frontend/**/*.ts", "frontend/**/*.svelte"]
+  "include": ["**/*.ts", "**/*.svelte"]
 }
