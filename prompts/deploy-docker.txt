@@ -28,15 +28,13 @@ Steps:
    - APP_PORT=<the port you chose>
    - APP_ENV=production
    - APP_URL=https://your-domain.com (or http://SERVER_IP:<port> if no domain)
-   Leave the rest as-is.
-6. If using docker-compose.yml, update the port mapping to match:
-   ports:
-     - "<port>:<port>"
-7. Run `docker compose up -d --build`.
-8. Wait for the container to be healthy (check with `docker compose ps`).
-9. If the port is not in UFW rules, allow it: sudo ufw allow <port>/tcp.
-10. Verify: curl http://localhost:<port>/health should return 200.
-11. Save these three lines to a file called `deploy.env` in my local
+   Leave the rest as-is. The docker-compose.yml reads APP_PORT from .env
+   automatically — no need to edit the compose file.
+6. Run `docker compose up -d --build`.
+7. Wait for the container to be healthy (check with `docker compose ps`).
+8. If the port is not in UFW rules, allow it: sudo ufw allow <port>/tcp.
+9. Verify: curl http://localhost:<port>/health should return 200.
+10. Save these three lines to a file called `deploy.env` in my local
     project root (NOT on the server) and add it to .gitignore.
     Use the actual values from above (not the placeholders):
     ```
@@ -44,7 +42,7 @@ Steps:
     DEPLOY_PATH=<the install path from above>
     DEPLOY_PORT=<the port you chose in step 3>
     ```
-12. Tell me the status, the port used, and any issues.
+11. Tell me the status, the port used, and any issues.
 
 # After the agent finishes, your app is live on the chosen port inside a
 # container. For HTTPS, use the same reverse proxy prompt as the
