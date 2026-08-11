@@ -209,16 +209,6 @@ program
 				process.exit(1);
 			}
 
-			// Ask for service name (default to project name)
-			console.log("\x1b[36m  Service name:\x1b[0m");
-			const serviceResponse = await prompts({
-				type: "text",
-				name: "serviceName",
-				message: "",
-				initial: projectDirectory,
-			});
-			const serviceName = serviceResponse.serviceName || projectDirectory;
-
 			const targetPath = path.resolve(projectDirectory);
 
 			// Check if directory exists
@@ -308,20 +298,6 @@ program
 					{ stdio: "pipe", timeout: 10000 },
 				);
 				console.log("\x1b[32m  ✓ Environment configured\x1b[0m");
-
-				// Generate .deploy file with customized service name
-				const deployExamplePath = path.join(targetPath, ".deploy.example");
-				const deployPath = path.join(targetPath, ".deploy");
-				if (fs.existsSync(deployExamplePath)) {
-					let deployContent = fs.readFileSync(deployExamplePath, "utf8");
-					deployContent = deployContent.replace(/APP_NAME/g, serviceName);
-					deployContent = deployContent.replace(
-						/YOUR_REPO_URL/g,
-						`https://github.com/maulanashalihin/${projectDirectory}.git`,
-					);
-					fs.writeFileSync(deployPath, deployContent);
-					console.log("\x1b[32m  ✓ Deployment configuration generated\x1b[0m");
-				}
 				console.log("");
 			} finally {
 				process.chdir(originalDir);

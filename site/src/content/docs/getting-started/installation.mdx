@@ -41,7 +41,7 @@ git --version
 npm create laju-go@latest my-app
 ```
 
-The installer prompts for a project name and a service name (used in the generated `.deploy` config), then prints the next steps:
+The installer clones the template, strips dev-only files, installs Go and Node.js dependencies, and creates `.env` from `.env.example`. Then it prints the next steps:
 
 ```bash
 cd my-app
@@ -104,7 +104,6 @@ Laju Go ships both `npm` scripts and a `Makefile`. They overlap — pick whichev
 | `npm run build:all` | `vite build && go build` — full production build |
 | `npm run build:linux` | Cross-compile a Linux amd64 binary via `cross-env` |
 | `npm run serve` | `go run ./cmd/laju-go` — run without building a binary |
-| `npm run deploy` | Runs `./scripts/deploy.sh` |
 | `npm run db:generate` | `sqlc generate` — regenerate `app/queries/` from `queries/*.sql` |
 | `npm run db:migrate` | Run Goose migrations up |
 | `npm run db:migrate:status` | Show migration status |
