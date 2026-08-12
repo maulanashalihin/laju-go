@@ -2,7 +2,7 @@
 
 High-performance SaaS boilerplate: Go Fiber + Svelte 5 + Inertia.js + SQLite + templ.
 
-> 🔴 **NEVER run `npm run dev:all` or any dev server.** The user handles dev servers manually.
+> 🔴 **NEVER start dev servers with `bash &` — they die when the call ends.** Use `hub start` for persistent processes (Go server, Vite). Stop with `hub stop` when done.
 
 ## Architecture
 
