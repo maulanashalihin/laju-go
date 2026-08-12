@@ -3,14 +3,24 @@ title: Avatar Uploads
 description: Multipart POST for small files with CSRF header, type validation, and avatar URL persistence
 ---
 
-Laju Go uses a simple multipart POST for avatar uploads. This is deliberately separate from the TUS protocol — avatars are small (max 5MB), don't benefit from resumable uploads, and need to update the database and session immediately.
+
+## When to use multipart vs TUS
+
+| Your file is... | Use | Why |
+|-----------------|-----|-----|
+| An avatar, profile photo, or any image < 5MB | **Multipart** (this page) | One POST request, immediate DB update, CSRF protected |
+| A video, archive, or any file > 5MB | **TUS** ([see TUS docs](./tus)) | Chunked, resumable, handles network failures |
+| A file that needs to update a DB field after upload | **Multipart** | Response includes URL, persist via `form.put()` |
+| A file that just needs to be stored and downloaded later | **TUS** | No DB update needed, async post-processing |
+
+**Rule of thumb:** if the file fits in a single POST and you need the URL back immediately, use multipart. If the file is large or the upload might fail mid-way, use TUS.
 
 ## Why Multipart, Not TUS
 
 | Upload | Mechanism | Max Size | Endpoint | Resumable | CSRF |
 |--------|-----------|----------|----------|-----------|------|
 | **Avatar** (Profile) | Multipart POST | 5MB | `POST /app/upload` | No | Yes |
-| **Large file** (UploadTest) | TUS chunked | 1GB | `POST /tus/files` | Yes | No |
+| **Large file** (UploadTest) | TUS chunked | 100MB+ | `POST /tus/files` | Yes | No |
 
 TUS requires 3 requests (POST create, HEAD offset, PATCH chunk) even for a 100KB file. Multipart needs only 1 POST. For avatars, the simplicity is worth it — a failed 100KB upload can just be re-uploaded.
 

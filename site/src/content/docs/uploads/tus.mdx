@@ -3,7 +3,18 @@ title: TUS Resumable Uploads
 description: TUS protocol via tusdfiber for chunked resumable uploads, storage layout, and post-processing
 ---
 
-Laju Go uses [tusdfiber](https://github.com/maulanashalihin/tusdfiber) for resumable file uploads via the [TUS protocol](https://tus.io/). This handles large files (up to 1GB) with chunked uploads, automatic retry, and pause/resume support.
+Laju Go uses [tusdfiber](https://github.com/maulanashalihin/tusdfiber) for resumable file uploads via the [TUS protocol](https://tus.io/). This handles large files (100MB and up, no hard limit) with chunked uploads, automatic retry, and pause/resume support.
+
+## When to use TUS vs multipart
+
+| Your file is... | Use | Why |
+|-----------------|-----|-----|
+| Any file ≥ 100MB | **TUS** (this page) | Chunked, resumable, handles network failures |
+| An avatar, profile photo, or any image < 5MB | **Multipart** ([see avatar docs](./avatar)) | One POST, immediate DB update, simpler |
+| A file that just needs to be stored and downloaded later | **TUS** | No DB update needed, async post-processing |
+| A file that needs to update a DB field after upload | **Multipart** | Response includes URL, persist via `form.put()` |
+
+**Rule of thumb:** if the file is ≥ 100MB or the upload might fail mid-way, use TUS. If the file fits in a single POST and you need the URL back immediately, use multipart.
 
 ## Architecture
 
@@ -86,8 +97,7 @@ func NewUploadHandler(store *session.Store, userService *services.UserService, u
 
 | Config | Value | Purpose |
 |--------|-------|---------|
-| `BasePath` | `/tus/files/` | Must include full prefix when registering directly on `app` (not a group) so `Location` URLs are correct |
-| `MaxSize` | 1GB | Maximum upload size |
+| `MaxSize` | Configurable | Maximum upload size. Set to 0 for no limit. Default config uses 1GB — adjust based on your needs. |
 | `NotifyCompleteUploads` | `true` | Sends events to `CompleteUploads` channel when uploads finish |
 | `NotifyCreatedUploads` | `false` | No channel for creation events (avoids needing to drain it) |
 | `DisableConcatenation` | `true` | TUS concatenation extension disabled |
@@ -286,10 +296,10 @@ The client supports pausing via `upload.abort()` and resuming via `upload.start(
 
 | Factor | TUS | Multipart |
 |--------|-----|-----------|
-| File size | Large (&gt;5MB) | Small (&lt;5MB) |
+| File size | ≥ 100MB (no hard limit) | < 5MB |
 | Resumable | Yes | No |
 | DB update needed | No | Yes (avatar URL) |
 | CSRF | No | Yes |
 | Requests per upload | 3+ (POST, HEAD, PATCH...) | 1 (POST) |
 
-Use TUS when you need resumability for large files. Use multipart when the file is small and you need to update the database with the result.
+Use TUS when you need resumability for large files (≥ 100MB). Use multipart when the file is small and you need to update the database with the result.
