@@ -38,8 +38,17 @@ git --version
 `npm create laju-go@latest` scaffolds a fresh project from the template. It clones the repo, strips dev-only files (the installer itself, `AGENTS.md`, `site/`, agent configs), keeps the useful `.llm-wiki/concepts` and `entities`, installs Go and Node dependencies, and copies `.env.example` to `.env`.
 
 ```bash
-npm create laju-go@latest my-app
+# Svelte (default)
+npx create-laju-go@latest my-app
+
+# React
+npx create-laju-go@latest my-app --template react
+
+# Vue
+npx create-laju-go@latest my-app --template vue
 ```
+
+Pass `--template svelte|react|vue` to skip the interactive prompt. Without the flag, the installer asks which frontend you want.
 
 The installer clones the template, strips dev-only files, installs Go and Node.js dependencies, and creates `.env` from `.env.example`. Then it prints the next steps:
 

@@ -3,7 +3,7 @@ title: Overview
 description: Laju Go is a single-entry Go app with a strict three-tier layering from routes to SQLite.
 ---
 
-Laju Go is a **single-entry Go application**. One binary, one process, one `main()`. There is no separate API server — Inertia.js makes the Svelte 5 frontend a server-rendered SPA that talks to the same Fiber process that serves HTML.
+Laju Go is a **single-entry Go application**. One binary, one process, one `main()`. There is no separate API server — Inertia.js makes the Svelte 5, React 19, or Vue 3 frontend a server-rendered SPA that talks to the same Fiber process that serves HTML.
 
 ## Entry point
 
@@ -37,7 +37,7 @@ There is no service locator, no plugin registry, no reflection. Dependencies are
 ## Request flow
 
 ```
-Browser (Svelte 5 + Inertia.js)
+Browser (Svelte / React / Vue + Inertia.js)
   │
   ▼
 Fiber app  ── global middleware (recover, compress, Inertia, CORS, CSRF)
@@ -72,7 +72,7 @@ A GET that renders a page ends at `h.inertiaService.Render(c, "app/Dashboard", f
 | **Cache** | `app/cache/` | In-memory session cache (`sync.RWMutex` + map). Called via the Service layer, never from a Handler. |
 | **Session** | `app/session/` | DB-backed sessions with an in-memory cache front. `store.Get(c)`, `store.Flash(c, ...)`, `store.CreateAuthenticatedSession(...)`. |
 | **Middlewares** | `app/middlewares/` | `AuthRequired`, `Guest`, `AdminRequired`, `CSRFMiddleware`, rate limiters. |
-| **Frontend** | `frontend/src/` | Svelte 5 + Inertia.js. Built by Vite into `dist/`, consumed by Go via `dist/.vite/manifest.json`. |
+| **Frontend** | `frontend/src/` | Svelte 5 / React 19 / Vue 3 + Inertia.js. Built by Vite into `dist/`, consumed by Go via `dist/.vite/manifest.json`. |
 
 ## Build order
 
@@ -87,7 +87,7 @@ vite build  →  dist/.vite/manifest.json  →  go build
 ## What this buys you
 
 - **One deploy artifact.** A single Go binary plus `dist/` and `migrations/`. No Node runtime in production.
-- **Type safety end to end.** sqlc generates Go from SQL; templ generates Go from templates; Svelte 5 is typed. The only untyped boundary is `fiber.Map` props passed to Inertia.
+- **Type safety end to end.** sqlc generates Go from SQL; templ generates Go from templates; all frontend frameworks are typed. The only untyped boundary is `fiber.Map` props passed to Inertia.
 - **No hidden layers.** Every dependency is visible in a constructor. Every SQL statement lives in `queries/*.sql`. Every route is registered in `routes/web.go`.
 
 The single rule that holds this together — Handler → Service → Query, no skipping — is covered in [Three-tier rule](./three-tier.md).

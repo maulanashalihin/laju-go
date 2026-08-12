@@ -1,0 +1,287 @@
+---
+title: Vue 3 + Inertia
+description: Composition API, useForm conventions, Link for navigation, v-model binding, and CSRF headers for manual fetch() calls.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The frontend is Vue 3 (Composition API, `<script setup>`) driven by Inertia.js 3. There is no separate API — the Go server renders Inertia JSON props directly into Vue pages. The entry point is `frontend/src/main.ts`, built by Vite into `dist/`.
+
+<Aside type="note" title="Same backend, different frontend">
+The Go handlers, routes, and SQLite database are identical across all templates. The backend does not know which framework you chose — only the `frontend/` directory and Vite config differ. See [Svelte 5 + Inertia](/frontend/svelte-inertia/) and [React 19 + Inertia](/frontend/react-inertia/) for the equivalent patterns in other frameworks.
+</Aside>
+
+## Entry point
+
+The entry point is `frontend/src/main.ts`. With the `@inertiajs/vite` plugin, `createInertiaApp()` needs no custom `resolve` or `setup` — the plugin auto-discovers pages in `frontend/src/pages/` and wires the Vue renderer.
+
+```ts title="frontend/src/main.ts"
+import { createInertiaApp } from "@inertiajs/vue3";
+
+createInertiaApp();
+```
+
+No Fast Refresh preamble is needed — `@vitejs/plugin-vue` handles hot module replacement without a manual bootstrap.
+
+## Component structure
+
+Every page is a `.vue` single-file component with `<script setup lang="ts">` and `<template>`:
+
+```vue
+<script setup lang="ts">
+import { ref, computed } from "vue";
+import { Link, useForm } from "@inertiajs/vue3";
+import type { User } from "@lib/types";
+
+interface Props {
+    user?: User;
+    success?: string;
+    error?: string;
+}
+
+const { user, success, error } = defineProps<Props>();
+</script>
+
+<template>
+  <!-- markup here -->
+</template>
+```
+
+## Props and state — the real pattern
+
+From `frontend/src/pages/app/Profile.vue`:
+
+```vue
+<script setup lang="ts">
+import { ref, computed } from "vue";
+import { Link, useForm } from "@inertiajs/vue3";
+import { getCSRFToken } from "@lib/utils/csrf";
+import type { User } from "@lib/types";
+
+interface Props {
+    user?: User;
+    success?: string;
+    error?: string;
+}
+
+const { user, success, error } = defineProps<Props>();
+
+// Form initialized from server props
+const profileForm = useForm("EditProfile", {
+    name: user?.name ?? "",
+    email: user?.email ?? "",
+    avatar: user?.avatar ?? "",
+});
+
+const showPassword = ref(false);
+
+// Derived via computed — recomputes when user.avatar changes
+const previewUrl = computed(() => user?.avatar ?? null);
+</script>
+```
+
+`previewUrl` is `computed`, not a `watch` + manual ref assignment. If you reach for `watch` to compute a value, stop — it is almost always `computed`.
+
+## Inertia form convention
+
+There are two ways to submit a form. Pick by what you need.
+
+| Need | Use |
+|------|-----|
+| Simple form — just collect data and submit | `<Form>` component from `@inertiajs/vue3` |
+| Pre-submit validation, `fetch()` integration, `v-model` reactive binding, programmatic submit | `useForm` + `<form @submit.prevent="...">` |
+
+**Default to `useForm` + `<form>` when unsure** — it covers more cases.
+
+### Pattern A: `<Form>` — simple
+
+No `v-model` needed; `Form` collects values from `name` attributes. Least boilerplate.
+
+```vue
+<script setup lang="ts">
+import { Form } from '@inertiajs/vue3'
+</script>
+
+<template>
+  <Form action="/users" method="post">
+    <input type="text" name="name" />
+    <input type="email" name="email" />
+    <button type="submit">Create User</button>
+  </Form>
+</template>
+```
+
+Slot props for processing state and errors:
+
+```vue
+<template>
+  <Form action="/users" method="post" v-slot="{ errors, processing, wasSuccessful }">
+    <input type="text" name="name" />
+    <div v-if="errors.name">{{ errors.name }}</div>
+    <button :disabled="processing">
+      {{ processing ? 'Creating...' : 'Create User' }}
+    </button>
+  </Form>
+</template>
+```
+
+### Pattern B: `useForm` + `<form>` — validation and control
+
+Auto-tracks `processing`, `errors`, `isDirty`, `wasSuccessful`. Allows pre-submit validation and `fetch()` integration.
+
+**Create** — from `frontend/src/pages/auth/Login.vue`:
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { Link, useForm } from "@inertiajs/vue3";
+
+const form = useForm({
+    email: "",
+    password: "",
+});
+
+const showPassword = ref(false);
+
+function submitForm() {
+    form.post("/login");
+}
+</script>
+
+<template>
+  <form class="space-y-5" @submit.prevent="submitForm">
+    <input v-model="form.email" type="email" name="email" />
+    <input v-model="form.password" :type="showPassword ? 'text' : 'password'" name="password" />
+    <span v-if="form.errors.email">{{ form.errors.email }}</span>
+    <button :disabled="form.processing">Sign in</button>
+  </form>
+</template>
+```
+
+<Aside type="note" title="Vue useForm is reactive">
+Inertia's Vue `useForm` returns a reactive object. You can bind inputs directly with `v-model="form.field"` and assign fields directly: `form.avatar = data.url`. No `setData` call needed — unlike React.
+</Aside>
+
+**Update** — give the form a unique key so its data and errors persist to history state:
+
+```vue
+<script setup lang="ts">
+import { useForm } from '@inertiajs/vue3'
+
+const { user } = defineProps<{ user: User }>()
+
+const form = useForm(`EditUser:${user.id}`, {
+  name: user.name,
+  email: user.email,
+})
+
+function submit() {
+  form.put(`/users/${user.id}`)
+}
+</script>
+
+<template>
+  <form @submit.prevent="submit">
+    <input v-model="form.name" />
+    <span v-if="form.isDirty">Unsaved changes</span>
+    <button :disabled="form.processing">Save</button>
+  </form>
+</template>
+```
+
+### Key rules (both patterns)
+
+| Rule | Why |
+|------|-----|
+| `form.post()` for create, `form.put()` / `form.patch()` for update | Correct HTTP method; server knows intent |
+| Unique key for edit forms: `useForm('EditUser:${id}', data)` | Persists form data + errors to history state |
+| `:disabled="form.processing"` or `:disabled="processing"` | Prevent double-submit |
+| `form.errors.field` or `errors.field` | Server validation errors auto-populate |
+| `@submit.prevent` on the `<form>` | Prevents full page reload — Inertia sends an XHR instead |
+| File upload: `fetch() + FormData`, then `form.put()` | Inertia forms cannot send files directly |
+| `v-model="form.field"` for two-way binding | Vue reactivity — no manual `onChange`/`value` needed |
+
+## File upload + form save (two-step)
+
+Avatar upload uses `fetch() + FormData` for the file, then `form.put()` to persist the resulting URL. From `frontend/src/pages/app/Profile.vue`:
+
+```vue
+<script setup lang="ts">
+import { useForm } from "@inertiajs/vue3";
+import { getCSRFToken } from "@lib/utils/csrf";
+
+const profileForm = useForm("EditProfile", {
+    name: user?.name ?? "",
+    avatar: user?.avatar ?? "",
+});
+
+function handleAvatarChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    fetch("/app/upload", {
+        method: "POST",
+        headers: { "X-XSRF-TOKEN": getCSRFToken() },
+        body: formData,
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success && data.url) {
+                profileForm.avatar = data.url;
+                profileForm.put("/app/profile");
+            }
+        });
+}
+</script>
+```
+
+## Internal links: `<Link>`
+
+<Aside type="caution" title="Internal links must use Link">
+Without `<Link>` from `@inertiajs/vue3`, an internal `<a href>` triggers a full page reload — defeating the SPA. Import it and use it for every in-app link.
+</Aside>
+
+```vue
+<script setup lang="ts">
+import { Link } from "@inertiajs/vue3";
+</script>
+
+<template>
+  <Link href="/app/profile">Profile</Link>
+</template>
+```
+
+**Exceptions — plain `<a>` without `<Link>`:**
+
+- OAuth links (`/auth/google`, `/auth/github`) — these leave the app to a provider and come back; a full navigation is correct.
+- External links (`https://github.com/...`) — `<Link>` only applies to same-origin routes.
+
+## CSRF for `fetch()`
+
+Inertia's router (Axios) automatically reads the `XSRF-TOKEN` cookie and sends it as the `X-XSRF-TOKEN` header. **Plain `fetch()` does not** — so every manual `fetch()` to a CSRF-protected route (`/app/*`, `/admin/*`) must add the header explicitly.
+
+<Aside type="danger" title="Required for fetch()">
+Every `fetch()` to `/app/*` or `/admin/*` MUST include `X-XSRF-TOKEN` from `getCSRFToken()` in `lib/utils/csrf.ts`. Inertia's `router.*` and `form.*` calls handle this automatically.
+</Aside>
+
+```ts
+// frontend/src/lib/utils/csrf.ts
+export function getCSRFToken(): string {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : "";
+}
+```
+
+Usage:
+
+```ts
+fetch("/app/upload", {
+    method: "POST",
+    headers: { "X-XSRF-TOKEN": getCSRFToken() },
+    body: formData,
+});
+```
+
+If you forget the header on a `fetch()` to a protected route, the `CSRFMiddleware` rejects the request. Inertia form/router calls never need this — only raw `fetch()`.

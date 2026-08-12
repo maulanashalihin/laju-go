@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: Laju Go is a high-performance SaaS boilerplate built with Go Fiber, Svelte 5, Inertia.js, SQLite, and templ.
+description: Laju Go is a high-performance SaaS boilerplate built with Go Fiber, Svelte 5, React 19, or Vue 3, Inertia.js, SQLite, and templ.
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components";
@@ -12,7 +12,7 @@ import { Card, CardGrid } from "@astrojs/starlight/components";
 The stack is deliberately small and deliberately boring:
 
 - **Go Fiber** — fast HTTP server, single binary output
-- **Svelte 5 + Inertia.js** — SPA UX without writing a separate REST API
+- **Svelte 5 / React 19 / Vue 3 + Inertia.js** — SPA UX without writing a separate REST API — choose your frontend
 - **SQLite** — one file, zero ops, WAL mode tuned for concurrency
 - **sqlc** — type-safe Go generated from plain SQL, no ORM
 - **templ** — type-safe HTML templates that compile to Go
@@ -32,7 +32,7 @@ Everything you need to ship a SaaS is wired end to end: register/login, Google O
     Write SQL in `queries/*.sql`, run `sqlc generate`, get fully typed Go. No stringly-typed query builders, no runtime reflection.
   </Card>
   <Card title="SPA without an API" icon="seti:svelte">
-    Inertia.js drives Svelte 5 pages from the server. `useForm` + `<form>` for CRUD — no `fetch` boilerplate, no client-side routing to maintain.
+    Inertia.js drives Svelte 5, React 19, or Vue 3 pages from the server. `useForm` + `<form>` for CRUD — no `fetch` boilerplate, no client-side routing to maintain.
   </Card>
   <Card title="Migrations on startup" icon="seti:go">
     Goose runs automatically when the binary starts. One table per migration file, never edit a deployed migration.
@@ -48,7 +48,7 @@ A single Go binary is the entire backend. The frontend is built by Vite into `di
 
 ```mermaid
 flowchart LR
-    Browser[Svelte 5 + Inertia] -->|HTTP| Fiber[Go Fiber]
+    Browser[Svelte / React / Vue + Inertia] -->|HTTP| Fiber[Go Fiber]
     Fiber --> Routes[routes/web.go]
     Routes --> Handlers[app/handlers]
     Handlers --> Services[app/services]
@@ -65,7 +65,15 @@ The one rule that holds the whole thing together: **Handler → Service → Quer
 The fastest way in is the installer. It clones the template, strips dev-only files, installs Go and Node dependencies, and copies `.env.example` to `.env`:
 
 ```bash
-npm create laju-go@latest my-app
+# Svelte (default)
+npx create-laju-go@latest my-app
+
+# React
+npx create-laju-go@latest my-app --template react
+
+# Vue
+npx create-laju-go@latest my-app --template vue
+
 cd my-app
 npm run dev:all
 ```

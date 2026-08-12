@@ -1,0 +1,281 @@
+---
+title: React 19 + Inertia
+description: Hooks, useForm conventions, Link for navigation, Fast Refresh preamble, and CSRF headers for manual fetch() calls.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The frontend is React 19 driven by Inertia.js 3. There is no separate API — the Go server renders Inertia JSON props directly into React pages. The entry point is `frontend/src/main.tsx`, built by Vite into `dist/`.
+
+<Aside type="note" title="Same backend, different frontend">
+The Go handlers, routes, and SQLite database are identical across all templates. The backend does not know which framework you chose — only the `frontend/` directory and Vite config differ. See [Svelte 5 + Inertia](/frontend/svelte-inertia/) and [Vue 3 + Inertia](/frontend/vue-inertia/) for the equivalent patterns in other frameworks.
+</Aside>
+
+## Entry point and Fast Refresh
+
+The entry point is `frontend/src/main.tsx`. With the `@inertiajs/vite` plugin, `createInertiaApp()` needs no custom `resolve` or `setup` — the plugin auto-discovers pages in `frontend/src/pages/` and wires the React renderer.
+
+```tsx title="frontend/src/main.tsx"
+import { createInertiaApp } from "@inertiajs/react";
+
+// React Fast Refresh — must load before any component imports in dev.
+// @vitejs/plugin-react normally injects this preamble via transformIndexHtml,
+// but with Inertia the Go server serves HTML, so Vite never sees it.
+// We load it here manually so components load after refresh runtime is ready.
+//
+// Dynamic import is required: /@react-refresh is a Vite virtual module
+// that only exists in dev — a static import would break production builds.
+if (import.meta.env.DEV) {
+    const { injectIntoGlobalHook } = await import("/@react-refresh");
+    injectIntoGlobalHook(window);
+    window.$RefreshReg$ = () => {};
+    window.$RefreshSig$ = () => {};
+}
+
+createInertiaApp();
+```
+
+<Aside type="caution" title="Fast Refresh preamble is required">
+Without this preamble, React Fast Refresh does not work in development. The Go server serves the HTML shell, so Vite's `transformIndexHtml` hook (which normally injects the preamble) never runs. The dynamic `import("/@react-refresh")` must come **before** any component imports.
+</Aside>
+
+## Props and state — the real pattern
+
+From `frontend/src/pages/app/Profile.tsx`:
+
+```tsx
+import { useState, useMemo } from "react";
+import { Link, useForm } from "@inertiajs/react";
+import { getCSRFToken } from "@lib/utils/csrf";
+import type { User } from "@lib/types";
+
+interface Props {
+    user?: User;
+    success?: string;
+    error?: string;
+}
+
+export default function Profile({ user, success, error }: Props) {
+    // Form initialized from server props
+    const profileForm = useForm("EditProfile", {
+        name: user?.name ?? "",
+        email: user?.email ?? "",
+        avatar: user?.avatar ?? "",
+    });
+
+    const [showPassword, setShowPassword] = useState(false);
+
+    // Derived via useMemo — recomputes when user.avatar changes
+    const previewUrl = useMemo(() => user?.avatar ?? null, [user?.avatar]);
+}
+```
+
+`previewUrl` is `useMemo`, not a `useEffect` + manual state update. If you reach for `useEffect` to compute a value, stop — it is almost always `useMemo` or derived state.
+
+## Inertia form convention
+
+There are two ways to submit a form. Pick by what you need.
+
+| Need | Use |
+|------|-----|
+| Simple form — just collect data and submit | `<Form>` component from `@inertiajs/react` |
+| Pre-submit validation, `fetch()` integration, controlled inputs, programmatic submit | `useForm` + `<form onSubmit={...}>` |
+
+**Default to `useForm` + `<form>` when unsure** — it covers more cases.
+
+### Pattern A: `<Form>` — simple
+
+No `onChange`/`value` needed; `Form` collects values from `name` attributes. Least boilerplate.
+
+```tsx
+import { Form } from '@inertiajs/react'
+
+<Form action="/users" method="post">
+  <input type="text" name="name" />
+  <input type="email" name="email" />
+  <button type="submit">Create User</button>
+</Form>
+```
+
+Render props for processing state and errors:
+
+```tsx
+<Form action="/users" method="post">
+  {({ errors, processing, wasSuccessful }) => (
+    <>
+      <input type="text" name="name" />
+      {errors.name && <div>{errors.name}</div>}
+      <button disabled={processing}>
+        {processing ? 'Creating...' : 'Create User'}
+      </button>
+    </>
+  )}
+</Form>
+```
+
+### Pattern B: `useForm` + `<form>` — validation and control
+
+Auto-tracks `processing`, `errors`, `isDirty`, `wasSuccessful`. Allows pre-submit validation and `fetch()` integration.
+
+**Create** — from `frontend/src/pages/auth/Login.tsx`:
+
+```tsx
+import { useState } from "react";
+import { Link, useForm } from "@inertiajs/react";
+
+export default function Login() {
+    const form = useForm({
+        email: "",
+        password: "",
+    });
+
+    function submitForm(e: React.FormEvent) {
+        e.preventDefault();
+        form.post("/login");
+    }
+
+    return (
+        <form className="space-y-5" onSubmit={submitForm}>
+            <input
+                value={form.data.email}
+                onChange={(e) => form.setData("email", e.target.value)}
+                type="email"
+                name="email"
+            />
+            <input
+                value={form.data.password}
+                onChange={(e) => form.setData("password", e.target.value)}
+                type="password"
+                name="password"
+            />
+            {form.errors.email && <span>{form.errors.email}</span>}
+            <button disabled={form.processing}>Sign in</button>
+        </form>
+    );
+}
+```
+
+<Aside type="caution" title="React form fields are controlled">
+Unlike Svelte's `bind:value` or Vue's `v-model`, React requires explicit `value` + `onChange` on each input. Read from `form.data.field` and write via `form.setData("field", value)`. Do not mutate `form.data` directly.
+</Aside>
+
+**Update** — give the form a unique key so its data and errors persist to history state:
+
+```tsx
+import { useForm } from '@inertiajs/react'
+
+export default function EditUser({ user }: { user: User }) {
+  const form = useForm(`EditUser:${user.id}`, {
+    name: user.name,
+    email: user.email,
+  })
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    form.put(`/users/${user.id}`)
+  }
+
+  return (
+    <form onSubmit={submit}>
+      <input
+        value={form.data.name}
+        onChange={(e) => form.setData("name", e.target.value)}
+      />
+      {form.isDirty && <span>Unsaved changes</span>}
+      <button disabled={form.processing}>Save</button>
+    </form>
+  )
+}
+```
+
+### Key rules (both patterns)
+
+| Rule | Why |
+|------|-----|
+| `form.post()` for create, `form.put()` / `form.patch()` for update | Correct HTTP method; server knows intent |
+| Unique key for edit forms: `useForm('EditUser:${id}', data)` | Persists form data + errors to history state |
+| `disabled={form.processing}` or `disabled={processing}` | Prevent double-submit |
+| `form.errors.field` or `errors.field` | Server validation errors auto-populate |
+| `e.preventDefault()` in the `useForm` submit handler | Prevents full page reload — Inertia sends an XHR instead |
+| File upload: `fetch() + FormData`, then `form.put()` | Inertia forms cannot send files directly |
+| `className` not `class` | JSX syntax — `class` is a reserved word |
+| `htmlFor` not `for` | JSX syntax — `for` is a reserved word |
+
+## File upload + form save (two-step)
+
+Avatar upload uses `fetch() + FormData` for the file, then `form.put()` to persist the resulting URL. From `frontend/src/pages/app/Profile.tsx`:
+
+```tsx
+import { useForm } from "@inertiajs/react";
+import { getCSRFToken } from "@lib/utils/csrf";
+
+const profileForm = useForm("EditProfile", {
+    name: user?.name ?? "",
+    avatar: user?.avatar ?? "",
+});
+
+function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const target = event.target;
+    const file = target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    fetch("/app/upload", {
+        method: "POST",
+        headers: { "X-XSRF-TOKEN": getCSRFToken() },
+        body: formData,
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success && data.url) {
+                profileForm.setData("avatar", data.url);
+                profileForm.put("/app/profile");
+            }
+        });
+}
+```
+
+## Internal links: `<Link>`
+
+<Aside type="caution" title="Internal links must use Link">
+Without `<Link>` from `@inertiajs/react`, an internal `<a href>` triggers a full page reload — defeating the SPA. Import it and use it for every in-app link.
+</Aside>
+
+```tsx
+import { Link } from "@inertiajs/react";
+
+<Link href="/app/profile">Profile</Link>
+```
+
+**Exceptions — plain `<a>` without `<Link>`:**
+
+- OAuth links (`/auth/google`, `/auth/github`) — these leave the app to a provider and come back; a full navigation is correct.
+- External links (`https://github.com/...`) — `<Link>` only applies to same-origin routes.
+
+## CSRF for `fetch()`
+
+Inertia's router (Axios) automatically reads the `XSRF-TOKEN` cookie and sends it as the `X-XSRF-TOKEN` header. **Plain `fetch()` does not** — so every manual `fetch()` to a CSRF-protected route (`/app/*`, `/admin/*`) must add the header explicitly.
+
+<Aside type="danger" title="Required for fetch()">
+Every `fetch()` to `/app/*` or `/admin/*` MUST include `X-XSRF-TOKEN` from `getCSRFToken()` in `lib/utils/csrf.ts`. Inertia's `router.*` and `form.*` calls handle this automatically.
+</Aside>
+
+```ts
+// frontend/src/lib/utils/csrf.ts
+export function getCSRFToken(): string {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : "";
+}
+```
+
+Usage:
+
+```ts
+fetch("/app/upload", {
+    method: "POST",
+    headers: { "X-XSRF-TOKEN": getCSRFToken() },
+    body: formData,
+});
+```
+
+If you forget the header on a `fetch()` to a protected route, the `CSRFMiddleware` rejects the request. Inertia form/router calls never need this — only raw `fetch()`.

@@ -7,6 +7,10 @@ import { Aside } from '@astrojs/starlight/components';
 
 The frontend is Svelte 5 (runes mode) driven by Inertia.js 3. There is no separate API — the Go server renders Inertia JSON props directly into Svelte pages. The entry point is `frontend/src/main.ts`, built by Vite into `dist/`.
 
+<Aside type="note" title="Same backend, different frontend">
+Laju Go also ships React 19 and Vue 3 templates — same Go handlers, routes, and SQLite database. The backend does not know which framework you chose. See [React 19 + Inertia](/frontend/react-inertia/) and [Vue 3 + Inertia](/frontend/vue-inertia/) for the equivalent patterns.
+</Aside>
+
 ## Svelte 5 runes rules
 
 Svelte 5 runes replace the old `export let` / `$:` reactivity. Laju Go enforces a strict reading of which rune to use when.

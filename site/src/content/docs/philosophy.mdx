@@ -73,7 +73,7 @@ The trade-off: you write SQL instead of Go method chains. If you find that trade
 
 The conventional SPA architecture is two apps: a frontend (React/Vue/Svelte) and a separate REST/GraphQL API. You build the API, you build the client, you keep their types in sync, you handle auth twice, you version both. It doubles the surface area.
 
-Inertia.js collapses them. The Go server renders Svelte components directly — the same way it would render an HTML template — but the result is a SPA. There is no separate API. The server is the API.
+Inertia.js collapses them. The Go server renders frontend components (Svelte, React, or Vue) directly — the same way it would render an HTML template — but the result is a SPA. There is no separate API. The server is the API.
 
 ```go title="app/handlers/app.go"
 func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
@@ -101,6 +101,8 @@ On the frontend, `useForm` + `<form>` handles CRUD without `fetch` boilerplate:
   <button>Register</button>
 </form>
 ```
+
+The same pattern works in React and Vue — see [React + Inertia](/frontend/react-inertia/) and [Vue + Inertia](/frontend/vue-inertia/).
 
 What you get:
 
@@ -142,13 +144,13 @@ The trade-off: it is a code generation step (`templ generate`), and Air does not
     Type-safe Go from plain SQL. The database layer is readable SQL, not magic method chains.
   </Card>
   <Card title="Inertia.js" icon="seti:svelte">
-    SPA without a separate API. The server renders Svelte; one codebase, one deploy.
+    SPA without a separate API. The server renders Svelte, React, or Vue; one codebase, one deploy.
   </Card>
   <Card title="templ" icon="seti:html">
     Type-safe HTML that compiles to Go. No runtime template errors.
   </Card>
-  <Card title="Svelte 5" icon="seti:svelte">
-    Runes-based reactivity that is simple to reason about. `$derived` over `$effect`.
+  <Card title="Svelte 5 / React 19 / Vue 3" icon="seti:svelte">
+    The frontend is swappable at scaffold time — pick Svelte 5 runes, React 19 hooks, or Vue 3 Composition API. Same Go backend, same Inertia contract.
   </Card>
 </CardGrid>
 

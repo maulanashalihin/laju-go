@@ -26,7 +26,7 @@ func (h *AppHandler) Dashboard(c *fiber.Ctx) error {
 }
 ```
 
-`Render(c, "app/Dashboard", props)` tells Inertia: render the Svelte component at `app/Dashboard` with these props. On a normal browser hit, it returns the HTML shell with the props serialized into a JSON `<div data-page>`. On an Inertia XHR (`X-Inertia: true`), it returns just the JSON. The Svelte side mounts the component. No API endpoint, no client-side router, no data-fetching hook.
+`Render(c, "app/Dashboard", props)` tells Inertia: render the Svelte component at `app/Dashboard` with these props. On a normal browser hit, it returns the HTML shell with the props serialized into a JSON `<div data-page>`. On an Inertia XHR (`X-Inertia: true`), it returns just the JSON. The frontend mounts the component (Svelte, React, or Vue). No API endpoint, no client-side router, no data-fetching hook.
 
 ## `useForm` replaces the fetch layer
 
@@ -44,6 +44,8 @@ The other half is form submission. Inertia's `useForm` handles POST/PUT/PATCH wi
     }
 </script>
 ```
+
+The same `useForm` pattern works in React and Vue — see [React + Inertia](/frontend/react-inertia/) and [Vue + Inertia](/frontend/vue-inertia/).
 
 `form.post("/login")` POSTs the form fields as form-encoded data with the CSRF token, follows the response, and updates `form.errors` and `form.processing` automatically. The Go handler doesn't know it's talking to Inertia — it just parses the body, calls the service, and redirects.
 
@@ -77,7 +79,7 @@ No API response shape to design. No `status: "success"` field. No client-side co
 
 ## SSR shell via templ
 
-The initial HTML shell — the `<head>`, the asset tags, the root `<div data-page>` — is rendered by a [templ](./why-templ) component, not by a JS bundle. That means the first byte of HTML is real, crawlable, and fast. The Svelte app hydrates into it. You get SPA navigation after the first load and a server-rendered shell on the first request, without running a Node SSR server.
+The initial HTML shell — the `<head>`, the asset tags, the root `<div data-page>` — is rendered by a [templ](./why-templ) component, not by a JS bundle. That means the first byte of HTML is real, crawlable, and fast. The frontend app hydrates into it. You get SPA navigation after the first load and a server-rendered shell on the first request, without running a Node SSR server.
 
 ## External redirects work too
 
