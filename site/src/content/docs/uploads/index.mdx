@@ -1,0 +1,64 @@
+---
+title: Uploads Overview
+slug: uploads/overview
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+Laju Go provides two upload mechanisms, each for a different use case. Picking the right one is a matter of file size and whether you need the result back immediately.
+
+## The two mechanisms
+
+<CardGrid stagger>
+  <Card title="Multipart FormData" icon="seti:upload">
+    One POST request, CSRF protected, response includes the file URL. Best for small files (< 5MB) where you need to update the database immediately — like avatars and profile photos.
+  </Card>
+  <Card title="TUS resumable uploads" icon="seti:upload">
+    Chunked, resumable, handles network failures. Best for large files (≥ 100MB, no hard limit) where the upload might fail mid-way — like videos and archives.
+  </Card>
+</CardGrid>
+
+## When to use which
+
+| Your file is... | Use | Why |
+|-----------------|-----|-----|
+| An avatar, profile photo, or any image < 5MB | **Multipart** | One POST, immediate DB update, CSRF protected |
+| A video, archive, or any file ≥ 100MB | **TUS** | Chunked, resumable, handles network failures |
+| A file that needs to update a DB field after upload | **Multipart** | Response includes URL, persist via `form.put()` |
+| A file that just needs to be stored and downloaded later | **TUS** | No DB update needed, async post-processing |
+
+**Rule of thumb:** if the file fits in a single POST and you need the URL back immediately, use multipart. If the file is ≥ 100MB or the upload might fail mid-way, use TUS.
+
+## Comparison
+
+| Factor | Multipart | TUS |
+|--------|-----------|-----|
+| File size | < 5MB | ≥ 100MB (no hard limit) |
+| Resumable | No | Yes |
+| DB update needed | Yes (avatar URL) | No |
+| CSRF | Yes | No (TUS has its own protocol) |
+| Requests per upload | 1 (POST) | 3+ (POST, HEAD, PATCH...) |
+| Endpoint | `POST /app/upload` | `POST /tus/files` |
+| Auth | Session + CSRF | Session only |
+
+## Storage layout
+
+Both mechanisms write to `storage/`, but in different subdirectories:
+
+```
+storage/
+├── avatars/              ← multipart uploads (avatars)
+│   └── <userID>_<timestamp>.<ext>
+├── uploads/              ← TUS internal format (by upload ID)
+│   ├── <upload-id>
+│   └── <upload-id>.info
+└── completed/            ← TUS post-processed (original filenames)
+    └── <original-name>
+```
+
+All files are served publicly via `app.Static("/storage", "./storage")`.
+
+## Next
+
+- [Avatar upload](./avatar) — multipart FormData, CSRF, validation, two-step persistence
+- [TUS resumable upload](./tus) — chunked uploads, retry, pause/resume, post-processing

@@ -24,7 +24,7 @@ export default defineConfig({
 			],
 			title: "Laju Go",
 			description:
-				"High-performance SaaS boilerplate: Go Fiber + Svelte 5 + Inertia.js + SQLite + templ. Auth, uploads, migrations, tests, Docker — wired end to end.",
+				"High-performance SaaS boilerplate: Go Fiber + Svelte 5 / React 19 / Vue 3 + Inertia.js + SQLite + templ. Auth, uploads, migrations, tests, Docker — wired end to end.",
 			favicon: "/favicon.svg",
 			logo: {
 				src: "./src/assets/logo.svg",
@@ -68,6 +68,8 @@ export default defineConfig({
 					label: "Frontend",
 					items: [
 						{ label: "Svelte 5 + Inertia", slug: "frontend/svelte-inertia" },
+						{ label: "React 19 + Inertia", slug: "frontend/react-inertia" },
+						{ label: "Vue 3 + Inertia", slug: "frontend/vue-inertia" },
 						{ label: "templ components", slug: "frontend/templ" },
 					],
 				},
@@ -94,8 +96,9 @@ export default defineConfig({
 				{
 					label: "Uploads",
 					items: [
-						{ label: "Avatar upload", slug: "uploads/avatar" },
-						{ label: "TUS resumable upload", slug: "uploads/tus" },
+					{ label: "Overview", slug: "uploads/overview" },
+					{ label: "Avatar upload", slug: "uploads/avatar" },
+					{ label: "TUS resumable upload", slug: "uploads/tus" },
 					],
 				},
 				{

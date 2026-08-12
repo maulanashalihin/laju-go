@@ -5,16 +5,7 @@ description: TUS protocol via tusdfiber for chunked resumable uploads, storage l
 
 Laju Go uses [tusdfiber](https://github.com/maulanashalihin/tusdfiber) for resumable file uploads via the [TUS protocol](https://tus.io/). This handles large files (100MB and up, no hard limit) with chunked uploads, automatic retry, and pause/resume support.
 
-## When to use TUS vs multipart
-
-| Your file is... | Use | Why |
-|-----------------|-----|-----|
-| Any file ≥ 100MB | **TUS** (this page) | Chunked, resumable, handles network failures |
-| An avatar, profile photo, or any image < 5MB | **Multipart** ([see avatar docs](./avatar)) | One POST, immediate DB update, simpler |
-| A file that just needs to be stored and downloaded later | **TUS** | No DB update needed, async post-processing |
-| A file that needs to update a DB field after upload | **Multipart** | Response includes URL, persist via `form.put()` |
-
-**Rule of thumb:** if the file is ≥ 100MB or the upload might fail mid-way, use TUS. If the file fits in a single POST and you need the URL back immediately, use multipart.
+See [Uploads Overview](./index) for when to use TUS vs multipart. This page covers the TUS implementation in detail.
 
 ## Architecture
 

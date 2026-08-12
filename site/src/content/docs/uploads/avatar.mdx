@@ -3,19 +3,10 @@ title: Avatar Uploads
 description: Multipart POST for small files with CSRF header, type validation, and avatar URL persistence
 ---
 
-
-## When to use multipart vs TUS
-
-| Your file is... | Use | Why |
-|-----------------|-----|-----|
-| An avatar, profile photo, or any image < 5MB | **Multipart** (this page) | One POST request, immediate DB update, CSRF protected |
-| A video, archive, or any file > 5MB | **TUS** ([see TUS docs](./tus)) | Chunked, resumable, handles network failures |
-| A file that needs to update a DB field after upload | **Multipart** | Response includes URL, persist via `form.put()` |
-| A file that just needs to be stored and downloaded later | **TUS** | No DB update needed, async post-processing |
-
-**Rule of thumb:** if the file fits in a single POST and you need the URL back immediately, use multipart. If the file is large or the upload might fail mid-way, use TUS.
-
 ## Why Multipart, Not TUS
+
+See [Uploads Overview](./index) for when to use multipart vs TUS. This page covers the multipart implementation in detail.
+
 
 | Upload | Mechanism | Max Size | Endpoint | Resumable | CSRF |
 |--------|-----------|----------|----------|-----------|------|
