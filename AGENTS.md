@@ -74,12 +74,29 @@ This repo uses multi-template branches. Each branch is **unique and independent*
 | Change Type | Verification Required |
 |-------------|---------------------|
 | Go backend | `go build -o /dev/null ./cmd/laju-go` passes |
-| Frontend | Browser test or `vite build` passes |
-| Config (vite, tsconfig, package.json) | Build or dev server starts clean |
+| Frontend | `vite build` passes + render and styling not broken |
 
 - If verification fails, fix and re-verify. Do NOT commit a broken fix.
 - Do NOT commit "cleanup" of your own broken commits — revert/reset instead.
-- One verified commit > five speculative commits.
+
+## No-Push-Without-Approval Rule (🔴 CRITICAL)
+
+🔴 **NEVER push to GitHub without explicit user approval.**
+
+- Commit locally is OK after verification.
+- Push to remote requires the user to say "push", "push ke github", or equivalent.
+- This applies to ALL branches — main, template/*, and any other.
+- Production deploys from remote — a broken push breaks production (laju.dev).
+
+## UI Testing Rule (🔴 CRITICAL)
+
+🔴 **NEVER commit UI/frontend changes without testing in browser.**
+
+- Start dev server with `hub start`, open in browser, confirm render + styling intact.
+- Check browser console — zero errors required. Console errors = not verified.
+
+- `vite build` passing is NOT enough — it does not catch missing CSS, broken layout, or visual regressions.
+- For Astro components: verify `<style>` blocks are intact after edits.
 
 ## Handler Structure Rule (🔴 Important)
 
