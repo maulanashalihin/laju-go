@@ -1,8 +1,8 @@
 ---
 import "../styles/landing.css";
 import Hero from "../components/Hero.astro";
-import StatsStrip from "../components/StatsStrip.astro";
-import FeatureGrid from "../components/FeatureGrid.astro";
+import WhatsInBox from "../components/WhatsInBox.astro";
+import FrameworkSelector from "../components/FrameworkSelector.astro";
 import WhyLaju from "../components/WhyLaju.astro";
 import Faq from "../components/Faq.astro";
 ---
@@ -11,12 +11,12 @@ import Faq from "../components/Faq.astro";
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <title>Laju Go — High-performance Go SaaS boilerplate</title>
-    <meta property="og:title" content="Laju Go — High-performance Go SaaS boilerplate" />
-    <meta property="og:description" content="Go Fiber + Svelte 5 + Inertia.js + SQLite + templ. Auth, uploads, migrations, tests, Docker — wired end to end." />
-    <meta name="twitter:title" content="Laju Go — High-performance Go SaaS boilerplate" />
-    <meta name="twitter:description" content="Go Fiber + Svelte 5 + Inertia.js + SQLite + templ. Auth, uploads, migrations, tests, Docker — wired end to end." />
-    <meta name="description" content="High-performance SaaS boilerplate — Go Fiber + Svelte 5 + Inertia.js + SQLite + templ." />
+    <title>Laju Go — Go SaaS boilerplate with Svelte, React, or Vue</title>
+    <meta property="og:title" content="Laju Go — Go SaaS boilerplate with Svelte, React, or Vue" />
+    <meta property="og:description" content="Go Fiber + Inertia.js + SQLite. Auth, uploads, migrations, Docker — wired end to end. Choose Svelte, React, or Vue. Free, MIT licensed." />
+    <meta name="twitter:title" content="Laju Go — Go SaaS boilerplate with Svelte, React, or Vue" />
+    <meta name="twitter:description" content="Go Fiber + Inertia.js + SQLite. Auth, uploads, migrations, Docker — wired end to end. Choose Svelte, React, or Vue. Free, MIT licensed." />
+    <meta name="description" content="High-performance Go SaaS boilerplate — Go Fiber + Inertia.js + SQLite. Choose Svelte, React, or Vue. Auth, uploads, migrations, Docker — wired end to end." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/favicon.svg" />
@@ -36,8 +36,8 @@ import Faq from "../components/Faq.astro";
 
     <main>
       <Hero />
-      <StatsStrip />
-      <FeatureGrid />
+      <WhatsInBox />
+      <FrameworkSelector />
       <WhyLaju />
       <Faq />
     </main>
@@ -49,7 +49,7 @@ import Faq from "../components/Faq.astro";
             <img src="/favicon.svg" alt="" width="20" height="20" />
             <span>Laju Go</span>
           </div>
-          <p>High-performance SaaS boilerplate. Go Fiber, Svelte 5, Inertia, SQLite, templ — one binary, wired end to end.</p>
+          <p>Go SaaS boilerplate. Go Fiber, Svelte / React / Vue, Inertia, TailwindCSS, SQLite, sqlc — one binary, wired end to end.</p>
         </div>
         <div class="lj-footer-col">
           <h4>Docs</h4>

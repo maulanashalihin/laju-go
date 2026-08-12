@@ -1,0 +1,268 @@
+---
+const frameworks = [
+  {
+    name: "Svelte 5",
+    id: "svelte",
+    badge: "default",
+    color: "#ff3e00",
+    install: "npx create-laju-go@latest my-app",
+    snippet: `// Login.svelte
+import { useForm } from "@inertiajs/svelte";
+
+const form = useForm({ email: "", password: "" });
+
+function submitForm(e) {
+  e.preventDefault();
+  form.post("/login");
+}
+
+<form onsubmit={submitForm}>
+  <input bind:value={form.email} type="email" />
+  <input bind:value={form.password} type="password" />
+  {#if form.errors.email}<span>{form.errors.email}</span>{/if}
+  <button disabled={form.processing}>Sign in</button>
+</form>`,
+  },
+  {
+    name: "React 19",
+    id: "react",
+    badge: "",
+    color: "#61dafb",
+    install: "npx create-laju-go@latest my-app --template react",
+    snippet: `// Login.tsx
+import { useForm } from "@inertiajs/react";
+
+const { data, setData, post, processing, errors } = useForm({
+  email: "",
+  password: "",
+});
+
+function submitForm(e) {
+  e.preventDefault();
+  post("/login");
+}
+
+<form onSubmit={submitForm}>
+  <input value={data.email}
+    onChange={e => setData("email", e.target.value)} />
+  <input value={data.password}
+    onChange={e => setData("password", e.target.value)} />
+  {errors.email && <span>{errors.email}</span>}
+  <button disabled={processing}>Sign in</button>
+</form>`,
+  },
+  {
+    name: "Vue 3",
+    id: "vue",
+    badge: "",
+    color: "#42b883",
+    install: "npx create-laju-go@latest my-app --template vue",
+    snippet: `<!-- Login.vue -->
+import { useForm } from "@inertiajs/vue3";
+
+const form = useForm({ email: "", password: "" });
+
+function submitForm() {
+  form.post("/login");
+}
+
+<form @submit.prevent="submitForm">
+  <input v-model="form.email" type="email" />
+  <input v-model="form.password" type="password" />
+  <span v-if="form.errors.email">{{ form.errors.email }}</span>
+  <button :disabled="form.processing">Sign in</button>
+</form>`,
+  },
+];
+---
+
+<section class="lj-fw">
+  <h2 class="lj-section-title">Same page, <span class="lj-accent">three syntaxes</span></h2>
+  <p class="lj-section-sub">The Login form in each framework. Same Go backend, same Inertia props, same database.</p>
+
+  <div class="lj-fw-tabs" role="tablist">
+    {frameworks.map((fw, i) => (
+      <button
+        class={`lj-fw-tab${i === 0 ? " lj-fw-tab-active" : ""}`}
+        role="tab"
+        data-target={fw.id}
+        style={i === 0 ? `border-color: ${fw.color}` : ""}
+      >
+        <span class="lj-fw-tab-logo" style={`color: ${fw.color}`}>
+          {fw.name === "Svelte 5" && (
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path d="M10.354 21.125a4.44 4.44 0 0 1-4.765-1.767 4.109 4.109 0 0 1-.703-3.107 3.898 3.898 0 0 1 .134-.522l.105-.321.287.21a7.21 7.21 0 0 0 2.186 1.092l.208.063-.02.208a1.253 1.253 0 0 0 .226.83 1.337 1.337 0 0 0 1.435.533 1.231 1.231 0 0 0 .343-.15l5.59-3.562a1.164 1.164 0 0 0 .524-.778 1.242 1.242 0 0 0-.211-.937 1.338 1.338 0 0 0-1.435-.533 1.23 1.23 0 0 0-.343.15l-2.133 1.36a4.078 4.078 0 0 1-1.135.499 4.44 4.44 0 0 1-4.765-1.766 4.108 4.108 0 0 1-.702-3.108 3.855 3.855 0 0 1 1.742-2.582l5.589-3.563a4.072 4.072 0 0 1 1.135-.499 4.44 4.44 0 0 1 4.765 1.767 4.109 4.109 0 0 1 .703 3.107 3.943 3.943 0 0 1-.134.522l-.105.321-.286-.21a7.204 7.204 0 0 0-2.187-1.093l-.208-.063.02-.207a1.255 1.255 0 0 0-.226-.831 1.337 1.337 0 0 0-1.435-.532 1.231 1.231 0 0 0-.343.15L8.62 9.368a1.162 1.162 0 0 0-.524.778 1.24 1.24 0 0 0 .211.937 1.338 1.338 0 0 0 1.435.533 1.235 1.235 0 0 0 .344-.151l2.132-1.36a4.067 4.067 0 0 1 1.135-.498 4.44 4.44 0 0 1 4.765 1.766 4.108 4.108 0 0 1 .702 3.108 3.857 3.857 0 0 1-1.742 2.583l-5.589 3.562a4.072 4.072 0 0 1-1.135.499m10.358-17.95C18.484-.015 14.082-.96 10.9 1.068L5.31 4.63a6.412 6.412 0 0 0-2.896 4.295 6.753 6.753 0 0 0 .666 4.336 6.43 6.43 0 0 0-.96 2.396 6.833 6.833 0 0 0 1.168 5.167c2.229 3.19 6.63 4.135 9.812 2.108l5.59-3.562a6.41 6.41 0 0 0 2.896-4.295 6.756 6.756 0 0 0-.665-4.336 6.429 6.429 0 0 0 .958-2.396 6.831 6.831 0 0 0-1.167-5.168Z"/>
+            </svg>
+          )}
+          {fw.name === "React 19" && (
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <circle cx="12" cy="12" r="2" fill="currentColor"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
+            </svg>
+          )}
+          {fw.name === "Vue 3" && (
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path d="M2 3h4.5L12 12l5.5-9H22L12 21 2 3zm5 0h2l3 5 3-5h2l-5 8-5-8z"/>
+            </svg>
+          )}
+        </span>
+        {fw.name}
+        {fw.badge && <span class="lj-fw-badge">{fw.badge}</span>}
+      </button>
+    ))}
+  </div>
+
+  <div class="lj-fw-content">
+    {frameworks.map((fw, i) => (
+      <div class={`lj-fw-panel${i === 0 ? " lj-fw-panel-active" : ""}`} data-panel={fw.id} role="tabpanel">
+        <pre class="lj-fw-code"><code>{fw.snippet}</code></pre>
+        <div class="lj-fw-install">
+          <span class="lj-fw-install-label">Install:</span>
+          <code>{fw.install}</code>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <div class="lj-fw-note">
+    <span>Same Go handlers. Same routes. Same SQLite database. The backend doesn't know which framework you chose — Inertia.js handles the bridge.</span>
+  </div>
+</section>
+
+<script>
+  const tabs = document.querySelectorAll('.lj-fw-tab');
+  const panels = document.querySelectorAll('.lj-fw-panel');
+  const colors = { svelte: '#ff3e00', react: '#61dafb', vue: '#42b883' };
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.target;
+      tabs.forEach(t => {
+        t.classList.remove('lj-fw-tab-active');
+        t.style.borderColor = '';
+      });
+      panels.forEach(p => p.classList.remove('lj-fw-panel-active'));
+      tab.classList.add('lj-fw-tab-active');
+      tab.style.borderColor = colors[target];
+      document.querySelector(`[data-panel="${target}"]`)?.classList.add('lj-fw-panel-active');
+    });
+  });
+</script>
+
+<style>
+  .lj-fw {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem;
+  }
+
+  .lj-fw-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #1e293b;
+    margin-bottom: 0;
+  }
+
+  .lj-fw-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1.1rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    background: transparent;
+    border-radius: 0.4rem 0.4rem 0 0;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .lj-fw-tab:hover {
+    color: #94a3b8;
+    background: rgba(15, 23, 42, 0.5);
+  }
+
+  .lj-fw-tab-active {
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.8);
+  }
+
+  .lj-fw-tab-logo {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .lj-fw-badge {
+    font-size: 0.58rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #22d3ee;
+    background: rgba(34, 211, 238, 0.1);
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.2rem;
+  }
+
+  .lj-fw-content {
+    position: relative;
+  }
+
+  .lj-fw-panel {
+    display: none;
+  }
+
+  .lj-fw-panel-active {
+    display: block;
+  }
+
+  .lj-fw-code {
+    margin: 0;
+    padding: 1.25rem;
+    background: #050810;
+    border: 1px solid #1e293b;
+    border-radius: 0 0.6rem 0.6rem 0.6rem;
+    overflow-x: auto;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: #e2e8f0;
+  }
+
+  .lj-fw-install {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    padding: 0.7rem 0.9rem;
+    background: rgba(34, 211, 238, 0.05);
+    border: 1px solid rgba(34, 211, 238, 0.15);
+    border-radius: 0.4rem;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.8rem;
+    color: #22d3ee;
+    overflow-x: auto;
+  }
+
+  .lj-fw-install-label {
+    color: #475569;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .lj-fw-note {
+    margin-top: 2rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(34, 211, 238, 0.15);
+    border-radius: 0.6rem;
+    background: rgba(34, 211, 238, 0.03);
+    font-size: 0.9rem;
+    color: #94a3b8;
+    text-align: center;
+  }
+</style>

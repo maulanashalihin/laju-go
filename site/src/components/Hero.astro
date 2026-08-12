@@ -6,16 +6,17 @@
     <div class="lj-hero-left">
       <div class="lj-hero-badge">
         <span class="lj-hero-dot"></span>
-        Go Fiber + Svelte 5 + Inertia.js
+        Go Fiber + Inertia.js + SQLite — Svelte, React, or Vue
       </div>
 
       <h1 class="lj-hero-title">
-        Ship Go apps at <span class="lj-accent">velocity</span>.
+        Go backend.<br />Your frontend.<br /><span class="lj-accent">One binary.</span>
       </h1>
 
       <p class="lj-hero-desc">
-        High-performance SaaS boilerplate with auth, uploads, migrations, tests,
-        and Docker — wired end to end. No framework tax, no ORM, no wiring homework.
+        A SaaS boilerplate with auth, uploads, migrations, and Docker —
+        wired end to end. Choose Svelte, React, or Vue. The Go backend
+        doesn't know which one you picked.
       </p>
 
       <div class="lj-hero-actions">
@@ -29,9 +30,7 @@
         </a>
       </div>
 
-      <div class="lj-hero-chips">
-        <span>Go Fiber</span><span>Svelte 5</span><span>Inertia.js</span><span>SQLite</span><span>templ</span><span>sqlc</span>
-      </div>
+      <p class="lj-hero-free">Free — MIT licensed. No account required.</p>
     </div>
 
     <div class="lj-hero-right">
@@ -43,11 +42,13 @@
           <span class="lj-terminal-title">terminal</span>
         </div>
         <div class="lj-terminal-body">
-          <div class="lj-terminal-line"><span class="lj-prompt">$</span> npm create laju-go@latest my-app</div>
+          <div class="lj-terminal-line"><span class="lj-prompt">$</span> npx create-laju-go@latest my-app</div>
+          <div class="lj-terminal-out">? Select a frontend framework:</div>
+          <div class="lj-terminal-out">❯ Svelte 5 (default)</div>
+          <div class="lj-terminal-out">  React 19</div>
+          <div class="lj-terminal-out">  Vue 3</div>
           <div class="lj-terminal-out">↓ Downloading template...</div>
-          <div class="lj-terminal-out">✓ Dev-only files removed</div>
-          <div class="lj-terminal-out">✓ Go dependencies installed</div>
-          <div class="lj-terminal-out">✓ Node.js dependencies installed</div>
+          <div class="lj-terminal-out">✓ Dependencies installed</div>
           <div class="lj-terminal-out">✓ Environment configured</div>
           <div class="lj-terminal-line"><span class="lj-prompt">$</span> cd my-app && npm run dev:all</div>
           <div class="lj-terminal-out">→ Go: http://localhost:8080</div>
@@ -126,7 +127,13 @@
   .lj-hero-actions {
     display: flex;
     gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .lj-hero-free {
+    font-size: 0.85rem;
+    color: #475569;
+    margin: 0;
   }
 
   .lj-btn {
@@ -163,22 +170,6 @@
 
   .lj-btn-ghost:hover {
     border-color: #334155;
-  }
-
-  .lj-hero-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .lj-hero-chips span {
-    padding: 0.2rem 0.6rem;
-    border-radius: 0.3rem;
-    font-size: 0.75rem;
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    background: rgba(34, 211, 238, 0.08);
-    color: #67e8f9;
-    border: 1px solid rgba(34, 211, 238, 0.15);
   }
 
   /* Terminal */
