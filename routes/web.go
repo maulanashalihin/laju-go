@@ -20,6 +20,13 @@ type Handlers struct {
 }
 
 func SetupRoutes(app *fiber.App, handlers Handlers, store *session.Store, userService *services.UserService, mailerService *services.MailerService, csrfMiddleware *middlewares.CSRFMiddleware) {
+	// Safety net against the cache-leak class: any HTML/JSON response that
+	// did not set its own Cache-Control (static assets do via MaxAge) gets
+	// private, no-store — so a future route can never leak user-specific
+	// bytes into a shared edge cache. Mounted first so it wraps everything
+	// below, including the static handlers (which opt out explicitly).
+	app.Use(middlewares.NoCacheByDefault())
+
 	// Setup static file serving
 	setupStaticRoutes(app)
 
@@ -142,7 +149,6 @@ func SetupCSRFMiddleware(secret string, secure bool) *middlewares.CSRFMiddleware
 	config.SameSite = "Lax"
 	return middlewares.NewCSRFMiddleware(config)
 }
-
 
 // SetupPasswordResetHandler sets up the password reset handler
 func SetupPasswordResetHandler(
